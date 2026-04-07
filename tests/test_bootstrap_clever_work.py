@@ -38,7 +38,7 @@ def build_packet(**overrides):
     module = load_module()
     return module.build_packet(
         user_session="agent-session",
-        current_working_repo="clever_agent_project",
+        current_working_repo="clever-agent-project",
         current_working_repo_path=str(REPO_ROOT),
         target_repo=overrides.get("target_repo", "clever-analytics-api"),
         target_repo_status=overrides.get("target_repo_status", "provided"),
@@ -137,11 +137,11 @@ def test_cli_from_start_repo_prefers_matching_ssot_worktrees_for_current_branch(
 def test_build_packet_distinguishes_start_repo_from_target_repo_bootstrap():
     packet = build_packet(target_repo="clever-analytics-api")
 
-    assert packet["current_working_repo"] == "clever_agent_project"
+    assert packet["current_working_repo"] == "clever-agent-project"
     assert packet["target_repo"] == "clever-analytics-api"
 
     repo_bootstrap = packet["repo_bootstrap"]
-    assert repo_bootstrap["source_repo"] == "clever_agent_project"
+    assert repo_bootstrap["source_repo"] == "clever-agent-project"
     assert repo_bootstrap["target_repo"] == "clever-analytics-api"
     assert repo_bootstrap["requires_new_repo"] is True
     assert repo_bootstrap["status"] == "proposed-after-approval"
@@ -183,12 +183,12 @@ def test_build_ssot_docs_uses_project_start_aligned_surface():
 def test_cli_without_target_repo_keeps_target_repo_as_needs_confirmation():
     packet = run_cli()
 
-    assert packet["current_working_repo"] == "clever_agent_project"
+    assert packet["current_working_repo"] == "clever-agent-project"
     assert packet["target_repo"] == "needs-confirmation"
     assert packet["target_repo_status"] == "needs-confirmation"
 
     repo_bootstrap = packet["repo_bootstrap"]
-    assert repo_bootstrap["source_repo"] == "clever_agent_project"
+    assert repo_bootstrap["source_repo"] == "clever-agent-project"
     assert repo_bootstrap["target_repo"] == "needs-confirmation"
     assert repo_bootstrap["requires_new_repo"] is None
     assert repo_bootstrap["target_repo_status"] == "needs-confirmation"
@@ -227,19 +227,19 @@ def test_resolve_repo_checkout_prefers_matching_branch_in_wrapper_root(
 
 
 def test_cli_with_current_repo_target_marks_requires_new_repo_false():
-    packet = run_cli("--target-repo", "clever_agent_project")
+    packet = run_cli("--target-repo", "clever-agent-project")
 
-    assert packet["current_working_repo"] == "clever_agent_project"
-    assert packet["target_repo"] == "clever_agent_project"
+    assert packet["current_working_repo"] == "clever-agent-project"
+    assert packet["target_repo"] == "clever-agent-project"
     assert packet["target_repo_status"] == "provided"
 
     repo_bootstrap = packet["repo_bootstrap"]
-    assert repo_bootstrap["source_repo"] == "clever_agent_project"
-    assert repo_bootstrap["target_repo"] == "clever_agent_project"
+    assert repo_bootstrap["source_repo"] == "clever-agent-project"
+    assert repo_bootstrap["target_repo"] == "clever-agent-project"
     assert repo_bootstrap["target_repo_status"] == "provided"
     assert repo_bootstrap["requires_new_repo"] is False
     assert (
-        "- target repo proposal: confirm the current working repo (clever_agent_project) as "
+        "- target repo proposal: confirm the current working repo (clever-agent-project) as "
         "the execution repo"
         in packet["project_start_issue"]["body"]
     )

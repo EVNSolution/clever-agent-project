@@ -1,4 +1,4 @@
-# clever_agent_project
+# clever-agent-project
 
 CLEVER 작업을 시작할 때 사용하는 repo-local 에이전트 자산 저장소다.
 
@@ -44,7 +44,7 @@ multi_agent = true
 운영 방식은 아래와 같다.
 
 1. 사용자 Codex 환경에 `superpowers`를 한 번 설치한다.
-2. CLEVER 작업 시작은 `clever_agent_project`에서 한다.
+2. CLEVER 작업 시작은 `clever-agent-project`에서 한다.
 3. 승인 후 target GitHub repo를 생성하고 로컬에 clone 또는 pull 한다.
 4. 그 target repo 루트에서 새 Codex 세션을 시작한다.
 5. 새 세션은 이미 설치된 `superpowers` 스킬을 자동으로 사용한다.
@@ -61,12 +61,12 @@ CLEVER 관련 저장소는 하나의 workspace root 아래에 두는 것을 권�
 
 ```text
 <CLEVER_ROOT>/
-  clever_agent_project/
+  clever-agent-project/
   clever-change-control/
   clever-context-monorepo/
 ```
 
-세션은 `<CLEVER_ROOT>/clever_agent_project`에서 시작한다.
+세션은 `<CLEVER_ROOT>/clever-agent-project`에서 시작한다.
 
 ### 먼저 읽을 순서
 
@@ -80,7 +80,7 @@ CLEVER 관련 저장소는 하나의 workspace root 아래에 두는 것을 권�
 
 ### 1단계: Bootstrap Packet 생성
 
-`clever_agent_project`에서 repo-local helper를 실행한다.
+`clever-agent-project`에서 repo-local helper를 실행한다.
 
 ```bash
 python3 .codex/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py --cwd "$PWD" --json
@@ -128,7 +128,7 @@ packet 요약을 사용자에게 보여주고 아래 질문 한 번만 한다.
 
 기본값은 target repo에서 새 세션을 시작하는 것이다.
 
-`clever_agent_project`는 intake와 orchestration surface다. 승인된 packet이 명시적으로 그렇게 정하지 않는 한, 기본 실행 repo로 취급하지 않는다.
+`clever-agent-project`는 intake와 orchestration surface다. 승인된 packet이 명시적으로 그렇게 정하지 않는 한, 기본 실행 repo로 취급하지 않는다.
 
 ### 하지 말아야 할 것
 

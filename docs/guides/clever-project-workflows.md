@@ -16,7 +16,7 @@
 
 ## 저장소별 역할
 
-- `clever_agent_project`: 작업 시작점, intake, orchestration
+- `clever-agent-project`: 작업 시작점, intake, orchestration
 - `clever-change-control`: root issue, child issue, 승인, 추적
 - `clever-context-monorepo`: 규칙, 용어, 문서 경계의 SSOT
 
@@ -24,7 +24,7 @@
 
 모든 경우에 아래 규칙은 공통이다.
 
-1. 시작은 `clever_agent_project`에서 한다.
+1. 시작은 `clever-agent-project`에서 한다.
 2. 초안 작성 전에 SSOT를 읽는다.
 3. repo를 만들거나 바꾸기 전에 `project-start` 초안을 만든다.
 4. 승인 전에는 GitHub issue 생성이나 repo bootstrap을 하지 않는다.
@@ -44,7 +44,7 @@
 
 실행 순서는 아래와 같다.
 
-1. `clever_agent_project`에서 시작한다.
+1. `clever-agent-project`에서 시작한다.
 2. `clever-context-monorepo`와 `clever-change-control`을 읽는다.
 3. `project-start` 초안을 만든다.
 4. 승인을 받는다.
