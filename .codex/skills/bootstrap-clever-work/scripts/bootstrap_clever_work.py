@@ -25,7 +25,7 @@ CONTEXT_DOCS = [
 
 CHANGE_DOCS = [
     "README.md",
-    ".github/ISSUE_TEMPLATE",
+    ".github/ISSUE_TEMPLATE/project-start.yml",
     ".github/PULL_REQUEST_TEMPLATE.md",
     "changes",
     "releases",
@@ -82,6 +82,56 @@ def repo_full_name(repo_path: Path) -> str | None:
     if not match:
         return None
     return f"{match.group('owner')}/{match.group('repo')}"
+
+
+def repo_name(repo_path: Path) -> str:
+    full_name = repo_full_name(repo_path)
+    if full_name:
+        return full_name.rsplit("/", 1)[-1]
+
+    common_dir = run_command(
+        ["git", "-C", str(repo_path), "rev-parse", "--path-format=absolute", "--git-common-dir"]
+    )
+    if common_dir:
+        common_dir_path = Path(common_dir).resolve()
+        if common_dir_path.name == ".git":
+            return common_dir_path.parent.name
+        return common_dir_path.name
+
+    return find_git_root(repo_path).name
+
+
+def is_checkout_root(path: Path) -> bool:
+    output = run_command(["git", "-C", str(path), "rev-parse", "--show-toplevel"])
+    return bool(output and Path(output).resolve() == path.resolve())
+
+
+def resolve_repo_checkout(
+    *, clever_root: Path, repo_name_value: str, preferred_checkout_name: str | None = None
+) -> Path:
+    container = clever_root / repo_name_value
+    candidates: list[Path] = [container]
+    if preferred_checkout_name:
+        candidates.append(container / preferred_checkout_name)
+    if container.is_dir():
+        candidates.extend(
+            child for child in sorted(container.iterdir()) if child.is_dir() and child.name != ".git"
+        )
+
+    seen: set[Path] = set()
+    for candidate in candidates:
+        resolved_candidate = candidate.resolve()
+        if resolved_candidate in seen or not candidate.exists():
+            continue
+        seen.add(resolved_candidate)
+        if not is_checkout_root(candidate):
+            continue
+        if repo_name(candidate) == repo_name_value:
+            return resolved_candidate
+
+    raise FileNotFoundError(
+        f"Could not resolve checkout for {repo_name_value} from CLEVER root {clever_root}"
+    )
 
 
 def build_project_start_title(purpose: str) -> str:
@@ -238,9 +288,17 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def build_ssot_docs(clever_root: Path) -> list[str]:
-    context_repo_path = clever_root / CONTEXT_REPO_NAME
-    change_repo_path = clever_root / CHANGE_REPO_NAME
+def build_ssot_docs(clever_root: Path, *, preferred_checkout_name: str | None = None) -> list[str]:
+    context_repo_path = resolve_repo_checkout(
+        clever_root=clever_root,
+        repo_name_value=CONTEXT_REPO_NAME,
+        preferred_checkout_name=preferred_checkout_name,
+    )
+    change_repo_path = resolve_repo_checkout(
+        clever_root=clever_root,
+        repo_name_value=CHANGE_REPO_NAME,
+        preferred_checkout_name=preferred_checkout_name,
+    )
     return [str(context_repo_path / rel) for rel in CONTEXT_DOCS] + [
         str(change_repo_path / rel) for rel in CHANGE_DOCS
     ]
@@ -307,14 +365,18 @@ def main() -> int:
     clever_root = find_clever_root(cwd)
     git_root = find_git_root(cwd)
 
-    working_repo = git_root.name
+    working_repo = repo_name(git_root)
     if args.target_repo:
         target_repo = args.target_repo
         target_repo_status = "provided"
     else:
         target_repo = "needs-confirmation"
         target_repo_status = "needs-confirmation"
-    change_repo_path = clever_root / CHANGE_REPO_NAME
+    change_repo_path = resolve_repo_checkout(
+        clever_root=clever_root,
+        repo_name_value=CHANGE_REPO_NAME,
+        preferred_checkout_name=git_root.name,
+    )
     packet = build_packet(
         user_session=args.user_session,
         current_working_repo=working_repo,
@@ -325,7 +387,7 @@ def main() -> int:
         constraints=args.constraints,
         ui_impact=args.ui_impact,
         expected_result=args.expected_result,
-        ssot_docs_read=build_ssot_docs(clever_root),
+        ssot_docs_read=build_ssot_docs(clever_root, preferred_checkout_name=git_root.name),
         issue_repo=repo_full_name(change_repo_path) or CHANGE_REPO_NAME,
     )
 

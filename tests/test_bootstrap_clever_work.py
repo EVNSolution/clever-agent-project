@@ -6,12 +6,17 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MODULE_PATH = (
     REPO_ROOT
     / ".codex/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py"
 )
+WORKTREES_ROOT = Path("/Users/jiin/.config/superpowers/worktrees")
+CHANGE_WORKTREE = WORKTREES_ROOT / "clever-change-control/project-start-model"
+CONTEXT_WORKTREE = WORKTREES_ROOT / "clever-context-monorepo/project-start-model"
 
 
 def load_module():
@@ -68,6 +73,28 @@ def test_build_packet_uses_project_start_fields():
     assert draft["body"].startswith("## Purpose")
 
 
+@pytest.mark.skipif(
+    not CHANGE_WORKTREE.is_dir() or not CONTEXT_WORKTREE.is_dir(),
+    reason="worktree regression requires CLEVER worktree fixtures",
+)
+def test_cli_from_worktree_resolves_real_repo_identity_and_ssot_checkouts():
+    proc = subprocess.run(
+        ["python3", str(MODULE_PATH), "--cwd", str(CHANGE_WORKTREE), "--json"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    packet = json.loads(proc.stdout)
+
+    assert packet["current_working_repo"] == "clever-change-control"
+    assert packet["current_working_repo_path"] == str(CHANGE_WORKTREE)
+    assert str(CONTEXT_WORKTREE / "README.md") in packet["ssot_docs_read"]
+    assert (
+        str(CHANGE_WORKTREE / ".github/ISSUE_TEMPLATE/project-start.yml")
+        in packet["ssot_docs_read"]
+    )
+
+
 def test_build_packet_distinguishes_start_repo_from_target_repo_bootstrap():
     packet = build_packet(target_repo="clever-analytics-api")
 
@@ -104,7 +131,10 @@ def test_build_ssot_docs_uses_project_start_aligned_surface():
     docs = module.build_ssot_docs(clever_root)
 
     assert str(clever_root / "clever-context-monorepo/docs/wiki/index.md") in docs
-    assert str(clever_root / "clever-change-control/.github/ISSUE_TEMPLATE") in docs
+    assert (
+        str(clever_root / "clever-change-control/.github/ISSUE_TEMPLATE/project-start.yml")
+        in docs
+    )
     assert str(clever_root / "clever-change-control/changes") in docs
     assert str(clever_root / "clever-change-control/releases") in docs
     assert str(clever_root / "clever-change-control/.github/ISSUE_TEMPLATE/change-request.yml") not in docs
