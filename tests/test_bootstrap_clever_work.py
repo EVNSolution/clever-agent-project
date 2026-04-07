@@ -124,3 +124,17 @@ def test_cli_without_target_repo_keeps_target_repo_as_needs_confirmation():
     assert repo_bootstrap["requires_new_repo"] is None
     assert repo_bootstrap["target_repo_status"] == "needs-confirmation"
     assert "confirm the target repo" in repo_bootstrap["proposal"]
+
+
+def test_cli_with_current_repo_target_marks_requires_new_repo_false():
+    packet = run_cli("--target-repo", "clever_agent_project")
+
+    assert packet["current_working_repo"] == "clever_agent_project"
+    assert packet["target_repo"] == "clever_agent_project"
+    assert packet["target_repo_status"] == "provided"
+
+    repo_bootstrap = packet["repo_bootstrap"]
+    assert repo_bootstrap["source_repo"] == "clever_agent_project"
+    assert repo_bootstrap["target_repo"] == "clever_agent_project"
+    assert repo_bootstrap["target_repo_status"] == "provided"
+    assert repo_bootstrap["requires_new_repo"] is False
