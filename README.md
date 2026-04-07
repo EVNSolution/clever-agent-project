@@ -6,11 +6,13 @@ Project-local agent assets for the CLEVER workspace.
 
 This repository stores CLEVER-specific agent skills and supporting files without relying on a global superpowers installation.
 
-## Start Here
+## Execution Guide
 
 Use this repository as the intake surface for any new CLEVER work.
 
-Recommended local layout:
+### Preconditions
+
+Keep the CLEVER repos in one workspace root.
 
 ```text
 <CLEVER_ROOT>/
@@ -19,14 +21,77 @@ Recommended local layout:
   clever-context-monorepo/
 ```
 
-When a new session agent starts here, it should:
+Start the session in `<CLEVER_ROOT>/clever_agent_project`.
+
+### Required Read Order
+
+Before drafting anything, read in this order:
 
 1. read this README
 2. read `.codex/skills/bootstrap-clever-work/SKILL.md`
 3. read the current SSOT state in `clever-change-control` and `clever-context-monorepo`
-4. draft a `project-start` issue
-5. wait for approval
-6. create the issue, bootstrap the target repo, and hand off to a fresh target-repo session
+
+Do not start planning or implementation before that read order is complete.
+
+### Step 1: Build the Bootstrap Packet
+
+Run the repo-local helper from `clever_agent_project`:
+
+```bash
+python3 .codex/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py --cwd "$PWD" --json
+```
+
+If the user already gave purpose, constraints, expected result, or a known target repo, pass them through:
+
+```bash
+python3 .codex/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py \
+  --cwd "$PWD" \
+  --purpose "<purpose>" \
+  --constraints "<constraints>" \
+  --expected-result "<expected result>" \
+  --target-repo "<target repo if known>" \
+  --json
+```
+
+Expected result:
+
+- `project_start_issue`
+- `repo_bootstrap`
+- `repo_session_handoff`
+- `ssot_docs_read`
+
+### Step 2: Present the Approval Gate
+
+Show the packet summary to the user and ask exactly one approval question:
+
+> 아래 project-start 초안과 repo bootstrap 제안으로 진행할까요? 틀리면 수정할 필드만 말해 주세요.
+
+Do not create a GitHub issue, repo, branch, folder, or SSOT change before approval.
+
+### Step 3: After Approval
+
+After approval, the execution order is:
+
+1. create the `project-start` issue in `clever-change-control`
+2. use the created `project-start issue #` as the canonical identifier
+3. propose or confirm the target repo
+4. create the target GitHub repo if needed
+5. clone or pull the target repo locally
+6. hand off to a fresh session rooted in the target repo
+
+### Step 4: Handoff Rule
+
+The default next session is a new session in the target repo.
+
+Keep `clever_agent_project` as the intake and orchestration surface. Do not treat it as the default execution repo unless the approved packet explicitly says so.
+
+### Do Not
+
+- do not generate a canonical `change_id`
+- do not require `target_service` before the start draft exists
+- do not create service-doc drafts in the normal start path
+- do not modify SSOT source during ordinary project intake
+- do not skip the approval gate
 
 ## Current Asset
 
