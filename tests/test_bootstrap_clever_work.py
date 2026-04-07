@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -28,6 +30,7 @@ def build_packet(**overrides):
         current_working_repo="clever_agent_project",
         current_working_repo_path=str(REPO_ROOT),
         target_repo=overrides.get("target_repo", "clever-analytics-api"),
+        target_repo_status=overrides.get("target_repo_status", "provided"),
         purpose="Launch a new analytics workflow",
         constraints="Use the approved project-start intake",
         ui_impact="unknown",
@@ -37,6 +40,16 @@ def build_packet(**overrides):
             "/workspace/clever-change-control/README.md",
         ],
     )
+
+
+def run_cli(*args):
+    proc = subprocess.run(
+        ["python3", str(MODULE_PATH), "--cwd", str(REPO_ROOT), "--json", *args],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(proc.stdout)
 
 
 def test_build_packet_uses_project_start_fields():
@@ -82,3 +95,32 @@ def test_build_packet_includes_post_create_clone_and_handoff_plan():
     assert handoff["recommended_session"] == "new-target-repo-session"
     assert handoff["status"] == "recommended-after-clone"
     assert "Switch to the cloned target repo" in handoff["summary"]
+
+
+def test_build_ssot_docs_uses_project_start_aligned_surface():
+    module = load_module()
+    clever_root = module.find_clever_root(REPO_ROOT)
+
+    docs = module.build_ssot_docs(clever_root)
+
+    assert str(clever_root / "clever-context-monorepo/docs/wiki/index.md") in docs
+    assert str(clever_root / "clever-change-control/.github/ISSUE_TEMPLATE") in docs
+    assert str(clever_root / "clever-change-control/changes") in docs
+    assert str(clever_root / "clever-change-control/releases") in docs
+    assert str(clever_root / "clever-change-control/.github/ISSUE_TEMPLATE/change-request.yml") not in docs
+    assert str(clever_root / "clever-context-monorepo/docs/services/service-template.md") not in docs
+
+
+def test_cli_without_target_repo_keeps_target_repo_as_needs_confirmation():
+    packet = run_cli()
+
+    assert packet["current_working_repo"] == "clever_agent_project"
+    assert packet["target_repo"] == "needs-confirmation"
+    assert packet["target_repo_status"] == "needs-confirmation"
+
+    repo_bootstrap = packet["repo_bootstrap"]
+    assert repo_bootstrap["source_repo"] == "clever_agent_project"
+    assert repo_bootstrap["target_repo"] == "needs-confirmation"
+    assert repo_bootstrap["requires_new_repo"] is None
+    assert repo_bootstrap["target_repo_status"] == "needs-confirmation"
+    assert "confirm the target repo" in repo_bootstrap["proposal"]

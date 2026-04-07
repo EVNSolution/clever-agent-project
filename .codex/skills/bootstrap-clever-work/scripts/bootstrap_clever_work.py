@@ -20,15 +20,15 @@ CONTEXT_DOCS = [
     "docs/root/agent-runtime-governance.md",
     "docs/root/doc-governance.md",
     "docs/root/pipeline-governance.md",
-    "docs/services/index.md",
-    "docs/services/service-template.md",
+    "docs/wiki/index.md",
 ]
 
 CHANGE_DOCS = [
     "README.md",
-    ".github/ISSUE_TEMPLATE/change-request.yml",
-    ".github/ISSUE_TEMPLATE/rollback-request.yml",
+    ".github/ISSUE_TEMPLATE",
     ".github/PULL_REQUEST_TEMPLATE.md",
+    "changes",
+    "releases",
 ]
 
 
@@ -132,6 +132,7 @@ def build_packet(
     current_working_repo: str,
     current_working_repo_path: str,
     target_repo: str,
+    target_repo_status: str,
     purpose: str,
     constraints: str,
     ui_impact: str,
@@ -139,21 +140,35 @@ def build_packet(
     ssot_docs_read: list[str],
     issue_repo: str = CHANGE_REPO_NAME,
 ) -> dict[str, Any]:
-    requires_new_repo = target_repo != current_working_repo
+    requires_new_repo: bool | None
+    if target_repo_status == "needs-confirmation":
+        requires_new_repo = None
+    else:
+        requires_new_repo = target_repo != current_working_repo
     project_start_title = build_project_start_title(purpose)
     repo_bootstrap_proposal = (
-        "After the project-start issue is approved and created, propose target repo "
-        "creation or confirmation before cloning locally."
-        if requires_new_repo
-        else "After the project-start issue is approved and created, confirm the current "
-        "repo is the target execution repo and refresh the local checkout."
+        "After the project-start issue is approved and created, confirm the target repo "
+        "before proposing repo creation or cloning."
+        if target_repo_status == "needs-confirmation"
+        else (
+            "After the project-start issue is approved and created, propose target repo "
+            "creation or confirmation before cloning locally."
+            if requires_new_repo
+            else "After the project-start issue is approved and created, confirm the current "
+            "repo is the target execution repo and refresh the local checkout."
+        )
     )
     handoff_summary = (
-        f"Switch to the cloned target repo ({target_repo}) and continue in a new session "
-        "for planning and implementation."
-        if requires_new_repo
-        else f"Continue in a fresh session scoped to the confirmed target repo "
-        f"({target_repo}) after verifying the local checkout."
+        "Confirm the target repo, prepare the local clone or pull step, and then continue "
+        "in a fresh target-repo session."
+        if target_repo_status == "needs-confirmation"
+        else (
+            f"Switch to the cloned target repo ({target_repo}) and continue in a new session "
+            "for planning and implementation."
+            if requires_new_repo
+            else f"Continue in a fresh session scoped to the confirmed target repo "
+            f"({target_repo}) after verifying the local checkout."
+        )
     )
 
     return {
@@ -161,6 +176,7 @@ def build_packet(
         "current_working_repo": current_working_repo,
         "current_working_repo_path": current_working_repo_path,
         "target_repo": target_repo,
+        "target_repo_status": target_repo_status,
         "purpose": purpose,
         "constraints": constraints,
         "ui_impact": ui_impact,
@@ -184,6 +200,7 @@ def build_packet(
         "repo_bootstrap": {
             "source_repo": current_working_repo,
             "target_repo": target_repo,
+            "target_repo_status": target_repo_status,
             "requires_new_repo": requires_new_repo,
             "status": "proposed-after-approval",
             "proposal": repo_bootstrap_proposal,
@@ -234,7 +251,7 @@ def print_text_packet(packet: dict[str, Any]) -> None:
     print(f"user-session: {packet['user_session']}")
     print(f"current-working-repo: {packet['current_working_repo']}")
     print(f"current-working-repo-path: {packet['current_working_repo_path']}")
-    print(f"target-repo: {packet['target_repo']}")
+    print(f"target-repo: {packet['target_repo']} ({packet['target_repo_status']})")
     print(f"purpose: {packet['purpose']}")
     print(f"constraints: {packet['constraints']}")
     print(f"ui-impact: {packet['ui_impact']}")
@@ -259,8 +276,15 @@ def print_text_packet(packet: dict[str, Any]) -> None:
     repo_bootstrap = packet["repo_bootstrap"]
     print("REPO_BOOTSTRAP_BEGIN")
     print(f"source-repo: {repo_bootstrap['source_repo']}")
-    print(f"target-repo: {repo_bootstrap['target_repo']}")
-    print(f"requires-new-repo: {'yes' if repo_bootstrap['requires_new_repo'] else 'no'}")
+    print(
+        f"target-repo: {repo_bootstrap['target_repo']} "
+        f"({repo_bootstrap['target_repo_status']})"
+    )
+    requires_new_repo = repo_bootstrap["requires_new_repo"]
+    if requires_new_repo is None:
+        print("requires-new-repo: needs-confirmation")
+    else:
+        print(f"requires-new-repo: {'yes' if requires_new_repo else 'no'}")
     print(f"status: {repo_bootstrap['status']}")
     print(f"proposal: {repo_bootstrap['proposal']}")
     print("post-create-clone:")
@@ -284,13 +308,19 @@ def main() -> int:
     git_root = find_git_root(cwd)
 
     working_repo = git_root.name
-    target_repo = args.target_repo or working_repo
+    if args.target_repo:
+        target_repo = args.target_repo
+        target_repo_status = "provided"
+    else:
+        target_repo = "needs-confirmation"
+        target_repo_status = "needs-confirmation"
     change_repo_path = clever_root / CHANGE_REPO_NAME
     packet = build_packet(
         user_session=args.user_session,
         current_working_repo=working_repo,
         current_working_repo_path=str(git_root),
         target_repo=target_repo,
+        target_repo_status=target_repo_status,
         purpose=args.purpose,
         constraints=args.constraints,
         ui_impact=args.ui_impact,
