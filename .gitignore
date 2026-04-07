@@ -5,14 +5,14 @@
 !/.gitignore
 !/README.md
 
-!/.codex/
-!/.codex/skills/
-!/.codex/skills/bootstrap-clever-work/
-!/.codex/skills/bootstrap-clever-work/SKILL.md
-!/.codex/skills/bootstrap-clever-work/agents/
-!/.codex/skills/bootstrap-clever-work/agents/openai.yaml
-!/.codex/skills/bootstrap-clever-work/scripts/
-!/.codex/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py
+!/.agent/
+!/.agent/skills/
+!/.agent/skills/bootstrap-clever-work/
+!/.agent/skills/bootstrap-clever-work/SKILL.md
+!/.agent/skills/bootstrap-clever-work/agents/
+!/.agent/skills/bootstrap-clever-work/agents/openai.yaml
+!/.agent/skills/bootstrap-clever-work/scripts/
+!/.agent/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py
 
 !/docs/
 !/docs/guides/
@@ -22,6 +22,7 @@
 
 !/scripts/
 !/scripts/sync_issue_from_md.py
+!/scripts/bootstrap_clever_work.py
 
 !/tests/
 !/tests/test_bootstrap_clever_work.py

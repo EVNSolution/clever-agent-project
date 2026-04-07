@@ -83,6 +83,8 @@ gh auth status
 
 이 저장소는 Codex 전용이 아니다. `superpowers`가 설치된 지원 에이전트 런타임이면 같은 시작 흐름을 사용할 수 있다.
 
+`/.agent` 폴더는 에이전트용 메타데이터를 담는 위치일 뿐이며, 저장소 운영의 필수 실행 체인은 아닙니다.
+
 현재 README 기준으로 확인 가능한 설치 경로는 아래와 같다.
 
 ### Claude Code Official Marketplace
@@ -205,7 +207,7 @@ CLEVER 관련 저장소는 하나의 workspace root 아래에 두는 것을 권�
 초안을 만들기 전에 아래 순서대로 읽는다.
 
 1. 이 `README.md`
-2. `.codex/skills/bootstrap-clever-work/SKILL.md`
+2. `.agent/skills/bootstrap-clever-work/SKILL.md`
 3. `clever-change-control`과 `clever-context-monorepo`의 현재 SSOT 상태
 
 이 순서가 끝나기 전에는 계획 수립이나 구현으로 들어가지 않는다.
@@ -215,13 +217,13 @@ CLEVER 관련 저장소는 하나의 workspace root 아래에 두는 것을 권�
 `clever-agent-project`에서 repo-local helper를 실행한다.
 
 ```bash
-python3 .codex/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py --cwd "$PWD" --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --json
 ```
 
 사용자가 목적, 제약, 기대 결과, target repo를 이미 줬다면 함께 넘긴다.
 
 ```bash
-python3 .codex/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py \
+python3 scripts/bootstrap_clever_work.py \
   --cwd "$PWD" \
   --purpose "<purpose>" \
   --constraints "<constraints>" \
@@ -229,6 +231,9 @@ python3 .codex/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py \
   --target-repo "<target repo if known>" \
   --json
 ```
+
+루트에 있는 `scripts/bootstrap_clever_work.py`는 같은 명령을 래핑한 진입점이라
+초기 세션에서도 `.agent` 경로를 직접 건드리지 않아도 된다.
 
 기대 출력은 아래 네 축이다.
 
@@ -284,7 +289,7 @@ packet 요약을 사용자에게 보여주고 아래 질문 한 번만 한다.
 
 ## 현재 자산
 
-- `.codex/skills/bootstrap-clever-work/`
+- `.agent/skills/bootstrap-clever-work/`
 
 `bootstrap-clever-work` 스킬은 아래 두 저장소를 SSOT로 보고 시작 흐름을 표준화한다.
 
@@ -313,7 +318,7 @@ packet 요약을 사용자에게 보여주고 아래 질문 한 번만 한다.
 ## 저장소 구조
 
 ```text
-.codex/
+.agent/
   skills/
     bootstrap-clever-work/
       SKILL.md

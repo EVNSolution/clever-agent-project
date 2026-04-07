@@ -13,7 +13,7 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MODULE_PATH = (
     REPO_ROOT
-    / ".codex/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py"
+    / ".agent/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py"
 )
 WORKTREES_ROOT = Path(
     os.environ.get(

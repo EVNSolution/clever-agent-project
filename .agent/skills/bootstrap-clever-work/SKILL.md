@@ -63,7 +63,7 @@ The workflow must not require a pre-confirmed `target-service` or a generated `c
 
 ## First Step
 
-Run the helper script from this repository-local skill.
+Run the helper script from this repository.
 
 ```bash
 python3 scripts/bootstrap_clever_work.py --cwd "$PWD"
@@ -80,8 +80,6 @@ python3 scripts/bootstrap_clever_work.py \
   --expected-result "<expected result>" \
   --target-repo "<target repo if known>"
 ```
-
-The `scripts/` path is relative to this skill directory inside `clever_agent_project/.codex/skills/bootstrap-clever-work/`.
 
 The script emits:
 
