@@ -6,6 +6,10 @@ CLEVER 작업을 시작할 때 사용하는 repo-local 에이전트 자산 저�
 
 이 저장소는 CLEVER 작업의 intake, bootstrap, handoff를 표준화하기 위한 시작점이다. repo-local bootstrap 자산은 이 저장소에 두고, 일반적인 설계 및 구현 워크플로우는 설치된 `superpowers`를 통해 실행한다.
 
+## 작업 운영 규칙
+
+이 저장소는 `main` 기준 direct push 운영을 기본으로 한다. 승인 후 변경 내용을 `main`에 바로 반영하되 PR은 생성하지 않는다. 필요 시 사용자가 별도로 요청할 때만 PR 워크플로우를 사용한다.
+
 ## 필수 사전 조건
 
 이 저장소를 실제로 운용하려면 아래 조건이 필요하다.
