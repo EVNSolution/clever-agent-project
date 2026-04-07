@@ -4,38 +4,137 @@ CLEVER 작업을 시작할 때 사용하는 repo-local 에이전트 자산 저�
 
 ## 목적
 
-이 저장소는 전역 superpowers 설치에 의존하지 않고, CLEVER 전용 스킬과 보조 파일을 repo 안에서 함께 관리하기 위한 시작점이다.
+이 저장소는 CLEVER 작업의 intake, bootstrap, handoff를 표준화하기 위한 시작점이다. repo-local bootstrap 자산은 이 저장소에 두고, 일반적인 설계 및 구현 워크플로우는 설치된 `superpowers`를 통해 실행한다.
+
+## 필수 사전 조건
+
+이 저장소를 실제로 운용하려면 아래 조건이 필요하다.
+
+1. `superpowers`가 설치된 지원 에이전트 런타임 하나
+2. `git`
+3. `python3`
+4. `gh` (GitHub CLI)
+5. 같은 workspace root 아래의 `clever-agent-project`, `clever-change-control`, `clever-context-monorepo`
+
+`bootstrap_clever_work.py`는 `git`과 `python3`에 직접 의존한다. 승인 후 실제 운영 흐름은 `gh` 기반의 GitHub 인증, 이슈 생성, repo 생성 또는 확인 작업을 전제로 한다.
+
+## GitHub CLI 설치 및 인증
+
+GitHub CLI는 GitHub 공식 설치 경로를 따르는 것을 권장한다.
+
+- 설치 개요: <https://github.com/cli/cli#installation>
+- 명령어 매뉴얼: <https://cli.github.com/manual/>
+
+### macOS
+
+```bash
+brew install gh
+brew upgrade gh
+```
+
+### Windows
+
+```powershell
+winget install --id GitHub.cli
+winget upgrade --id GitHub.cli
+```
+
+### Linux
+
+#### Debian / Ubuntu / Raspberry Pi
+
+```bash
+(type -p wget >/dev/null || (sudo apt update && sudo apt install wget -y)) \
+  && sudo mkdir -p -m 755 /etc/apt/keyrings \
+  && out=$(mktemp) && wget -nv -O "$out" https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+  && cat "$out" | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+  && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+  && sudo mkdir -p -m 755 /etc/apt/sources.list.d \
+  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+  && sudo apt update \
+  && sudo apt install gh -y
+```
+
+#### Fedora / RHEL / openSUSE / SUSE 계열
+
+대표적인 공식 RPM 설치 방식은 아래와 같다.
+
+```bash
+sudo dnf install dnf5-plugins
+sudo dnf config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo
+sudo dnf install gh --repo gh-cli
+```
+
+DNF4, `yum`, `zypper` 등 다른 공식 RPM 계열 설치 방식은 GitHub CLI Linux 설치 문서를 따른다.
+
+### 인증
+
+기본 인증 흐름은 브라우저 기반 로그인이다.
+
+```bash
+gh auth login
+gh auth setup-git
+gh auth status
+```
+
+헤드리스 환경에서는 `GH_TOKEN` 환경 변수 또는 `gh auth login --with-token` 방식을 사용할 수 있다.
 
 ## Superpowers 설치
 
-이 저장소와 이후 생성되는 target repo 세션은 Codex에 `superpowers`가 설치되어 있다는 전제로 동작한다.
+이 저장소는 Codex 전용이 아니다. `superpowers`가 설치된 지원 에이전트 런타임이면 같은 시작 흐름을 사용할 수 있다.
 
-### 권장 설치 방식
+현재 README 기준으로 확인 가능한 설치 경로는 아래와 같다.
 
-새 Codex 세션에서 아래 요청을 실행한다.
+### Claude Code Official Marketplace
+
+```bash
+/plugin install superpowers@claude-plugins-official
+```
+
+### Claude Code (via Plugin Marketplace)
+
+```bash
+/plugin marketplace add obra/superpowers-marketplace
+/plugin install superpowers@superpowers-marketplace
+```
+
+### Cursor (via Plugin Marketplace)
+
+```text
+/add-plugin superpowers
+```
+
+또는 plugin marketplace에서 `superpowers`를 검색해 설치한다.
+
+### Codex
 
 ```text
 Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.codex/INSTALL.md
 ```
 
-### 수동 설치 방식
+세부 문서: <https://github.com/obra/superpowers/blob/main/docs/README.codex.md>
 
-필요하면 공식 Codex 문서 기준으로 수동 설치할 수 있다.
+### OpenCode
+
+```text
+Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.opencode/INSTALL.md
+```
+
+세부 문서: <https://github.com/obra/superpowers/blob/main/docs/README.opencode.md>
+
+### Gemini CLI
 
 ```bash
-git clone https://github.com/obra/superpowers.git ~/.codex/superpowers
-mkdir -p ~/.agents/skills
-ln -s ~/.codex/superpowers/skills ~/.agents/skills/superpowers
+gemini extensions install https://github.com/obra/superpowers
 ```
 
-설치 후에는 Codex를 재시작한다.
+업데이트:
 
-subagent 기반 스킬까지 쓰려면 Codex 설정에 multi-agent 기능을 켠다.
-
-```toml
-[features]
-multi_agent = true
+```bash
+gemini extensions update superpowers
 ```
+
+지원 런타임에서 subagent 기능이 있다면 켜는 것을 권장하지만, 이 저장소를 시작점으로 쓰기 위한 절대 필수 조건은 아니다.
 
 ### 새 프로젝트 repo에서 어떻게 적용되는가
 
@@ -43,17 +142,50 @@ multi_agent = true
 
 운영 방식은 아래와 같다.
 
-1. 사용자 Codex 환경에 `superpowers`를 한 번 설치한다.
+1. 사용 중인 에이전트 환경에 `superpowers`를 한 번 설치한다.
 2. CLEVER 작업 시작은 `clever-agent-project`에서 한다.
 3. 승인 후 target GitHub repo를 생성하고 로컬에 clone 또는 pull 한다.
-4. 그 target repo 루트에서 새 Codex 세션을 시작한다.
-5. 새 세션은 이미 설치된 `superpowers` 스킬을 자동으로 사용한다.
+4. 그 target repo 루트에서 같은 에이전트 런타임으로 새 세션을 시작한다.
+5. 새 세션은 이미 설치된 `superpowers`를 사용해 후속 계획 및 구현을 진행한다.
 
-즉, `superpowers`는 사용자 Codex 환경에 설치되고, 새 프로젝트 repo는 그 환경 위에서 실행되는 작업 대상 repo가 된다.
+즉, `superpowers`는 사용자 에이전트 환경에 설치되고, 새 프로젝트 repo는 그 환경 위에서 실행되는 작업 대상 repo가 된다.
 
 ## 실행 가이드
 
 새 CLEVER 작업은 이 저장소를 intake surface로 사용한다.
+
+### Markdown으로 이슈 제목/본문 직접 수정하기
+
+이슈 제목 규칙을 `태그/짧은 제목` 형태로 유지하려면, Markdown front matter를 수정한 뒤 동기화 스크립트를 실행한다.
+
+1. 템플릿 복사 또는 기존 draft 파일 수정
+   - 템플릿: `docs/templates/issue-edit-template.md`
+   - 현재 project-start draft 예시: `docs/issue-drafts/project-start-3.md`
+2. front matter의 아래 필드를 수정
+   - `repo`
+   - `issue_number`
+   - `work_type` (`신규 개발`, `수정`, `변경`, `리팩토링` 등)
+   - `title` - 가능한 한 짧은 명사구로 적는다
+3. dry-run으로 결과 확인
+
+```bash
+python3 scripts/sync_issue_from_md.py docs/issue-drafts/project-start-3.md --dry-run
+```
+
+4. 실제 반영
+
+```bash
+python3 scripts/sync_issue_from_md.py docs/issue-drafts/project-start-3.md
+```
+
+스크립트는 제목을 자동으로 `태그/짧은 제목` 형태로 조합해 GitHub 이슈를 갱신한다.
+
+- `신규 개발` -> `신규`
+- `수정` -> `수정`
+- `변경` -> `변경`
+- `리팩토링` -> `리팩토링`
+
+스크립트는 문장형 종결어를 가능한 범위에서 걷어내고, 너무 긴 제목은 잘라서 추적하기 쉬운 길이로 정리한다.
 
 ### 사전 조건
 
