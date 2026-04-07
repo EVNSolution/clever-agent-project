@@ -1,18 +1,18 @@
 # clever_agent_project
 
-Project-local agent assets for the CLEVER workspace.
+CLEVER 작업을 시작할 때 사용하는 repo-local 에이전트 자산 저장소다.
 
-## Purpose
+## 목적
 
-This repository stores CLEVER-specific agent skills and supporting files without relying on a global superpowers installation.
+이 저장소는 전역 superpowers 설치에 의존하지 않고, CLEVER 전용 스킬과 보조 파일을 repo 안에서 함께 관리하기 위한 시작점이다.
 
-## Execution Guide
+## 실행 가이드
 
-Use this repository as the intake surface for any new CLEVER work.
+새 CLEVER 작업은 이 저장소를 intake surface로 사용한다.
 
-### Preconditions
+### 사전 조건
 
-Keep the CLEVER repos in one workspace root.
+CLEVER 관련 저장소는 하나의 workspace root 아래에 두는 것을 권장한다.
 
 ```text
 <CLEVER_ROOT>/
@@ -21,27 +21,27 @@ Keep the CLEVER repos in one workspace root.
   clever-context-monorepo/
 ```
 
-Start the session in `<CLEVER_ROOT>/clever_agent_project`.
+세션은 `<CLEVER_ROOT>/clever_agent_project`에서 시작한다.
 
-### Required Read Order
+### 먼저 읽을 순서
 
-Before drafting anything, read in this order:
+초안을 만들기 전에 아래 순서대로 읽는다.
 
-1. read this README
-2. read `.codex/skills/bootstrap-clever-work/SKILL.md`
-3. read the current SSOT state in `clever-change-control` and `clever-context-monorepo`
+1. 이 `README.md`
+2. `.codex/skills/bootstrap-clever-work/SKILL.md`
+3. `clever-change-control`과 `clever-context-monorepo`의 현재 SSOT 상태
 
-Do not start planning or implementation before that read order is complete.
+이 순서가 끝나기 전에는 계획 수립이나 구현으로 들어가지 않는다.
 
-### Step 1: Build the Bootstrap Packet
+### 1단계: Bootstrap Packet 생성
 
-Run the repo-local helper from `clever_agent_project`:
+`clever_agent_project`에서 repo-local helper를 실행한다.
 
 ```bash
 python3 .codex/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py --cwd "$PWD" --json
 ```
 
-If the user already gave purpose, constraints, expected result, or a known target repo, pass them through:
+사용자가 목적, 제약, 기대 결과, target repo를 이미 줬다면 함께 넘긴다.
 
 ```bash
 python3 .codex/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py \
@@ -53,81 +53,87 @@ python3 .codex/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py \
   --json
 ```
 
-Expected result:
+기대 출력은 아래 네 축이다.
 
 - `project_start_issue`
 - `repo_bootstrap`
 - `repo_session_handoff`
 - `ssot_docs_read`
 
-### Step 2: Present the Approval Gate
+### 2단계: 승인 게이트 제시
 
-Show the packet summary to the user and ask exactly one approval question:
+packet 요약을 사용자에게 보여주고 아래 질문 한 번만 한다.
 
 > 아래 project-start 초안과 repo bootstrap 제안으로 진행할까요? 틀리면 수정할 필드만 말해 주세요.
 
-Do not create a GitHub issue, repo, branch, folder, or SSOT change before approval.
+승인 전에는 GitHub issue, repo, branch, folder, SSOT 변경을 만들지 않는다.
 
-### Step 3: After Approval
+### 3단계: 승인 후 실행 순서
 
-After approval, the execution order is:
+승인 후 순서는 아래와 같다.
 
-1. create the `project-start` issue in `clever-change-control`
-2. use the created `project-start issue #` as the canonical identifier
-3. propose or confirm the target repo
-4. create the target GitHub repo if needed
-5. clone or pull the target repo locally
-6. hand off to a fresh session rooted in the target repo
+1. `clever-change-control`에 `project-start` 이슈를 생성한다.
+2. 생성된 `project-start issue #`를 canonical identifier로 사용한다.
+3. target repo를 제안하거나 확정한다.
+4. 필요하면 대상 GitHub repo를 생성한다.
+5. target repo를 로컬에 clone 또는 pull 한다.
+6. target repo를 기준으로 새 세션으로 handoff 한다.
 
-### Step 4: Handoff Rule
+### 4단계: Handoff 원칙
 
-The default next session is a new session in the target repo.
+기본값은 target repo에서 새 세션을 시작하는 것이다.
 
-Keep `clever_agent_project` as the intake and orchestration surface. Do not treat it as the default execution repo unless the approved packet explicitly says so.
+`clever_agent_project`는 intake와 orchestration surface다. 승인된 packet이 명시적으로 그렇게 정하지 않는 한, 기본 실행 repo로 취급하지 않는다.
 
-### Do Not
+### 하지 말아야 할 것
 
-- do not generate a canonical `change_id`
-- do not require `target_service` before the start draft exists
-- do not create service-doc drafts in the normal start path
-- do not modify SSOT source during ordinary project intake
-- do not skip the approval gate
+- canonical `change_id`를 만들지 않는다.
+- 시작 초안 전에 `target_service`를 필수로 요구하지 않는다.
+- 일반 start path에서 service-doc draft를 만들지 않는다.
+- 일반 프로젝트 intake 중 SSOT source를 수정하지 않는다.
+- 승인 게이트를 건너뛰지 않는다.
 
-### User-Facing Flow Guide
+### 사용자용 흐름 설명 문서
 
-For a user-level explanation of when to create a new `project-start`, when to stay under an existing one, and how new-project bootstrap differs from improving an existing repo, read:
+아래 문서는 사용자 관점에서 정리되어 있다.
+
+- 언제 새 `project-start`를 만드는지
+- 언제 기존 `project-start` 아래 child issue로 가는지
+- 새 프로젝트 시작과 기존 repo 개선/재구현이 어떻게 다른지
+
+문서:
 
 - `docs/guides/clever-project-workflows.md`
 
-## Current Asset
+## 현재 자산
 
 - `.codex/skills/bootstrap-clever-work/`
 
-`bootstrap-clever-work` standardizes new work intake by treating:
+`bootstrap-clever-work` 스킬은 아래 두 저장소를 SSOT로 보고 시작 흐름을 표준화한다.
 
-- `clever-context-monorepo` as the context and workflow SSOT
-- `clever-change-control` as the change-record SSOT
+- `clever-context-monorepo`: 규칙과 workflow SSOT
+- `clever-change-control`: 변경 기록과 추적 SSOT
 
-The skill now starts from a `project-start` draft instead of a generated `change_id` or inferred `target_service`.
+이 스킬은 더 이상 생성된 `change_id`나 추론된 `target_service`에서 시작하지 않고, `project-start` 초안에서 시작한다.
 
-Its normal flow is:
+일반적인 흐름은 아래와 같다.
 
-1. draft a `project-start` issue for `clever-change-control`
-2. ask for approval
-3. create the issue
-4. propose target repo bootstrap
-5. clone or pull the target repo locally
-6. recommend a fresh session in the target repo
+1. `project-start` 초안을 만든다.
+2. 승인을 받는다.
+3. 이슈를 생성한다.
+4. target repo bootstrap을 제안한다.
+5. target repo를 로컬에 clone 또는 pull 한다.
+6. target repo에서 새 세션 시작을 권장한다.
 
-The resulting canonical identifier is the created `project-start` issue number. Before issue creation, the helper emits a repo-local draft packet with:
+생성 이후의 canonical identifier는 `project-start issue #`다. 이슈 생성 전까지 helper는 repo-local draft packet만 만든다.
 
 - `project_start_issue`
 - `repo_bootstrap`
 - `repo_session_handoff`
 
-The normal start path does not generate a canonical `change_id` and does not prepare service-doc creation work.
+일반 start path에서는 canonical `change_id`를 만들지 않고, service-doc 생성 작업도 준비하지 않는다.
 
-## Repository Layout
+## 저장소 구조
 
 ```text
 .codex/
@@ -138,7 +144,7 @@ The normal start path does not generate a canonical `change_id` and does not pre
       scripts/bootstrap_clever_work.py
 ```
 
-## Notes
+## 참고
 
-- This repository is intended to be versioned and shared with CLEVER contributors.
-- The skill is repository-local on purpose. It is not meant to live in a user-specific global skills directory.
+- 이 저장소는 CLEVER 기여자들과 공유하는 것을 전제로 한다.
+- 스킬은 의도적으로 repo-local이다. 사용자별 전역 skills 디렉터리에 두는 모델이 아니다.
