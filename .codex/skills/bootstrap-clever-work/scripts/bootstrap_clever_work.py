@@ -46,6 +46,10 @@ def run_command(cmd: list[str], cwd: Path | None = None) -> str | None:
     return proc.stdout.strip()
 
 
+def current_branch(repo_path: Path) -> str | None:
+    return run_command(["git", "-C", str(repo_path), "branch", "--show-current"])
+
+
 def iter_ancestors(path: Path) -> Iterable[Path]:
     current = path.resolve()
     yield current
@@ -106,17 +110,69 @@ def is_checkout_root(path: Path) -> bool:
     return bool(output and Path(output).resolve() == path.resolve())
 
 
+def list_git_worktrees(repo_path: Path) -> list[dict[str, str]]:
+    output = run_command(["git", "-C", str(repo_path), "worktree", "list", "--porcelain"])
+    if not output:
+        return []
+
+    entries: list[dict[str, str]] = []
+    current: dict[str, str] = {}
+    for line in output.splitlines():
+        if not line:
+            if current:
+                entries.append(current)
+                current = {}
+            continue
+        key, _, value = line.partition(" ")
+        if key == "worktree":
+            current["path"] = value
+        elif key == "branch":
+            current["branch"] = value.removeprefix("refs/heads/")
+    if current:
+        entries.append(current)
+    return entries
+
+
 def resolve_repo_checkout(
-    *, clever_root: Path, repo_name_value: str, preferred_checkout_name: str | None = None
+    *,
+    clever_root: Path,
+    repo_name_value: str,
+    preferred_branch: str | None = None,
+    preferred_checkout_name: str | None = None,
 ) -> Path:
     container = clever_root / repo_name_value
     candidates: list[Path] = [container]
     if preferred_checkout_name:
         candidates.append(container / preferred_checkout_name)
-    if container.is_dir():
-        candidates.extend(
-            child for child in sorted(container.iterdir()) if child.is_dir() and child.name != ".git"
-        )
+    child_candidates = (
+        [child for child in sorted(container.iterdir()) if child.is_dir() and child.name != ".git"]
+        if container.is_dir()
+        else []
+    )
+    if preferred_branch and container.is_dir():
+        for entry in list_git_worktrees(container):
+            if entry.get("branch") != preferred_branch:
+                continue
+            worktree_path_value = entry.get("path")
+            if not worktree_path_value:
+                continue
+            worktree_path = Path(worktree_path_value).resolve()
+            if worktree_path.exists() and repo_name(worktree_path) == repo_name_value:
+                return worktree_path
+        repo_children = [
+            child
+            for child in child_candidates
+            if is_checkout_root(child) and repo_name(child) == repo_name_value
+        ]
+        for child in repo_children:
+            if current_branch(child) == preferred_branch:
+                return child.resolve()
+        if repo_children and not is_checkout_root(container):
+            raise FileNotFoundError(
+                f"Could not resolve checkout for {repo_name_value} on branch "
+                f"{preferred_branch} from CLEVER root {clever_root}"
+            )
+    candidates.extend(child_candidates)
 
     seen: set[Path] = set()
     for candidate in candidates:
@@ -146,8 +202,12 @@ def build_project_start_body(
     constraints: str,
     ui_impact: str,
     current_working_repo: str,
-    target_repo: str,
     expected_result: str,
+    target_repo_proposal: str,
+    target_service_proposal: str,
+    repo_bootstrap_proposal: str,
+    canonical_linkage_expectations: str,
+    repo_session_handoff: str,
 ) -> str:
     return "\n".join(
         [
@@ -159,19 +219,27 @@ def build_project_start_body(
             "",
             "## Start Surface",
             f"- current working repo: {current_working_repo}",
-            f"- target repo proposal: {target_repo}",
+            f"- target repo proposal: {target_repo_proposal}",
+            f"- target service proposal: {target_service_proposal}",
             f"- ui impact: {ui_impact}",
             "",
             "## Expected Result",
             expected_result,
             "",
-            "## Requested Flow",
-            "1. Review and approve this project-start draft.",
-            "2. Create the project-start issue in clever-change-control.",
-            "3. Use the created project-start issue number as the canonical identifier.",
-            "4. Propose target repo creation or confirmation.",
-            "5. Clone or pull the target repo locally.",
-            "6. Continue in a new target-repo session.",
+            "## Target Repo Proposal",
+            target_repo_proposal,
+            "",
+            "## Target Service Proposal",
+            target_service_proposal,
+            "",
+            "## Repo Bootstrap Proposal",
+            repo_bootstrap_proposal,
+            "",
+            "## Canonical Linkage Expectations",
+            canonical_linkage_expectations,
+            "",
+            "## Repo Session Handoff",
+            repo_session_handoff,
         ]
     ).strip()
 
@@ -196,6 +264,20 @@ def build_packet(
     else:
         requires_new_repo = target_repo != current_working_repo
     project_start_title = build_project_start_title(purpose)
+    target_repo_proposal = (
+        "deferred until approval; confirm which GitHub repo should be created or selected "
+        "after the project-start issue exists."
+        if target_repo_status == "needs-confirmation"
+        else (
+            f"proposed target repo: {target_repo}"
+            if requires_new_repo
+            else f"confirm the current working repo ({target_repo}) as the execution repo"
+        )
+    )
+    target_service_proposal = (
+        "deferred until repo bootstrap; target service is optional at project-start and "
+        "should only be confirmed if it becomes necessary."
+    )
     repo_bootstrap_proposal = (
         "After the project-start issue is approved and created, confirm the target repo "
         "before proposing repo creation or cloning."
@@ -207,6 +289,15 @@ def build_packet(
             else "After the project-start issue is approved and created, confirm the current "
             "repo is the target execution repo and refresh the local checkout."
         )
+    )
+    canonical_linkage_expectations = "\n".join(
+        [
+            "- The created project-start issue number becomes the canonical identifier.",
+            "- Child issues (`new`, `fix`, `change`, `refactoring`) must reference that "
+            "project-start issue number.",
+            "- Repo bootstrap records, pull requests, and follow-on planning should link "
+            "back to the same project-start issue number instead of using a separate change id.",
+        ]
     )
     handoff_summary = (
         "Confirm the target repo, prepare the local clone or pull step, and then continue "
@@ -243,8 +334,12 @@ def build_packet(
                 constraints=constraints,
                 ui_impact=ui_impact,
                 current_working_repo=current_working_repo,
-                target_repo=target_repo,
                 expected_result=expected_result,
+                target_repo_proposal=target_repo_proposal,
+                target_service_proposal=target_service_proposal,
+                repo_bootstrap_proposal=repo_bootstrap_proposal,
+                canonical_linkage_expectations=canonical_linkage_expectations,
+                repo_session_handoff=handoff_summary,
             ),
         },
         "repo_bootstrap": {
@@ -288,15 +383,22 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def build_ssot_docs(clever_root: Path, *, preferred_checkout_name: str | None = None) -> list[str]:
+def build_ssot_docs(
+    clever_root: Path,
+    *,
+    preferred_branch: str | None = None,
+    preferred_checkout_name: str | None = None,
+) -> list[str]:
     context_repo_path = resolve_repo_checkout(
         clever_root=clever_root,
         repo_name_value=CONTEXT_REPO_NAME,
+        preferred_branch=preferred_branch,
         preferred_checkout_name=preferred_checkout_name,
     )
     change_repo_path = resolve_repo_checkout(
         clever_root=clever_root,
         repo_name_value=CHANGE_REPO_NAME,
+        preferred_branch=preferred_branch,
         preferred_checkout_name=preferred_checkout_name,
     )
     return [str(context_repo_path / rel) for rel in CONTEXT_DOCS] + [
@@ -364,6 +466,7 @@ def main() -> int:
     cwd = Path(args.cwd).resolve()
     clever_root = find_clever_root(cwd)
     git_root = find_git_root(cwd)
+    branch_name = current_branch(git_root)
 
     working_repo = repo_name(git_root)
     if args.target_repo:
@@ -375,6 +478,7 @@ def main() -> int:
     change_repo_path = resolve_repo_checkout(
         clever_root=clever_root,
         repo_name_value=CHANGE_REPO_NAME,
+        preferred_branch=branch_name,
         preferred_checkout_name=git_root.name,
     )
     packet = build_packet(
@@ -387,7 +491,11 @@ def main() -> int:
         constraints=args.constraints,
         ui_impact=args.ui_impact,
         expected_result=args.expected_result,
-        ssot_docs_read=build_ssot_docs(clever_root, preferred_checkout_name=git_root.name),
+        ssot_docs_read=build_ssot_docs(
+            clever_root,
+            preferred_branch=branch_name,
+            preferred_checkout_name=git_root.name,
+        ),
         issue_repo=repo_full_name(change_repo_path) or CHANGE_REPO_NAME,
     )
 
