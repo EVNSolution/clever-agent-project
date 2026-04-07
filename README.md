@@ -93,6 +93,12 @@ Keep `clever_agent_project` as the intake and orchestration surface. Do not trea
 - do not modify SSOT source during ordinary project intake
 - do not skip the approval gate
 
+### User-Facing Flow Guide
+
+For a user-level explanation of when to create a new `project-start`, when to stay under an existing one, and how new-project bootstrap differs from improving an existing repo, read:
+
+- `docs/guides/clever-project-workflows.md`
+
 ## Current Asset
 
 - `.codex/skills/bootstrap-clever-work/`
