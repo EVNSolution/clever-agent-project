@@ -6,6 +6,51 @@ CLEVER 작업을 시작할 때 사용하는 repo-local 에이전트 자산 저�
 
 이 저장소는 전역 superpowers 설치에 의존하지 않고, CLEVER 전용 스킬과 보조 파일을 repo 안에서 함께 관리하기 위한 시작점이다.
 
+## Superpowers 설치
+
+이 저장소와 이후 생성되는 target repo 세션은 Codex에 `superpowers`가 설치되어 있다는 전제로 동작한다.
+
+### 권장 설치 방식
+
+새 Codex 세션에서 아래 요청을 실행한다.
+
+```text
+Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.codex/INSTALL.md
+```
+
+### 수동 설치 방식
+
+필요하면 공식 Codex 문서 기준으로 수동 설치할 수 있다.
+
+```bash
+git clone https://github.com/obra/superpowers.git ~/.codex/superpowers
+mkdir -p ~/.agents/skills
+ln -s ~/.codex/superpowers/skills ~/.agents/skills/superpowers
+```
+
+설치 후에는 Codex를 재시작한다.
+
+subagent 기반 스킬까지 쓰려면 Codex 설정에 multi-agent 기능을 켠다.
+
+```toml
+[features]
+multi_agent = true
+```
+
+### 새 프로젝트 repo에서 어떻게 적용되는가
+
+새 프로젝트 repo를 만들 때마다 `superpowers`를 repo 안에 다시 설치하는 모델은 아니다.
+
+운영 방식은 아래와 같다.
+
+1. 사용자 Codex 환경에 `superpowers`를 한 번 설치한다.
+2. CLEVER 작업 시작은 `clever_agent_project`에서 한다.
+3. 승인 후 target GitHub repo를 생성하고 로컬에 clone 또는 pull 한다.
+4. 그 target repo 루트에서 새 Codex 세션을 시작한다.
+5. 새 세션은 이미 설치된 `superpowers` 스킬을 자동으로 사용한다.
+
+즉, `superpowers`는 사용자 Codex 환경에 설치되고, 새 프로젝트 repo는 그 환경 위에서 실행되는 작업 대상 repo가 된다.
+
 ## 실행 가이드
 
 새 CLEVER 작업은 이 저장소를 intake surface로 사용한다.
