@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bootstrap CLEVER Work"
+  short_description: "Draft CLEVER project-start intake from SSOT context"
+  default_prompt: "Use $bootstrap-clever-work to start this CLEVER task from the current repo, draft the SSOT-backed project-start issue, and prepare the repo bootstrap plus target-repo handoff proposal."
