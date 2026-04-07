@@ -1,3 +1,33 @@
-.DS_Store
-__pycache__/
-*.pyc
+/**
+
+# allow required repository files
+!/.gitignore
+!/README.md
+
+# keep paths for bootstrap-clever-work skill
+!/.codex/
+!/.codex/skills/
+!/.codex/skills/bootstrap-clever-work/
+!/.codex/skills/bootstrap-clever-work/SKILL.md
+!/.codex/skills/bootstrap-clever-work/agents/
+!/.codex/skills/bootstrap-clever-work/agents/openai.yaml
+!/.codex/skills/bootstrap-clever-work/scripts/
+!/.codex/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py
+
+# keep selected docs and scripts/tests
+!/docs/
+!/docs/guides/
+!/docs/guides/clever-project-workflows.md
+!/docs/templates/
+!/docs/templates/issue-edit-template.md
+!/scripts/
+!/scripts/sync_issue_from_md.py
+!/tests/
+!/tests/test_bootstrap_clever_work.py
+!/tests/test_sync_issue_from_md.py
+
+# always ignore common noise
+**/.DS_Store
+**/__pycache__/
+**/*.pyc
+/.pytest_cache/
