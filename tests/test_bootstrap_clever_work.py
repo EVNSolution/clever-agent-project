@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -14,7 +15,12 @@ MODULE_PATH = (
     REPO_ROOT
     / ".codex/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py"
 )
-WORKTREES_ROOT = Path("/Users/jiin/.config/superpowers/worktrees")
+WORKTREES_ROOT = Path(
+    os.environ.get(
+        "SUPERPOWERS_WORKTREES_ROOT",
+        str(Path.home() / ".config/superpowers/worktrees"),
+    )
+)
 CHANGE_WORKTREE = WORKTREES_ROOT / "clever-change-control/project-start-model"
 CONTEXT_WORKTREE = WORKTREES_ROOT / "clever-context-monorepo/project-start-model"
 

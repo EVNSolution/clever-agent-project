@@ -6,6 +6,28 @@ Project-local agent assets for the CLEVER workspace.
 
 This repository stores CLEVER-specific agent skills and supporting files without relying on a global superpowers installation.
 
+## Start Here
+
+Use this repository as the intake surface for any new CLEVER work.
+
+Recommended local layout:
+
+```text
+<CLEVER_ROOT>/
+  clever_agent_project/
+  clever-change-control/
+  clever-context-monorepo/
+```
+
+When a new session agent starts here, it should:
+
+1. read this README
+2. read `.codex/skills/bootstrap-clever-work/SKILL.md`
+3. read the current SSOT state in `clever-change-control` and `clever-context-monorepo`
+4. draft a `project-start` issue
+5. wait for approval
+6. create the issue, bootstrap the target repo, and hand off to a fresh target-repo session
+
 ## Current Asset
 
 - `.codex/skills/bootstrap-clever-work/`
@@ -48,4 +70,4 @@ The normal start path does not generate a canonical `change_id` and does not pre
 ## Notes
 
 - This repository is intended to be versioned and shared with CLEVER contributors.
-- The skill is repository-local on purpose. It is not meant to live in `/Users/jiin/superpowers/skills`.
+- The skill is repository-local on purpose. It is not meant to live in a user-specific global skills directory.
