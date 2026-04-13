@@ -216,6 +216,33 @@ CLEVER 관련 저장소는 하나의 workspace root 아래에 두는 것을 권�
 
 이 순서가 끝나기 전에는 계획 수립이나 구현으로 들어가지 않는다.
 
+### 작업 성격 먼저 분류
+
+시작점은 항상 `clever-agent-project`지만, 모든 작업이 같은 분기를 타지는 않는다.
+
+#### MSA/SaaS 복제형 작업
+
+아래 성격이면 이 분기로 본다.
+
+- 플랫폼 템플릿과 배포 표준을 바탕으로 서비스를 복제한다.
+- 고객사별로 수정/변경을 얹어 SaaS 형태로 전개한다.
+- 컨테이너마다 다른 이미지를 올리는 운영 구조를 염두에 둔다.
+
+이 경우에는 일반 bootstrap을 바로 밀어붙이지 말고 아래 순서로 진행한다.
+
+1. 대화로 target service 또는 대상 서비스 군을 먼저 정한다.
+2. `clever-context-monorepo/docs/root/msa-saas-replication-governance.md`를 읽는다.
+3. `clever-context-monorepo/docs/root/clever-msa-platform-workspace.md`를 읽는다.
+4. target service가 정해졌으면 `clever-context-monorepo/docs/services/<service-name>/index.md`를 읽는다.
+5. 그 다음 일반 bootstrap과 target repo handoff 흐름으로 이어간다.
+
+#### 일반 개발 작업
+
+위 분류에 속하지 않는 일반적인 신규 개발, 수정, 변경, 리팩토링, 특정 repo 구현 작업은 기존 시작 흐름을 그대로 사용한다.
+
+- 시작 시 `target_service`를 먼저 확정할 필요는 없다.
+- 아래 bootstrap packet 생성부터 진행한다.
+
 ### 1단계: Bootstrap Packet 생성
 
 `clever-agent-project`에서 repo-local helper를 실행한다.
@@ -275,6 +302,7 @@ packet 요약을 사용자에게 보여주고 아래 질문 한 번만 한다.
 
 - canonical `change_id`를 만들지 않는다.
 - 시작 초안 전에 `target_service`를 필수로 요구하지 않는다.
+- 일반 개발 작업에 MSA/SaaS 복제 규칙을 기본값으로 강제하지 않는다.
 - 일반 start path에서 service-doc draft를 만들지 않는다.
 - 일반 프로젝트 intake 중 SSOT source를 수정하지 않는다.
 - 승인 게이트를 건너뛰지 않는다.
@@ -312,6 +340,8 @@ packet 요약을 사용자에게 보여주고 아래 질문 한 번만 한다.
 6. target repo에서 새 세션 시작을 권장한다.
 
 생성 이후의 canonical identifier는 `project-start issue #`다. 이슈 생성 전까지 helper는 repo-local draft packet만 만든다.
+
+MSA/SaaS 복제형 작업은 예외적으로 target service 대화와 `clever-context-monorepo` root/service 문서 확인이 bootstrap보다 앞설 수 있다. 다만 이 경우에도 canonical identifier는 동일하게 `project-start issue #`를 사용한다.
 
 - `project_start_issue`
 - `repo_bootstrap`

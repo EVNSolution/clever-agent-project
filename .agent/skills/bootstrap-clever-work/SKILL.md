@@ -12,10 +12,12 @@ Use this skill as the single entry point for new CLEVER work.
 It forces the same start sequence for every user and every repo:
 
 1. Read the two SSOT repos first.
-2. Infer the work context from the current repo.
-3. Convert the request into a `project-start` draft packet.
-4. Ask for one final approval.
-5. Only then create the root issue, propose repo bootstrap, clone the repo, and hand off.
+2. Classify whether the work is `MSA/SaaS 복제형` or `일반 개발`.
+3. If it is MSA/SaaS replication-oriented, determine the target service by conversation and read the relevant root/service docs.
+4. Infer the work context from the current repo.
+5. Convert the request into a `project-start` draft packet.
+6. Ask for one final approval.
+7. Only then create the root issue, propose repo bootstrap, clone the repo, and hand off.
 
 **Core principle:** do not start CLEVER work from a freeform prompt when the SSOT repos are available.
 
@@ -59,9 +61,48 @@ You should infer or propose the rest:
 - `ui-impact`
 - `expected-result`
 
-The workflow must not require a pre-confirmed `target-service` or a generated `change-id` at start time.
+The workflow must not require a pre-confirmed `target-service` for general work or a generated `change-id` at start time.
+
+## Work-Type Branching
+
+Before running the helper script, classify the task into one of these paths:
+
+- `MSA/SaaS 복제형 작업`
+- `일반 개발 작업`
+
+Treat the task as `MSA/SaaS 복제형 작업` when the user is trying to:
+
+- replicate an MSA service based on a shared template
+- deploy customer-specific variants as separate images or containers
+- organize work around `복제 / 수정 / 변경 / 신규` decisions for SaaS rollout
+
+Treat everything else as `일반 개발 작업`.
+
+### MSA/SaaS Replication Path
+
+If the task is MSA/SaaS replication-oriented:
+
+1. Determine the target service or service family by conversation first.
+2. Read `clever-context-monorepo/docs/root/msa-saas-replication-governance.md`.
+3. Read `clever-context-monorepo/docs/root/clever-msa-platform-workspace.md`.
+4. If the target service is fixed, read `clever-context-monorepo/docs/services/<service-name>/index.md`.
+5. Only then run the helper script and continue with the normal `project-start` bootstrap flow.
+
+This path is for document interpretation and repo selection. It does not change the canonical identifier rule: the canonical identifier is still the created `project-start` issue number.
+
+### General Development Path
+
+If the task is general development:
+
+- do not force MSA/SaaS replication rules as the default
+- do not require `target-service` before intake can start
+- use the existing `project-start -> target repo -> handoff` bootstrap flow
 
 ## First Step
+
+If the task has already been classified as MSA/SaaS replication-oriented, finish the target service conversation and the required SSOT reads first.
+
+After that, or immediately for general development, run the helper script from this repository.
 
 Run the helper script from this repository.
 
@@ -134,9 +175,10 @@ Never replace this with a looser narrative summary.
 
 ## Common Mistakes
 
+- Treating MSA/SaaS replication rules as the default path for every CLEVER task.
 - Treating the current repo as the workflow SSOT.
 - Starting implementation before the `project-start` issue is drafted and approved.
-- Requiring an inferred `target-service` before the intake can begin.
+- Requiring an inferred `target-service` before the intake can begin for general work.
 - Generating a canonical `change-id` before the root issue exists.
 - Creating service-doc work in the normal bootstrap path.
 - Editing change-control or repo resources before the final approval step.
