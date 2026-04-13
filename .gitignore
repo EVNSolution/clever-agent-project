@@ -18,6 +18,8 @@
 !/docs/guides/
 !/docs/guides/clever-project-workflows.md
 !/docs/superpowers/
+!/docs/superpowers/plans/
+!/docs/superpowers/plans/*.md
 !/docs/superpowers/specs/
 !/docs/superpowers/specs/*.md
 !/docs/templates/
