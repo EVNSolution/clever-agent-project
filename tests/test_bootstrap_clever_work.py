@@ -25,6 +25,26 @@ CHANGE_WORKTREE = WORKTREES_ROOT / "clever-change-control/project-start-model"
 CONTEXT_WORKTREE = WORKTREES_ROOT / "clever-context-monorepo/project-start-model"
 
 
+def git_current_branch(path: Path) -> str | None:
+    if not path.is_dir():
+        return None
+    proc = subprocess.run(
+        ["git", "-C", str(path), "branch", "--show-current"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        return None
+    branch = proc.stdout.strip()
+    return branch or None
+
+
+CURRENT_BRANCH = git_current_branch(REPO_ROOT)
+CHANGE_WORKTREE_BRANCH = git_current_branch(CHANGE_WORKTREE)
+CONTEXT_WORKTREE_BRANCH = git_current_branch(CONTEXT_WORKTREE)
+
+
 def load_module():
     spec = importlib.util.spec_from_file_location("bootstrap_clever_work", MODULE_PATH)
     module = importlib.util.module_from_spec(spec)
@@ -44,18 +64,43 @@ def build_packet(**overrides):
         target_repo_status=overrides.get("target_repo_status", "provided"),
         purpose="Launch a new analytics workflow",
         constraints="Use the approved project-start intake",
-        ui_impact="unknown",
+        ui_impact=overrides.get("ui_impact", "unknown"),
         expected_result="A ready-to-approve project-start issue draft",
         ssot_docs_read=[
             "/workspace/clever-context-monorepo/README.md",
             "/workspace/clever-change-control/README.md",
         ],
+        template_id=overrides.get("template_id", "test-erik-project-template"),
+        template_version=overrides.get("template_version", "v1"),
+        deploy_profile=overrides.get("deploy_profile", "preview-dev-prod-monorepo"),
+        override_scope=overrides.get("override_scope", "customer-config-only"),
+        lifecycle_action=overrides.get("lifecycle_action", "adopt"),
+        recorded_template_id=overrides.get("recorded_template_id"),
+        recorded_template_version=overrides.get("recorded_template_version"),
+        recorded_deploy_profile=overrides.get("recorded_deploy_profile"),
     )
 
 
 def run_cli(*args):
     proc = subprocess.run(
-        ["python3", str(MODULE_PATH), "--cwd", str(REPO_ROOT), "--json", *args],
+        [
+            "python3",
+            str(MODULE_PATH),
+            "--cwd",
+            str(REPO_ROOT),
+            "--json",
+            "--template-id",
+            "test-erik-project-template",
+            "--template-version",
+            "v1",
+            "--deploy-profile",
+            "preview-dev-prod-monorepo",
+            "--override-scope",
+            "customer-config-only",
+            "--lifecycle-action",
+            "adopt",
+            *args,
+        ],
         check=True,
         capture_output=True,
         text=True,
@@ -90,6 +135,7 @@ def test_build_packet_uses_project_start_fields():
     for section in [
         "## Target Repo Proposal",
         "## Target Service Proposal",
+        "## Template Harness",
         "## Repo Bootstrap Proposal",
         "## Canonical Linkage Expectations",
         "## Repo Session Handoff",
@@ -97,9 +143,91 @@ def test_build_packet_uses_project_start_fields():
         assert section in draft["body"]
 
 
+def test_build_packet_includes_template_harness_metadata():
+    packet = build_packet()
+
+    assert packet["template_id"] == "test-erik-project-template"
+    assert packet["template_version"] == "v1"
+    assert packet["deploy_profile"] == "preview-dev-prod-monorepo"
+    assert packet["override_scope"] == "customer-config-only"
+    assert packet["lifecycle_action"] == "adopt"
+
+    draft = packet["project_start_issue"]
+    assert "## Template Harness" in draft["body"]
+    assert "- template_id: test-erik-project-template" in draft["body"]
+    assert "- template_version: v1" in draft["body"]
+    assert "- deploy_profile: preview-dev-prod-monorepo" in draft["body"]
+    assert "- override_scope: customer-config-only" in draft["body"]
+    assert "- lifecycle_action: adopt" in draft["body"]
+
+
+def test_build_packet_accepts_explicit_template_harness_metadata():
+    packet = build_packet(
+        template_id="test-erik-project-template",
+        template_version="v1",
+        deploy_profile="preview-dev-prod-monorepo",
+        override_scope="customer-config-only",
+        lifecycle_action="adopt",
+    )
+
+    assert packet["template_id"] == "test-erik-project-template"
+    assert packet["template_version"] == "v1"
+    assert packet["deploy_profile"] == "preview-dev-prod-monorepo"
+    assert packet["override_scope"] == "customer-config-only"
+    assert packet["lifecycle_action"] == "adopt"
+
+    draft = packet["project_start_issue"]
+    assert "- template_id: test-erik-project-template" in draft["body"]
+    assert "- template_version: v1" in draft["body"]
+    assert "- deploy_profile: preview-dev-prod-monorepo" in draft["body"]
+    assert "- override_scope: customer-config-only" in draft["body"]
+    assert "- lifecycle_action: adopt" in draft["body"]
+
+
+def test_build_packet_rejects_invalid_lifecycle_action():
+    with pytest.raises(ValueError, match="Unsupported lifecycle_action"):
+        build_packet(lifecycle_action="archive")
+
+
+def test_build_packet_rejects_invalid_template_id():
+    with pytest.raises(ValueError, match="template_id must use lowercase"):
+        build_packet(template_id="Bad Template")
+
+
+def test_build_packet_rejects_invalid_ui_impact():
+    with pytest.raises(ValueError, match="Unsupported ui_impact"):
+        build_packet(ui_impact="maybe")
+
+
+def test_build_packet_rejects_invalid_deploy_profile():
+    with pytest.raises(ValueError, match="deploy_profile must use lowercase"):
+        build_packet(deploy_profile="Preview/Profile")
+
+
+def test_build_packet_requires_migrate_for_recorded_lineage_mismatch():
+    with pytest.raises(ValueError, match="Use lifecycle_action=migrate"):
+        build_packet(
+            recorded_template_id="legacy-template",
+            lifecycle_action="modify",
+        )
+
+
+def test_build_packet_allows_migrate_for_recorded_lineage_mismatch():
+    packet = build_packet(
+        recorded_template_id="legacy-template",
+        lifecycle_action="migrate",
+    )
+
+    assert packet["lifecycle_action"] == "migrate"
+
+
 @pytest.mark.skipif(
-    not CHANGE_WORKTREE.is_dir() or not CONTEXT_WORKTREE.is_dir(),
-    reason="worktree regression requires CLEVER worktree fixtures",
+    not CHANGE_WORKTREE.is_dir()
+    or not CONTEXT_WORKTREE.is_dir()
+    or not CURRENT_BRANCH
+    or CHANGE_WORKTREE_BRANCH != CURRENT_BRANCH
+    or CONTEXT_WORKTREE_BRANCH != CURRENT_BRANCH,
+    reason="worktree regression requires matching-branch CLEVER worktree fixtures",
 )
 def test_cli_from_worktree_resolves_real_repo_identity_and_ssot_checkouts():
     proc = subprocess.run(
@@ -113,24 +241,22 @@ def test_cli_from_worktree_resolves_real_repo_identity_and_ssot_checkouts():
     assert packet["current_working_repo"] == "clever-change-control"
     assert packet["current_working_repo_path"] == str(CHANGE_WORKTREE)
     assert str(CONTEXT_WORKTREE / "README.md") in packet["ssot_docs_read"]
-    assert (
-        str(CHANGE_WORKTREE / ".github/ISSUE_TEMPLATE/project-start.yml")
-        in packet["ssot_docs_read"]
-    )
+    assert str(CHANGE_WORKTREE / "README.md") in packet["ssot_docs_read"]
 
 
 @pytest.mark.skipif(
-    not CHANGE_WORKTREE.is_dir() or not CONTEXT_WORKTREE.is_dir(),
-    reason="worktree regression requires CLEVER worktree fixtures",
+    not CHANGE_WORKTREE.is_dir()
+    or not CONTEXT_WORKTREE.is_dir()
+    or not CURRENT_BRANCH
+    or CHANGE_WORKTREE_BRANCH != CURRENT_BRANCH
+    or CONTEXT_WORKTREE_BRANCH != CURRENT_BRANCH,
+    reason="worktree regression requires matching-branch CLEVER worktree fixtures",
 )
 def test_cli_from_start_repo_prefers_matching_ssot_worktrees_for_current_branch():
     packet = run_cli()
 
     assert str(CONTEXT_WORKTREE / "README.md") in packet["ssot_docs_read"]
-    assert (
-        str(CHANGE_WORKTREE / ".github/ISSUE_TEMPLATE/project-start.yml")
-        in packet["ssot_docs_read"]
-    )
+    assert str(CHANGE_WORKTREE / "README.md") in packet["ssot_docs_read"]
     assert str(REPO_ROOT.parent / "clever-context-monorepo/README.md") not in packet["ssot_docs_read"]
 
 
@@ -169,15 +295,22 @@ def test_build_ssot_docs_uses_project_start_aligned_surface():
 
     docs = module.build_ssot_docs(clever_root)
 
-    assert str(clever_root / "clever-context-monorepo/docs/wiki/index.md") in docs
-    assert (
-        str(clever_root / "clever-change-control/.github/ISSUE_TEMPLATE/project-start.yml")
-        in docs
-    )
     assert str(clever_root / "clever-change-control/changes") in docs
     assert str(clever_root / "clever-change-control/releases") in docs
     assert str(clever_root / "clever-change-control/.github/ISSUE_TEMPLATE/change-request.yml") not in docs
+    assert str(clever_root / "clever-context-monorepo/docs/wiki/index.md") not in docs
     assert str(clever_root / "clever-context-monorepo/docs/services/service-template.md") not in docs
+    assert (
+        str(clever_root / "clever-context-monorepo/docs/root/template-harness-governance.md")
+        in docs
+    )
+    assert (
+        str(clever_root / "clever-context-monorepo/docs/root/deploy-template-governance.md")
+        in docs
+    )
+    assert str(clever_root / "clever-context-monorepo/docs/templates/index.md") in docs
+    for path in docs:
+        assert Path(path).exists(), f"Expected SSOT path to exist: {path}"
 
 
 def test_cli_without_target_repo_keeps_target_repo_as_needs_confirmation():
@@ -243,6 +376,96 @@ def test_cli_with_current_repo_target_marks_requires_new_repo_false():
         "the execution repo"
         in packet["project_start_issue"]["body"]
     )
+
+
+def test_cli_emits_template_harness_metadata_from_flags():
+    packet = run_cli(
+        "--template-id",
+        "test-erik-project-template",
+        "--template-version",
+        "v1",
+        "--deploy-profile",
+        "preview-dev-prod-monorepo",
+        "--override-scope",
+        "customer-config-only",
+        "--lifecycle-action",
+        "adopt",
+    )
+
+    assert packet["template_id"] == "test-erik-project-template"
+    assert packet["template_version"] == "v1"
+    assert packet["deploy_profile"] == "preview-dev-prod-monorepo"
+    assert packet["override_scope"] == "customer-config-only"
+    assert packet["lifecycle_action"] == "adopt"
+    assert "- lifecycle_action: adopt" in packet["project_start_issue"]["body"]
+
+
+def test_cli_rejects_invalid_lifecycle_action():
+    proc = subprocess.run(
+        [
+            "python3",
+            str(MODULE_PATH),
+            "--cwd",
+            str(REPO_ROOT),
+            "--json",
+            "--lifecycle-action",
+            "archive",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert proc.returncode != 0
+    assert "invalid choice" in proc.stderr
+
+
+def test_cli_requires_template_selection_flags():
+    proc = subprocess.run(
+        [
+            "python3",
+            str(MODULE_PATH),
+            "--cwd",
+            str(REPO_ROOT),
+            "--json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert proc.returncode != 0
+    assert "--template-id" in proc.stderr
+
+
+def test_cli_rejects_invalid_ui_impact():
+    proc = subprocess.run(
+        [
+            "python3",
+            str(MODULE_PATH),
+            "--cwd",
+            str(REPO_ROOT),
+            "--json",
+            "--template-id",
+            "test-erik-project-template",
+            "--template-version",
+            "v1",
+            "--deploy-profile",
+            "preview-dev-prod-monorepo",
+            "--override-scope",
+            "customer-config-only",
+            "--lifecycle-action",
+            "adopt",
+            "--ui-impact",
+            "maybe",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert proc.returncode != 0
+    assert "invalid choice" in proc.stderr
 
 
 def test_resolve_repo_checkout_prefers_matching_branch_with_real_git_worktrees(tmp_path: Path):

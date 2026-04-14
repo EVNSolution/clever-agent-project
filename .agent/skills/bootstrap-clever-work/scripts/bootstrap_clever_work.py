@@ -13,19 +13,31 @@ from typing import Any, Iterable
 
 CONTEXT_REPO_NAME = "clever-context-monorepo"
 CHANGE_REPO_NAME = "clever-change-control"
+ALLOWED_LIFECYCLE_ACTIONS = {
+    "adopt",
+    "modify",
+    "migrate",
+    "retire",
+}
+ALLOWED_UI_IMPACTS = {
+    "unknown",
+    "있음",
+    "없음",
+}
 
 CONTEXT_DOCS = [
     "README.md",
     "docs/root/index.md",
     "docs/root/agent-runtime-governance.md",
     "docs/root/doc-governance.md",
+    "docs/root/template-harness-governance.md",
+    "docs/root/deploy-template-governance.md",
     "docs/root/pipeline-governance.md",
-    "docs/wiki/index.md",
+    "docs/templates/index.md",
 ]
 
 CHANGE_DOCS = [
     "README.md",
-    ".github/ISSUE_TEMPLATE/project-start.yml",
     ".github/PULL_REQUEST_TEMPLATE.md",
     "changes",
     "releases",
@@ -205,6 +217,11 @@ def build_project_start_body(
     expected_result: str,
     target_repo_proposal: str,
     target_service_proposal: str,
+    template_id: str,
+    template_version: str,
+    deploy_profile: str,
+    override_scope: str,
+    lifecycle_action: str,
     repo_bootstrap_proposal: str,
     canonical_linkage_expectations: str,
     repo_session_handoff: str,
@@ -232,6 +249,13 @@ def build_project_start_body(
             "## Target Service Proposal",
             target_service_proposal,
             "",
+            "## Template Harness",
+            f"- template_id: {template_id}",
+            f"- template_version: {template_version}",
+            f"- deploy_profile: {deploy_profile}",
+            f"- override_scope: {override_scope}",
+            f"- lifecycle_action: {lifecycle_action}",
+            "",
             "## Repo Bootstrap Proposal",
             repo_bootstrap_proposal,
             "",
@@ -256,8 +280,49 @@ def build_packet(
     ui_impact: str,
     expected_result: str,
     ssot_docs_read: list[str],
+    template_id: str,
+    template_version: str,
+    deploy_profile: str,
+    override_scope: str,
+    lifecycle_action: str,
+    recorded_template_id: str | None = None,
+    recorded_template_version: str | None = None,
+    recorded_deploy_profile: str | None = None,
     issue_repo: str = CHANGE_REPO_NAME,
 ) -> dict[str, Any]:
+    if ui_impact not in ALLOWED_UI_IMPACTS:
+        allowed = ", ".join(sorted(ALLOWED_UI_IMPACTS))
+        raise ValueError(f"Unsupported ui_impact: {ui_impact}. Allowed: {allowed}")
+    if lifecycle_action not in ALLOWED_LIFECYCLE_ACTIONS:
+        allowed = ", ".join(sorted(ALLOWED_LIFECYCLE_ACTIONS))
+        raise ValueError(f"Unsupported lifecycle_action: {lifecycle_action}. Allowed: {allowed}")
+    if not re.fullmatch(r"[a-z0-9-]+", override_scope):
+        raise ValueError(
+            "override_scope must use lowercase letters, digits, and hyphen only."
+        )
+    if not re.fullmatch(r"[a-z0-9-]+", template_id):
+        raise ValueError("template_id must use lowercase letters, digits, and hyphen only.")
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", template_version):
+        raise ValueError(
+            "template_version must use letters, digits, dot, underscore, or hyphen only."
+        )
+    if not re.fullmatch(r"[a-z0-9-]+", deploy_profile):
+        raise ValueError(
+            "deploy_profile must use lowercase letters, digits, and hyphen only."
+        )
+    lineage_differs = any(
+        (
+            recorded_template_id and recorded_template_id != template_id,
+            recorded_template_version and recorded_template_version != template_version,
+            recorded_deploy_profile and recorded_deploy_profile != deploy_profile,
+        )
+    )
+    if lineage_differs and lifecycle_action != "migrate":
+        raise ValueError(
+            "Recorded template lineage differs from the selected template metadata. "
+            "Use lifecycle_action=migrate."
+        )
+
     requires_new_repo: bool | None
     if target_repo_status == "needs-confirmation":
         requires_new_repo = None
@@ -322,6 +387,11 @@ def build_packet(
         "constraints": constraints,
         "ui_impact": ui_impact,
         "expected_result": expected_result,
+        "template_id": template_id,
+        "template_version": template_version,
+        "deploy_profile": deploy_profile,
+        "override_scope": override_scope,
+        "lifecycle_action": lifecycle_action,
         "ssot_docs_read": ssot_docs_read,
         "project_start_issue": {
             "issue_repo": issue_repo,
@@ -337,6 +407,11 @@ def build_packet(
                 expected_result=expected_result,
                 target_repo_proposal=target_repo_proposal,
                 target_service_proposal=target_service_proposal,
+                template_id=template_id,
+                template_version=template_version,
+                deploy_profile=deploy_profile,
+                override_scope=override_scope,
+                lifecycle_action=lifecycle_action,
                 repo_bootstrap_proposal=repo_bootstrap_proposal,
                 canonical_linkage_expectations=canonical_linkage_expectations,
                 repo_session_handoff=handoff_summary,
@@ -377,8 +452,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--target-repo")
     parser.add_argument("--purpose", default="needs-input")
     parser.add_argument("--constraints", default="needs-input")
-    parser.add_argument("--ui-impact", default="unknown")
+    parser.add_argument("--ui-impact", default="unknown", choices=sorted(ALLOWED_UI_IMPACTS))
     parser.add_argument("--expected-result", default="needs-input")
+    parser.add_argument("--template-id", required=True)
+    parser.add_argument("--template-version", required=True)
+    parser.add_argument("--deploy-profile", required=True)
+    parser.add_argument("--override-scope", required=True)
+    parser.add_argument(
+        "--lifecycle-action",
+        required=True,
+        choices=sorted(ALLOWED_LIFECYCLE_ACTIONS),
+    )
+    parser.add_argument("--recorded-template-id")
+    parser.add_argument("--recorded-template-version")
+    parser.add_argument("--recorded-deploy-profile")
     parser.add_argument("--json", action="store_true", help="Emit JSON instead of text")
     return parser.parse_args()
 
@@ -416,6 +503,11 @@ def print_text_packet(packet: dict[str, Any]) -> None:
     print(f"constraints: {packet['constraints']}")
     print(f"ui-impact: {packet['ui_impact']}")
     print(f"expected-result: {packet['expected_result']}")
+    print(f"template-id: {packet['template_id']}")
+    print(f"template-version: {packet['template_version']}")
+    print(f"deploy-profile: {packet['deploy_profile']}")
+    print(f"override-scope: {packet['override_scope']}")
+    print(f"lifecycle-action: {packet['lifecycle_action']}")
     print("ssot-docs-read:")
     for item in packet["ssot_docs_read"]:
         print(f"- {item}")
@@ -491,6 +583,14 @@ def main() -> int:
         constraints=args.constraints,
         ui_impact=args.ui_impact,
         expected_result=args.expected_result,
+        template_id=args.template_id,
+        template_version=args.template_version,
+        deploy_profile=args.deploy_profile,
+        override_scope=args.override_scope,
+        lifecycle_action=args.lifecycle_action,
+        recorded_template_id=args.recorded_template_id,
+        recorded_template_version=args.recorded_template_version,
+        recorded_deploy_profile=args.recorded_deploy_profile,
         ssot_docs_read=build_ssot_docs(
             clever_root,
             preferred_branch=branch_name,

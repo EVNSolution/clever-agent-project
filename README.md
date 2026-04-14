@@ -255,12 +255,30 @@ CLEVER 관련 저장소는 하나의 workspace root 아래에 두는 것을 권�
 - 시작 시 `target_service`를 먼저 확정할 필요는 없다.
 - 아래 bootstrap packet 생성부터 진행한다.
 
+### 템플릿 선택 규칙
+
+작업 성격 분기 뒤에는 신규 개발과 유지보수 모두에서 템플릿 선택지를 항상 사용자에게 보여준다.
+
+- template registry 정본은 `clever-context-monorepo/docs/templates/index.md`에 둔다.
+- 전역 규칙은 `clever-context-monorepo/docs/root/template-harness-governance.md`를 따른다.
+- deploy baseline은 `clever-context-monorepo/docs/root/deploy-template-governance.md`를 따른다.
+- 유지보수면 먼저 `clever-context-monorepo/docs/services/<service-name>/index.md`의 template lineage를 읽고, 기존 `template_id`/`template_version`을 기본 추천으로 제시한다.
+- 그래도 선택지는 항상 보여주고 최종 선택은 사용자에게 맡긴다.
+- 기존 템플릿과 다른 template/version으로 가면 일반 수정이 아니라 `migration` 성격으로 기록한다.
+
 ### 1단계: Bootstrap Packet 생성
 
 `clever-agent-project`에서 repo-local helper를 실행한다.
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --json
+python3 scripts/bootstrap_clever_work.py \
+  --cwd "$PWD" \
+  --template-id "<template id>" \
+  --template-version "<version>" \
+  --deploy-profile "<deploy profile>" \
+  --override-scope "<override scope>" \
+  --lifecycle-action "<adopt|modify|migrate|retire>" \
+  --json
 ```
 
 사용자가 목적, 제약, 기대 결과, target repo를 이미 줬다면 함께 넘긴다.
@@ -272,6 +290,11 @@ python3 scripts/bootstrap_clever_work.py \
   --constraints "<constraints>" \
   --expected-result "<expected result>" \
   --target-repo "<target repo if known>" \
+  --template-id "<template id>" \
+  --template-version "<version>" \
+  --deploy-profile "<deploy profile>" \
+  --override-scope "<override scope>" \
+  --lifecycle-action "<adopt|modify|migrate|retire>" \
   --json
 ```
 
@@ -284,6 +307,14 @@ python3 scripts/bootstrap_clever_work.py \
 - `repo_bootstrap`
 - `repo_session_handoff`
 - `ssot_docs_read`
+
+packet과 issue draft에는 아래 template metadata도 포함한다.
+
+- `template_id`
+- `template_version`
+- `deploy_profile`
+- `override_scope`
+- `lifecycle_action`
 
 ### 2단계: 승인 게이트 제시
 

@@ -60,6 +60,11 @@ You should infer or propose the rest:
 - `constraints`
 - `ui-impact`
 - `expected-result`
+- `template-id`
+- `template-version`
+- `deploy-profile`
+- `override-scope`
+- `lifecycle-action`
 
 The workflow must not require a pre-confirmed `target-service` for general work or a generated `change-id` at start time.
 
@@ -98,16 +103,41 @@ If the task is general development:
 - do not require `target-service` before intake can start
 - use the existing `project-start -> target repo -> handoff` bootstrap flow
 
+## Template Harness Selection
+
+After work-type branching, the agent must always present template choices to the user.
+
+Use these sources first:
+
+1. `clever-context-monorepo/docs/root/template-harness-governance.md`
+2. `clever-context-monorepo/docs/root/deploy-template-governance.md`
+3. `clever-context-monorepo/docs/templates/index.md`
+
+If the task is maintenance and a target service is already known:
+
+1. Read `clever-context-monorepo/docs/services/<service-name>/index.md`
+2. Extract the recorded `template_id`, `template_version`, and `deploy_profile`
+3. Present that lineage as the default recommendation
+4. Still show the available template options and let the user choose
+
+If the user selects a different template or a different template version than the recorded lineage, treat that as `migration`.
+
 ## First Step
 
 If the task has already been classified as MSA/SaaS replication-oriented, finish the target service conversation and the required SSOT reads first.
 
-After that, or immediately for general development, run the helper script from this repository.
+After that, or immediately for general development, finish the template choice conversation and then run the helper script from this repository.
 
 Run the helper script from this repository.
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD"
+python3 scripts/bootstrap_clever_work.py \
+  --cwd "$PWD" \
+  --template-id "<template id>" \
+  --template-version "<version>" \
+  --deploy-profile "<deploy profile>" \
+  --override-scope "<override scope>" \
+  --lifecycle-action "<adopt|modify|migrate|retire>"
 ```
 
 If the user already provided fields such as purpose or constraints, pass them through:
@@ -119,7 +149,12 @@ python3 scripts/bootstrap_clever_work.py \
   --constraints "<constraints>" \
   --ui-impact "<있음|없음|unknown>" \
   --expected-result "<expected result>" \
-  --target-repo "<target repo if known>"
+  --target-repo "<target repo if known>" \
+  --template-id "<template id>" \
+  --template-version "<version>" \
+  --deploy-profile "<deploy profile>" \
+  --override-scope "<override scope>" \
+  --lifecycle-action "<adopt|modify|migrate|retire>"
 ```
 
 The script emits:
@@ -129,6 +164,7 @@ The script emits:
 - a `project_start_issue` draft
 - a `repo_bootstrap` proposal
 - a `repo_session_handoff` recommendation
+- the selected or pending template/deploy metadata
 
 ## Approval Gate
 
@@ -164,6 +200,11 @@ purpose:
 constraints:
 ui-impact:
 expected-result:
+template-id:
+template-version:
+deploy-profile:
+override-scope:
+lifecycle-action:
 ssot-docs-read:
 project-start-issue:
 repo-bootstrap:
@@ -177,9 +218,11 @@ Never replace this with a looser narrative summary.
 
 - Treating MSA/SaaS replication rules as the default path for every CLEVER task.
 - Treating the current repo as the workflow SSOT.
+- Skipping the template choice conversation because one option looks obvious.
 - Starting implementation before the `project-start` issue is drafted and approved.
 - Requiring an inferred `target-service` before the intake can begin for general work.
 - Generating a canonical `change-id` before the root issue exists.
+- Letting template changes slip through as an ordinary edit instead of `migration`.
 - Creating service-doc work in the normal bootstrap path.
 - Editing change-control or repo resources before the final approval step.
 
