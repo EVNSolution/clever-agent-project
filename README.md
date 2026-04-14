@@ -162,7 +162,7 @@ gemini extensions update superpowers
 
 ### Markdown으로 이슈 제목/본문 직접 수정하기
 
-이슈 제목 규칙을 `태그/짧은 제목` 형태로 유지하려면, Markdown front matter를 수정한 뒤 동기화 스크립트를 실행한다.
+이슈 제목과 본문 타입 규칙을 유지하려면, Markdown front matter를 수정한 뒤 동기화 스크립트를 실행한다.
 
 1. 템플릿 복사 또는 기존 draft 파일 수정
    - 템플릿: `docs/templates/issue-edit-template.md`
@@ -170,7 +170,10 @@ gemini extensions update superpowers
 2. front matter의 아래 필드를 수정
    - `repo`
    - `issue_number`
-   - `work_type` (`신규 개발`, `수정`, `변경`, `리팩토링` 등)
+   - `work_type_group` (`MSA/SaaS`, `일반 개발`)
+   - `work_type_detail`
+     - `MSA/SaaS`: `복제`, `수정`, `변경`, `신규`
+     - `일반 개발`: `신규 개발`, `수정`, `변경`, `리팩토링`
    - `title` - 가능한 한 짧은 명사구로 적는다
 3. dry-run으로 결과 확인
 
@@ -184,12 +187,21 @@ python3 scripts/sync_issue_from_md.py docs/issue-drafts/project-start-3.md --dry
 python3 scripts/sync_issue_from_md.py docs/issue-drafts/project-start-3.md
 ```
 
-스크립트는 제목을 자동으로 `태그/짧은 제목` 형태로 조합해 GitHub 이슈를 갱신한다.
+스크립트는 제목을 자동으로 `[상위 타입][하위 타입] 짧은 제목` 형태로 조합해 GitHub 이슈를 갱신한다.
 
-- `신규 개발` -> `신규`
-- `수정` -> `수정`
-- `변경` -> `변경`
-- `리팩토링` -> `리팩토링`
+예:
+
+- `[MSA/SaaS][복제] 배차 서비스 고객사 배포 분기 추가`
+- `[일반 개발][리팩토링] bootstrap packet 구조 정리`
+
+이슈 본문에도 같은 타입을 남겨야 한다.
+
+```text
+work_type_group: MSA/SaaS
+work_type_detail: 복제
+```
+
+에이전트는 제목과 본문의 타입 값을 항상 일치시켜야 한다.
 
 스크립트는 문장형 종결어를 가능한 범위에서 걷어내고, 너무 긴 제목은 잘라서 추적하기 쉬운 길이로 정리한다.
 
