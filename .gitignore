@@ -15,6 +15,10 @@
 !/.agent/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py
 
 !/docs/
+!/docs/diagrams/
+!/docs/diagrams/README.md
+!/docs/diagrams/*.md
+!/docs/diagrams/*.html
 !/docs/guides/
 !/docs/guides/clever-project-workflows.md
 !/docs/setting.md

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLEVER control plane overview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --paper: #f5f4ed;
+      --paper-2: #efeee5;
+      --ink: #0b0d0b;
+      --muted: #52534e;
+      --soft: #65655c;
+      --rule: rgba(11,13,11,0.12);
+      --accent: #f7591f;
+      --accent-tint: rgba(247,89,31,0.08);
+      --blue: #1a70c7;
+      --blue-tint: rgba(26,112,199,0.08);
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--paper); color: var(--ink); min-height: 100vh; padding: 3rem 2rem; }
+    .container { max-width: 1580px; margin: 0 auto; }
+    .header { margin-bottom: 2rem; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(2rem, 3vw + 1rem, 2.8rem); font-weight: 400; line-height: 1.06; letter-spacing: -0.02em; margin-bottom: 0.6rem; }
+    .subtitle { max-width: 72ch; color: var(--muted); line-height: 1.6; font-size: 1rem; }
+    .flow-strip {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .flow-chip {
+      background: #fff;
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 68px;
+      position: relative;
+    }
+    .flow-chip.start { border-color: rgba(247,89,31,0.35); background: var(--accent-tint); }
+    .flow-chip.ssot { border-color: rgba(26,112,199,0.28); background: var(--blue-tint); }
+    .flow-chip::after {
+      content: "→";
+      position: absolute;
+      right: -0.52rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(11,13,11,0.28);
+      font-size: 1.05rem;
+    }
+    .flow-chip:last-child::after { display: none; }
+    .flow-label { display: block; font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.16em; color: var(--soft); text-transform: uppercase; margin-bottom: 0.3rem; }
+    .flow-title { font-size: 0.92rem; font-weight: 600; line-height: 1.3; }
+    .diagram-panel {
+      background: var(--paper-2);
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      padding: 1.5rem;
+    }
+    .repo-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1.25fr 1fr 0.9fr;
+      gap: 1rem;
+      align-items: start;
+    }
+    .repo-card {
+      background: #fff;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      padding: 1.1rem;
+      min-height: 100%;
+      position: relative;
+    }
+    .repo-card.start { border-color: rgba(247,89,31,0.40); box-shadow: inset 0 0 0 1px rgba(247,89,31,0.10); }
+    .repo-card.ssot { border-color: rgba(26,112,199,0.30); box-shadow: inset 0 0 0 1px rgba(26,112,199,0.08); }
+    .repo-card.trace { border-color: rgba(82,83,78,0.30); background: linear-gradient(180deg, #fff 0%, rgba(11,13,11,0.02) 100%); }
+    .repo-card.exec { border-style: dashed; }
+    .repo-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding-bottom: 0.9rem;
+      margin-bottom: 0.95rem;
+      border-bottom: 1px solid rgba(11,13,11,0.08);
+    }
+    .repo-role {
+      font-family: var(--font-mono);
+      font-size: 0.56rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+    .repo-title { font-size: 1rem; font-weight: 600; line-height: 1.3; }
+    .repo-id {
+      min-width: 44px;
+      height: 28px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      color: var(--soft);
+      border: 1px solid rgba(11,13,11,0.12);
+    }
+    .repo-desc { color: var(--muted); font-size: 0.83rem; line-height: 1.55; margin-bottom: 1rem; }
+    .dir-box {
+      border: 1px solid rgba(11,13,11,0.10);
+      border-radius: 7px;
+      padding: 0.8rem;
+      background: rgba(255,255,255,0.88);
+      margin-bottom: 0.75rem;
+    }
+    .dir-path {
+      font-family: var(--font-mono);
+      font-size: 0.69rem;
+      color: var(--ink);
+      margin-bottom: 0.45rem;
+      word-break: break-word;
+    }
+    .dir-list {
+      list-style: none;
+      display: grid;
+      gap: 0.3rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+    .dir-list li::before { content: "· "; color: rgba(11,13,11,0.35); }
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.8rem;
+      margin-top: 1.25rem;
+    }
+    .legend-card {
+      background: #fff;
+      border: 1px solid var(--rule);
+      border-radius: 7px;
+      padding: 0.9rem 1rem;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+    .legend-card strong { color: var(--ink); }
+    .footer {
+      margin-top: 1.75rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(11,13,11,0.10);
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--soft);
+      letter-spacing: 0.06em;
+    }
+    @media (max-width: 1280px) {
+      .repo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .flow-strip { grid-template-columns: 1fr; }
+      .flow-chip::after { display: none; }
+      .legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 760px) {
+      .repo-grid, .legend { grid-template-columns: 1fr; }
+      body { padding: 2rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p class="eyebrow">Architecture · CLEVER Agent Project</p>
+      <h1>Three-repo control plane, down to the directory level</h1>
+      <p class="subtitle">이 버전은 repo 역할만 보여주는 다이어그램이 아니라, 각 저장소 안에서 어떤 디렉터리가 실제로 시작점, 정본, ledger, handoff를 담당하는지까지 한 화면에 내려서 보여준다.</p>
+    </div>
+
+    <div class="flow-strip">
+      <div class="flow-chip">
+        <div><span class="flow-label">Entry</span><span class="flow-title">User session opens the line</span></div>
+      </div>
+      <div class="flow-chip start">
+        <div><span class="flow-label">Start Surface</span><span class="flow-title">`clever-agent-project` intake and bootstrap</span></div>
+      </div>
+      <div class="flow-chip ssot">
+        <div><span class="flow-label">Interpretation</span><span class="flow-title">`clever-context-monorepo` rules, lineage, service docs</span></div>
+      </div>
+      <div class="flow-chip">
+        <div><span class="flow-label">Ledger</span><span class="flow-title">`clever-change-control` root and scoped trace</span></div>
+      </div>
+      <div class="flow-chip">
+        <div><span class="flow-label">Execution</span><span class="flow-title">Target repo implements, tests, ships</span></div>
+      </div>
+    </div>
+
+    <div class="diagram-panel">
+      <div class="repo-grid">
+        <section class="repo-card start">
+          <div class="repo-head">
+            <div>
+              <p class="repo-role">Start Surface</p>
+              <h2 class="repo-title">clever-agent-project</h2>
+            </div>
+            <span class="repo-id">01</span>
+          </div>
+          <p class="repo-desc">사용자 요청을 intake하고, 3단계 시작 템플릿을 강제하고, bootstrap packet과 handoff 방향을 잡는 레포다.</p>
+
+          <div class="dir-box">
+            <p class="dir-path">/README.md</p>
+            <ul class="dir-list">
+              <li>세션 시작 템플릿 노출</li>
+              <li>사용자가 가장 먼저 보는 entry 문서</li>
+            </ul>
+          </div>
+          <div class="dir-box">
+            <p class="dir-path">/.agent/skills/bootstrap-clever-work/</p>
+            <ul class="dir-list">
+              <li>`SKILL.md`: 시작 규칙과 hard gate</li>
+              <li>`scripts/bootstrap_clever_work.py`: bootstrap packet 생성 로직</li>
+              <li>`agents/openai.yaml`: agent 연결 설정</li>
+            </ul>
+          </div>
+          <div class="dir-box">
+            <p class="dir-path">/docs/</p>
+            <ul class="dir-list">
+              <li>`setting.md`: 운영 설명서</li>
+              <li>`guides/`: project workflow 가이드</li>
+              <li>`templates/`: issue 편집 템플릿</li>
+              <li>`diagrams/`: 현재 보는 구조/흐름 다이어그램</li>
+              <li>`superpowers/`: plan/spec 기록</li>
+            </ul>
+          </div>
+          <div class="dir-box">
+            <p class="dir-path">/scripts + /tests</p>
+            <ul class="dir-list">
+              <li>`scripts/bootstrap_clever_work.py`: CLI 진입점</li>
+              <li>`scripts/sync_issue_from_md.py`: issue sync helper</li>
+              <li>`tests/test_bootstrap_clever_work.py`: bootstrap 규칙 검증</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="repo-card ssot">
+          <div class="repo-head">
+            <div>
+              <p class="repo-role">Interpretation SSOT</p>
+              <h2 class="repo-title">clever-context-monorepo</h2>
+            </div>
+            <span class="repo-id">02</span>
+          </div>
+          <p class="repo-desc">전역 규칙과 템플릿 계보, 서비스 문맥, deploy baseline을 가진 해석 정본이다. 코드 저장소라기보다 문맥 저장소에 가깝다.</p>
+
+          <div class="dir-box">
+            <p class="dir-path">/docs/root/</p>
+            <ul class="dir-list">
+              <li>`index.md`: 읽기 시작점</li>
+              <li>`authority-boundaries.md`: start / interpret / trace 경계</li>
+              <li>`agent-runtime-governance.md`: agent 동작 규칙</li>
+              <li>`template-harness-governance.md`: lineage 선택 기준</li>
+              <li>`deploy-template-governance.md`, `pipeline-governance.md`: 운영 baseline</li>
+            </ul>
+          </div>
+          <div class="dir-box">
+            <p class="dir-path">/docs/services/</p>
+            <ul class="dir-list">
+              <li>`service-template.md`: 서비스 문서 스키마</li>
+              <li>`service-*/index.md`: 서비스별 lineage / deploy profile / source mirror</li>
+              <li>`index.md`: 서비스 문서 진입점</li>
+            </ul>
+          </div>
+          <div class="dir-box">
+            <p class="dir-path">/docs/templates/ + /templates/deploy/</p>
+            <ul class="dir-list">
+              <li>`docs/templates/index.md`: template registry</li>
+              <li>`msa-template/`, `test-erik-project-template/`: template family 문맥</li>
+              <li>`templates/deploy/`: 배포 템플릿 skeleton과 override 가이드</li>
+            </ul>
+          </div>
+          <div class="dir-box">
+            <p class="dir-path">/docs/wiki/ + /apps /packages /services /contracts</p>
+            <ul class="dir-list">
+              <li>`docs/wiki/`: 탐색용 입구, 정본 아님</li>
+              <li>`contracts/`: 공통 계약 기준점</li>
+              <li>`apps`, `packages`, `services`: 현재는 placeholder 구조</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="repo-card trace">
+          <div class="repo-head">
+            <div>
+              <p class="repo-role">Root + Scoped Trace</p>
+              <h2 class="repo-title">clever-change-control</h2>
+            </div>
+            <span class="repo-id">03</span>
+          </div>
+          <p class="repo-desc">`project-start` root, scoped change, rollout/rollback evidence를 묶는 ledger 저장소다. 규칙 정본을 소유하지는 않는다.</p>
+
+          <div class="dir-box">
+            <p class="dir-path">/README.md</p>
+            <ul class="dir-list">
+              <li>root canonical identifier와 `change_id` 규칙 설명</li>
+              <li>MSA/SaaS vs 일반 개발 타입 체계 설명</li>
+            </ul>
+          </div>
+          <div class="dir-box">
+            <p class="dir-path">/.github/ISSUE_TEMPLATE/</p>
+            <ul class="dir-list">
+              <li>`project-start`, `change request`, `rollback` template 자리</li>
+              <li>실제 운영 폼이 들어갈 issue template 레이어</li>
+            </ul>
+          </div>
+          <div class="dir-box">
+            <p class="dir-path">/changes/</p>
+            <ul class="dir-list">
+              <li>change unit별 기록 anchor</li>
+              <li>linked repo / PR / status를 묶는 위치</li>
+            </ul>
+          </div>
+          <div class="dir-box">
+            <p class="dir-path">/releases/dev · /stg · /prod</p>
+            <ul class="dir-list">
+              <li>환경별 release evidence 정리 위치</li>
+              <li>rollout / rollback trace를 남기는 곳</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="repo-card exec">
+          <div class="repo-head">
+            <div>
+              <p class="repo-role">Execution Surface</p>
+              <h2 class="repo-title">Target Repo</h2>
+            </div>
+            <span class="repo-id">EXT</span>
+          </div>
+          <p class="repo-desc">실제 구현, 테스트, 빌드, 배포 설정은 여기에서 일어난다. control-plane 3레포는 이 저장소를 해석하고 추적할 뿐, 대체하지 않는다.</p>
+
+          <div class="dir-box">
+            <p class="dir-path">/src or /app</p>
+            <ul class="dir-list">
+              <li>비즈니스 구현 코드</li>
+              <li>서비스 API / UI / domain logic</li>
+            </ul>
+          </div>
+          <div class="dir-box">
+            <p class="dir-path">/tests + /.github or deploy config</p>
+            <ul class="dir-list">
+              <li>검증 코드와 CI</li>
+              <li>build-only 또는 runtime-specific deploy assets</li>
+            </ul>
+          </div>
+          <div class="dir-box">
+            <p class="dir-path">/docs or local specs</p>
+            <ul class="dir-list">
+              <li>서비스 구현 문맥의 로컬 보조 문서</li>
+              <li>최종 authority는 여전히 context/change-control과 연결</li>
+            </ul>
+          </div>
+        </section>
+      </div>
+
+      <div class="legend">
+        <div class="legend-card"><strong>Start surface</strong><br>`README.md`, `.agent/skills/`, `/docs`, `/scripts`가 세션을 열고 packet을 만든다.</div>
+        <div class="legend-card"><strong>Interpretation SSOT</strong><br>`docs/root`, `docs/services`, `docs/templates`가 rule과 lineage를 해석한다.</div>
+        <div class="legend-card"><strong>Ledger</strong><br>`README`, `.github/ISSUE_TEMPLATE`, `changes`, `releases`가 root/scoped trace를 남긴다.</div>
+        <div class="legend-card"><strong>Execution</strong><br>실제 코드와 테스트는 target repo에서만 수행된다.</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>CLEVER control plane · repo-level to directory-level overview</span>
+      <span>based on diagram-design editorial HTML</span>
+    </div>
+  </div>
+</body>
+</html>

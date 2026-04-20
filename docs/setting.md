@@ -151,15 +151,51 @@ CLEVER 관련 저장소는 하나의 workspace root 아래에 두는 것을 권�
 
 즉 `superpowers`는 사용자 에이전트 환경에 설치되고, 새 프로젝트 repo는 그 환경 위에서 실행되는 작업 대상 repo가 된다.
 
+## 첫 대화 하드 게이트
+
+새 세션에서 에이전트는 아래 템플릿을 첫 응답 기본값으로 사용한다.
+
+```text
+[작업 시작]
+1. 새 서비스 개발 vs. 기존 서비스 추가:
+2. 서비스 기반 (MSA vs. MONO):
+3. 타입 명확하게 분류하기:
+
+추가 설명
+- 하려는 일:
+- 왜 필요한지:
+- 제약:
+- 기대 결과:
+- 관련 repo/service가 있으면:
+```
+
+운영 규칙은 아래와 같다.
+
+- 사용자가 템플릿을 그대로 채워 넣으면 그 값을 그대로 intake로 사용한다.
+- 사용자가 자유문으로 시작하면 에이전트가 같은 구조로 다시 정리해 부족한 칸만 묻는다.
+- 질문 순서는 항상 `1 -> 2 -> 3`을 먼저 고정한다.
+- `change-control`용 `work_type_group`, `work_type_detail`은 사용자가 직접 고르지 않는다. 에이전트가 해석한다.
+- 아래가 충분히 채워지기 전에는 다음 단계로 넘어가지 않는다.
+  - `1. 새 서비스 개발 vs. 기존 서비스 추가`
+  - `2. 서비스 기반 (MSA vs. MONO)`
+  - `3. 타입 명확하게 분류하기`
+  - `왜 필요한지`
+  - `제약`
+  - `기대 결과`
+
+즉 시작 템플릿이 먼저고, `project-start` 초안 생성과 repo bootstrap은 그 다음이다.
+
 ## 먼저 읽을 문서 순서
 
 작업 성격을 정리하기 전에는 아래 순서를 먼저 따른다.
 
 1. [README.md](../README.md)
 2. [.agent/skills/bootstrap-clever-work/SKILL.md](../.agent/skills/bootstrap-clever-work/SKILL.md)
-3. [clever-context-monorepo template governance](https://github.com/EVNSolution/clever-context-monorepo/blob/main/docs/root/template-harness-governance.md)
-4. [clever-context-monorepo deploy governance](https://github.com/EVNSolution/clever-context-monorepo/blob/main/docs/root/deploy-template-governance.md)
-5. [clever-change-control README](https://github.com/EVNSolution/clever-change-control/blob/main/README.md)
+3. [clever-context-monorepo authority boundaries](https://github.com/EVNSolution/clever-context-monorepo/blob/main/docs/root/authority-boundaries.md)
+4. [clever-context-monorepo template governance](https://github.com/EVNSolution/clever-context-monorepo/blob/main/docs/root/template-harness-governance.md)
+5. [clever-context-monorepo deploy governance](https://github.com/EVNSolution/clever-context-monorepo/blob/main/docs/root/deploy-template-governance.md)
+6. [clever-change-control README](https://github.com/EVNSolution/clever-change-control/blob/main/README.md)
+7. [clever-change-control project-start issue template](https://github.com/EVNSolution/clever-change-control/blob/main/.github/ISSUE_TEMPLATE/project-start.yml)
 
 이후에는 작업 성격에 따라 추가 문서를 읽는다.
 
@@ -174,14 +210,15 @@ CLEVER 관련 저장소는 하나의 workspace root 아래에 두는 것을 권�
 신규 개발은 아래 순서로 진행한다.
 
 1. `clever-agent-project`에서 시작한다.
-2. 작업을 `MSA/SaaS 복제형`인지 `일반 개발`인지 분기한다.
-3. 템플릿 후보를 사용자에게 항상 보여준다.
-4. 선택한 템플릿과 배포 프로파일을 기준으로 bootstrap packet을 만든다.
-5. `project-start` 초안을 제시하고 승인 게이트를 거친다.
-6. 승인 후 `clever-change-control`에 root 기록을 만든다.
-7. target repo를 제안하거나 확정하고 handoff 한다.
+2. 먼저 세션 시작 템플릿의 `1 -> 2 -> 3` 질문과 추가 설명을 채운다.
+3. 에이전트가 답변을 해석해 `MSA/SaaS 복제형`인지 `일반 개발`인지 분기한다.
+4. 템플릿 후보를 사용자에게 항상 보여준다.
+5. 선택한 템플릿과 배포 프로파일을 기준으로 bootstrap packet을 만든다.
+6. `project-start` 초안을 제시하고 승인 게이트를 거친다.
+7. 승인 후 `clever-change-control`의 `project-start` root 기록을 만든다.
+8. target repo를 제안하거나 확정하고 handoff 한다.
 
-중요한 점은, 신규 개발의 첫 앵커가 `target_service` 고정이 아니라 `템플릿 후보 검토`라는 점이다.
+중요한 점은, 신규 개발의 첫 앵커가 `target_service` 고정이 아니라 `템플릿 후보 검토`라는 점과, root canonical identifier가 `change id`가 아니라 `project-start issue #`라는 점이다.
 
 ## 기존 서비스 변경 / 유지보수 절차
 
@@ -189,17 +226,18 @@ CLEVER 관련 저장소는 하나의 workspace root 아래에 두는 것을 권�
 
 기본 절차는 아래와 같다.
 
-1. 대상 서비스 또는 관련 서비스군을 확인한다.
-2. `clever-context-monorepo/docs/services/<service-name>/index.md`를 읽는다.
-3. 아래 메타를 확인한다.
+1. 먼저 세션 시작 템플릿의 `1 -> 2 -> 3` 질문과 추가 설명을 채운다.
+2. 대상 서비스 또는 관련 서비스군을 확인한다.
+3. `clever-context-monorepo/docs/services/<service-name>/index.md`를 읽는다.
+4. 아래 메타를 확인한다.
    - `template_id`
    - `template_version`
    - `deploy_profile`
    - `override_scope`
    - `lifecycle_state`
-4. 같은 계열 유지인지, template migration인지 판단한다.
-5. 필요하면 템플릿 후보를 다시 제시한다.
-6. change request 또는 handoff packet을 만든다.
+5. 같은 계열 유지인지, template migration인지 판단한다.
+6. 필요하면 템플릿 후보를 다시 제시한다.
+7. root issue 승인 이후 scope가 고정되면 change request 또는 handoff packet을 만든다.
 
 유지보수의 시작점은 코드베이스 해석이 아니라 메타 해석이다.
 
@@ -260,6 +298,8 @@ python3 scripts/bootstrap_clever_work.py \
   --lifecycle-action "<adopt|modify|migrate|retire>" \
   --json
 ```
+
+일반 intake에서 `change id`와 확정된 `target_service`는 helper 입력 필수값이 아니다. 이 값들은 root issue 승인 후 scoped execution에서 고정한다.
 
 이 helper는 아래 축을 만든다.
 

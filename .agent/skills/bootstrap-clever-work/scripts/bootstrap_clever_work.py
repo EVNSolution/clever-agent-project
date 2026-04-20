@@ -28,6 +28,7 @@ ALLOWED_UI_IMPACTS = {
 CONTEXT_DOCS = [
     "README.md",
     "docs/root/index.md",
+    "docs/root/authority-boundaries.md",
     "docs/root/agent-runtime-governance.md",
     "docs/root/doc-governance.md",
     "docs/root/template-harness-governance.md",
@@ -38,6 +39,7 @@ CONTEXT_DOCS = [
 
 CHANGE_DOCS = [
     "README.md",
+    ".github/ISSUE_TEMPLATE/project-start.yml",
     ".github/PULL_REQUEST_TEMPLATE.md",
     "changes",
     "releases",
@@ -357,11 +359,13 @@ def build_packet(
     )
     canonical_linkage_expectations = "\n".join(
         [
-            "- The created project-start issue number becomes the canonical identifier.",
+            "- The created project-start issue number becomes the root canonical identifier.",
             "- Child issues (`new`, `fix`, `change`, `refactoring`) must reference that "
             "project-start issue number.",
-            "- Repo bootstrap records, pull requests, and follow-on planning should link "
-            "back to the same project-start issue number instead of using a separate change id.",
+            "- Use change id only after approval, when a scoped change request, rollout, or "
+            "rollback unit has been fixed.",
+            "- Repo bootstrap records and pre-scope planning should link back to the same "
+            "project-start issue number instead of inventing a change id early.",
         ]
     )
     handoff_summary = (

@@ -23,6 +23,33 @@ It forces the same start sequence for every user and every repo:
 
 The canonical identifier is the created `project-start` issue number in `clever-change-control`. Before issue creation, the workflow uses a `project-start` draft only.
 
+## First-Response Hard Gate
+
+Before planning, implementation, `project-start` creation, or repo bootstrap, the agent must first normalize the session into the same opening structure.
+
+Use this exact first-response template:
+
+```text
+[작업 시작]
+1. 새 서비스 개발 vs. 기존 서비스 추가:
+2. 서비스 기반 (MSA vs. MONO):
+3. 타입 명확하게 분류하기:
+
+추가 설명
+- 하려는 일:
+- 왜 필요한지:
+- 제약:
+- 기대 결과:
+- 관련 repo/service가 있으면:
+```
+
+Rules:
+
+- If the user pasted the template, keep the structure and fill only missing fields.
+- If the user started in freeform, restate the request into this template and ask only for the missing parts.
+- Do not skip straight to planning, implementation, `project-start` drafting, or repo bootstrap before this structure is sufficiently filled.
+- `change-control` taxonomy is internal. The user does not need to choose `work_type_group` or `work_type_detail` directly.
+
 ## SSOT Order
 
 Interpret sources in this order:
@@ -32,6 +59,8 @@ Interpret sources in this order:
 3. the current working repo
 
 The current repo is the execution surface, not the source of truth for workflow rules.
+
+Start-vs-scope authority is defined in `clever-context-monorepo/docs/root/authority-boundaries.md`.
 
 ## When to Use
 
@@ -49,13 +78,14 @@ Do not use this skill when:
 
 ## Required Inputs
 
-The user only needs to provide the business intent.
+The user only needs to provide the business intent and any known constraints.
 
 You should infer or propose the rest:
 
-- `user-session`
+- `user-session` or `request-context`
 - `current-working-repo`
-- `target-repo`
+- `candidate-target-repo`
+- `candidate-target-service`
 - `purpose`
 - `constraints`
 - `ui-impact`
@@ -66,11 +96,41 @@ You should infer or propose the rest:
 - `override-scope`
 - `lifecycle-action`
 
-The workflow must not require a pre-confirmed `target-service` for general work or a generated `change-id` at start time.
+The workflow must not require a fixed `target-service` for general work or a generated `change-id` at start time.
+
+To clear the hard gate, the intake must have enough information for:
+
+- `1. 새 서비스 개발 vs. 기존 서비스 추가`
+- `2. 서비스 기반 (MSA vs. MONO)`
+- `3. 타입 명확하게 분류하기`
+- `왜 필요한지`
+- `제약`
+- `기대 결과`
 
 ## Work-Type Branching
 
-Before running the helper script, classify the task into one of these paths:
+Before running the helper script, classify the task into one of these paths.
+
+The user-facing questions stay simple, but the agent must interpret them against the internal `change-control` model.
+
+### Interpretation Rules
+
+Interpret the first three answers in this order:
+
+1. `새 서비스 개발` vs `기존 서비스 추가`
+2. `MSA` vs `MONO`
+3. the user explanation for `타입 명확하게 분류하기`
+
+Map them like this:
+
+- `새 서비스 개발` + `MSA`: default to `MSA/SaaS`, detail `신규`, unless the explanation is clearly a template/customer replication path, then prefer `복제`
+- `새 서비스 개발` + `MONO`: default to `일반 개발`, detail `신규 개발`
+- `기존 서비스 추가` + `MSA`: interpret into `MSA/SaaS` and choose among `복제`, `수정`, `변경`, `신규`
+- `기존 서비스 추가` + `MONO`: interpret into `일반 개발` and choose among `신규 개발`, `수정`, `변경`, `리팩토링`
+
+If the explanation is still too vague after the first template pass, ask a short follow-up question before continuing.
+
+After this interpretation, classify the task into one of these paths:
 
 - `MSA/SaaS 복제형 작업`
 - `일반 개발 작업`
@@ -123,6 +183,8 @@ If the task is maintenance and a target service is already known:
 If the user selects a different template or a different template version than the recorded lineage, treat that as `migration`.
 
 ## First Step
+
+First, clear the first-response hard gate.
 
 If the task has already been classified as MSA/SaaS replication-oriented, finish the target service conversation and the required SSOT reads first.
 
@@ -179,11 +241,13 @@ Do not create or update records before this approval.
 Once the user approves:
 
 1. Treat the packet as locked context for the rest of the task.
-2. Create the `project-start` issue in `clever-change-control`.
+2. Create the `project-start` issue in `clever-change-control` using the root intake template.
 3. Use the created issue number as the canonical identifier.
 4. Propose creation or confirmation of the target repo after the issue exists.
 5. Clone or pull the target repo locally.
 6. Recommend a new session in the cloned target repo for planning or implementation.
+
+Only after the root issue is approved and the execution scope is fixed should a scoped change request introduce a `change-id`.
 
 Do not create service-doc drafts in the normal start path.
 
@@ -218,6 +282,7 @@ Never replace this with a looser narrative summary.
 
 - Treating MSA/SaaS replication rules as the default path for every CLEVER task.
 - Treating the current repo as the workflow SSOT.
+- Skipping the three-step opening template because the request "already sounds clear enough."
 - Skipping the template choice conversation because one option looks obvious.
 - Starting implementation before the `project-start` issue is drafted and approved.
 - Requiring an inferred `target-service` before the intake can begin for general work.

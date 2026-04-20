@@ -31,8 +31,9 @@
 3. repo를 만들거나 바꾸기 전에 `project-start` 초안을 만든다.
 4. 승인 전에는 GitHub issue 생성이나 repo bootstrap을 하지 않는다.
 5. 생성된 `project-start issue #`를 최상위 식별자로 사용한다.
-6. `target_service`는 시작 시 선택 정보로 본다.
-7. canonical `change_id`는 만들지 않는다.
+6. `target_service`와 `target_repo`는 시작 시 candidate 정보로 볼 수 있다.
+7. canonical `change_id`는 root intake에서 만들지 않는다.
+8. `change_id`는 root issue 승인 후, scoped change request가 고정될 때 만든다.
 
 ## 흐름 1: 새 프로젝트 시작
 
@@ -50,7 +51,7 @@
 2. `clever-context-monorepo`와 `clever-change-control`을 읽는다.
 3. `project-start` 초안을 만든다.
 4. 승인을 받는다.
-5. `project-start` 이슈를 생성한다.
+5. `clever-change-control`의 `project-start` 이슈를 생성한다.
 6. 생성된 issue 번호를 root identifier로 쓴다.
 7. 첫 target repo를 결정한다.
 8. 필요하면 GitHub repo를 만든다.
@@ -144,11 +145,15 @@ child issue 유형은 보통 아래 중 하나다.
 
 - 목적 또는 배경 1~2문장
 - 이미 알고 있는 중요한 제약
+- 기대 결과
+- candidate template lineage
+- candidate target repo/service if known
 
 처음부터 아래를 모두 확정하게 만들면 안 된다.
 
 - target repo
 - target service
+- change id
 - repo 개수
 - 상세 구현 계획
 

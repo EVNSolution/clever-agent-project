@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLEVER work lifecycle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --paper: #f5f4ed;
+      --paper-2: #efeee5;
+      --ink: #0b0d0b;
+      --muted: #52534e;
+      --soft: #65655c;
+      --rule: rgba(11,13,11,0.12);
+      --accent: #f7591f;
+      --accent-tint: rgba(247,89,31,0.08);
+      --blue: #1a70c7;
+      --blue-tint: rgba(26,112,199,0.08);
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--paper); color: var(--ink); min-height: 100vh; padding: 3rem 2rem; }
+    .container { max-width: 1600px; margin: 0 auto; }
+    .header { margin-bottom: 2rem; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(2rem, 3vw + 1rem, 2.8rem); font-weight: 400; line-height: 1.08; letter-spacing: -0.02em; margin-bottom: 0.6rem; }
+    .subtitle { max-width: 72ch; font-size: 1rem; color: var(--muted); line-height: 1.6; }
+    .panel {
+      background: var(--paper-2);
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      padding: 1.4rem;
+      overflow-x: auto;
+    }
+    .timeline {
+      min-width: 1380px;
+      display: grid;
+      grid-template-columns: 180px repeat(7, minmax(150px, 1fr));
+      gap: 0.75rem;
+      align-items: stretch;
+    }
+    .stage {
+      background: rgba(255,255,255,0.84);
+      border: 1px solid rgba(11,13,11,0.08);
+      border-radius: 999px;
+      padding: 0.8rem 0.9rem;
+      text-align: center;
+    }
+    .stage-label {
+      font-family: var(--font-mono);
+      font-size: 0.56rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--soft);
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    .stage-title { font-size: 0.82rem; font-weight: 600; line-height: 1.3; }
+    .blank { background: transparent; border: none; }
+    .lane {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 1rem 0.25rem 0 0;
+    }
+    .cell {
+      min-height: 138px;
+      border-radius: 8px;
+      border: 1px solid var(--rule);
+      background: #fff;
+      padding: 0.9rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      position: relative;
+    }
+    .cell.highlight { background: linear-gradient(180deg, rgba(247,89,31,0.10) 0%, #fff 100%); border-color: rgba(247,89,31,0.34); }
+    .cell.ssot { background: linear-gradient(180deg, rgba(26,112,199,0.08) 0%, #fff 100%); border-color: rgba(26,112,199,0.24); }
+    .cell.trace { background: linear-gradient(180deg, rgba(11,13,11,0.03) 0%, #fff 100%); }
+    .step-no {
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      color: var(--soft);
+      text-transform: uppercase;
+    }
+    .step-title { font-size: 0.86rem; font-weight: 600; line-height: 1.35; }
+    .files {
+      list-style: none;
+      display: grid;
+      gap: 0.28rem;
+      font-size: 0.75rem;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    .files li::before { content: "· "; color: rgba(11,13,11,0.35); }
+    .empty {
+      border: 1px dashed rgba(11,13,11,0.12);
+      background: rgba(255,255,255,0.35);
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.9rem;
+      margin-top: 1.2rem;
+    }
+    .summary-card {
+      background: #fff;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      padding: 1rem;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+    .summary-card strong { color: var(--ink); }
+    .footer {
+      margin-top: 1.7rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid rgba(11,13,11,0.10);
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--soft);
+      letter-spacing: 0.06em;
+    }
+    @media (max-width: 920px) {
+      .summary { grid-template-columns: 1fr; }
+      body { padding: 2rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p class="eyebrow">Swimlane · CLEVER Agent Project</p>
+      <h1>Session start to target-repo execution, with directory anchors</h1>
+      <p class="subtitle">단계만 보여주는 흐름도가 아니라, 각 actor가 실제로 어느 레포의 어느 디렉터리와 파일을 읽고 쓰는지까지 포함한 실행 다이어그램이다.</p>
+    </div>
+
+    <div class="panel">
+      <div class="timeline">
+        <div class="stage blank"></div>
+        <div class="stage"><span class="stage-label">Stage 1</span><span class="stage-title">Open the request</span></div>
+        <div class="stage"><span class="stage-label">Stage 2</span><span class="stage-title">Pass the hard gate</span></div>
+        <div class="stage"><span class="stage-label">Stage 3</span><span class="stage-title">Interpret with SSOT</span></div>
+        <div class="stage"><span class="stage-label">Stage 4</span><span class="stage-title">Draft the root line</span></div>
+        <div class="stage"><span class="stage-label">Stage 5</span><span class="stage-title">Approve and anchor</span></div>
+        <div class="stage"><span class="stage-label">Stage 6</span><span class="stage-title">Fix scoped execution</span></div>
+        <div class="stage"><span class="stage-label">Stage 7</span><span class="stage-title">Implement in target repo</span></div>
+
+        <div class="lane">USER</div>
+        <div class="cell">
+          <p class="step-no">User / 01</p>
+          <h2 class="step-title">Open a session in `clever-agent-project`</h2>
+          <ul class="files">
+            <li>entry through `/README.md`</li>
+            <li>free text or copied start template</li>
+          </ul>
+        </div>
+        <div class="cell highlight">
+          <p class="step-no">User / 02</p>
+          <h2 class="step-title">Fill the 3-step start template</h2>
+          <ul class="files">
+            <li>`새 서비스 개발 vs. 기존 서비스 추가`</li>
+            <li>`MSA vs. MONO`</li>
+            <li>`타입 명확하게 분류하기`</li>
+            <li>추가 설명: 목적, 제약, 기대 결과</li>
+          </ul>
+        </div>
+        <div class="cell empty"></div>
+        <div class="cell empty"></div>
+        <div class="cell highlight">
+          <p class="step-no">User / 03</p>
+          <h2 class="step-title">Approve the `project-start` draft</h2>
+          <ul class="files">
+            <li>root line을 열어도 되는지 승인</li>
+            <li>candidate repo/service 검토</li>
+          </ul>
+        </div>
+        <div class="cell empty"></div>
+        <div class="cell empty"></div>
+
+        <div class="lane">AGENT PROJECT</div>
+        <div class="cell">
+          <p class="step-no">Agent / 01</p>
+          <h2 class="step-title">Normalize the opening request</h2>
+          <ul class="files">
+            <li>`/README.md`</li>
+            <li>`/docs/setting.md`</li>
+          </ul>
+        </div>
+        <div class="cell highlight">
+          <p class="step-no">Agent / 02</p>
+          <h2 class="step-title">Enforce the hard gate</h2>
+          <ul class="files">
+            <li>`/.agent/skills/bootstrap-clever-work/SKILL.md`</li>
+            <li>`/docs/guides/clever-project-workflows.md`</li>
+          </ul>
+        </div>
+        <div class="cell ssot">
+          <p class="step-no">Agent / 03</p>
+          <h2 class="step-title">Read context and choose candidate lineage</h2>
+          <ul class="files">
+            <li>context repo root and services docs</li>
+            <li>template registry and deploy baseline</li>
+          </ul>
+        </div>
+        <div class="cell">
+          <p class="step-no">Agent / 04</p>
+          <h2 class="step-title">Build the bootstrap packet</h2>
+          <ul class="files">
+            <li>`/.agent/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py`</li>
+            <li>`/scripts/bootstrap_clever_work.py`</li>
+          </ul>
+        </div>
+        <div class="cell highlight">
+          <p class="step-no">Agent / 05</p>
+          <h2 class="step-title">Return the root draft for approval</h2>
+          <ul class="files">
+            <li>`project-start` payload draft</li>
+            <li>candidate repo/service, candidate lineage</li>
+          </ul>
+        </div>
+        <div class="cell">
+          <p class="step-no">Agent / 06</p>
+          <h2 class="step-title">Tighten execution scope after approval</h2>
+          <ul class="files">
+            <li>target repo 확정</li>
+            <li>target service 확정</li>
+            <li>`change_id` 필요 여부 확정</li>
+          </ul>
+        </div>
+        <div class="cell">
+          <p class="step-no">Agent / 07</p>
+          <h2 class="step-title">Handoff into implementation repo</h2>
+          <ul class="files">
+            <li>clone / pull / branch context</li>
+            <li>implementation session으로 이동</li>
+          </ul>
+        </div>
+
+        <div class="lane">CONTEXT</div>
+        <div class="cell empty"></div>
+        <div class="cell empty"></div>
+        <div class="cell ssot">
+          <p class="step-no">Context / 01</p>
+          <h2 class="step-title">Interpret the work against root rules</h2>
+          <ul class="files">
+            <li>`/docs/root/index.md`</li>
+            <li>`/docs/root/authority-boundaries.md`</li>
+            <li>`/docs/root/agent-runtime-governance.md`</li>
+          </ul>
+        </div>
+        <div class="cell ssot">
+          <p class="step-no">Context / 02</p>
+          <h2 class="step-title">Resolve lineage, service metadata, deploy baseline</h2>
+          <ul class="files">
+            <li>`/docs/templates/index.md`</li>
+            <li>`/docs/root/template-harness-governance.md`</li>
+            <li>`/docs/root/deploy-template-governance.md`</li>
+            <li>`/docs/services/service-*/index.md`</li>
+          </ul>
+        </div>
+        <div class="cell empty"></div>
+        <div class="cell ssot">
+          <p class="step-no">Context / 03</p>
+          <h2 class="step-title">Re-read only the service-specific branch of context</h2>
+          <ul class="files">
+            <li>`/docs/services/service-template.md`</li>
+            <li>target service 문서 갱신 여부 판단</li>
+          </ul>
+        </div>
+        <div class="cell empty"></div>
+
+        <div class="lane">CHANGE CONTROL</div>
+        <div class="cell empty"></div>
+        <div class="cell empty"></div>
+        <div class="cell empty"></div>
+        <div class="cell trace">
+          <p class="step-no">Trace / 01</p>
+          <h2 class="step-title">Prepare the root ledger location</h2>
+          <ul class="files">
+            <li>`/README.md` rules for root id and `change_id`</li>
+            <li>`/.github/ISSUE_TEMPLATE/` as issue form layer</li>
+          </ul>
+        </div>
+        <div class="cell highlight trace">
+          <p class="step-no">Trace / 02</p>
+          <h2 class="step-title">Create `project-start` as canonical root</h2>
+          <ul class="files">
+            <li>root canonical identifier = `project-start issue #`</li>
+            <li>`change_id`는 아직 root 식별자가 아님</li>
+          </ul>
+        </div>
+        <div class="cell trace">
+          <p class="step-no">Trace / 03</p>
+          <h2 class="step-title">Drop into scoped change</h2>
+          <ul class="files">
+            <li>`/changes/` change unit anchor</li>
+            <li>`/releases/dev|stg|prod/` evidence destination</li>
+            <li>repo / service / rollout scope 확정</li>
+          </ul>
+        </div>
+        <div class="cell trace">
+          <p class="step-no">Trace / 04</p>
+          <h2 class="step-title">Link PR, rollout, rollback evidence</h2>
+          <ul class="files">
+            <li>target repo PR 연결</li>
+            <li>release evidence와 final status 갱신</li>
+          </ul>
+        </div>
+
+        <div class="lane">TARGET REPO</div>
+        <div class="cell empty"></div>
+        <div class="cell empty"></div>
+        <div class="cell empty"></div>
+        <div class="cell empty"></div>
+        <div class="cell empty"></div>
+        <div class="cell">
+          <p class="step-no">Target / 01</p>
+          <h2 class="step-title">Prepare the implementation surface</h2>
+          <ul class="files">
+            <li>repo clone or refresh</li>
+            <li>branch / worktree / local env 정리</li>
+          </ul>
+        </div>
+        <div class="cell highlight">
+          <p class="step-no">Target / 02</p>
+          <h2 class="step-title">Implement, test, and feed evidence back</h2>
+          <ul class="files">
+            <li>`/src` or `/app` 구현</li>
+            <li>`/tests` 검증</li>
+            <li>PR / build / rollout 결과를 change-control로 환류</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="summary">
+        <div class="summary-card"><strong>Hard gate first.</strong><br>구현 착수 전에 반드시 `README`와 `SKILL.md` 레이어에서 세션 시작 템플릿을 통과한다.</div>
+        <div class="summary-card"><strong>SSOT is read in two passes.</strong><br>처음엔 root rule 해석용, 다음엔 target service와 scoped execution을 좁히기 위한 재해석용이다.</div>
+        <div class="summary-card"><strong>Root then scoped execution.</strong><br>`project-start issue #`가 먼저 열리고, 그 뒤에야 repo/service/`change_id`가 scoped execution으로 내려간다.</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>CLEVER work lifecycle · directory-aware execution map</span>
+      <span>based on diagram-design editorial HTML</span>
+    </div>
+  </div>
+</body>
+</html>

@@ -123,6 +123,8 @@ def test_build_packet_uses_project_start_fields():
     assert draft["canonical_reference"] == "pending-project-start-issue"
     assert draft["body"].startswith("## Purpose")
     assert "## Requested Flow" not in draft["body"]
+    assert "- The created project-start issue number becomes the root canonical identifier." in draft["body"]
+    assert "- Use change id only after approval, when a scoped change request, rollout, or rollback unit has been fixed." in draft["body"]
     assert (
         "- target repo proposal: proposed target repo: clever-analytics-api"
         in draft["body"]
@@ -295,9 +297,11 @@ def test_build_ssot_docs_uses_project_start_aligned_surface():
 
     docs = module.build_ssot_docs(clever_root)
 
+    assert str(clever_root / "clever-change-control/.github/ISSUE_TEMPLATE/project-start.yml") in docs
     assert str(clever_root / "clever-change-control/changes") in docs
     assert str(clever_root / "clever-change-control/releases") in docs
     assert str(clever_root / "clever-change-control/.github/ISSUE_TEMPLATE/change-request.yml") not in docs
+    assert str(clever_root / "clever-context-monorepo/docs/root/authority-boundaries.md") in docs
     assert str(clever_root / "clever-context-monorepo/docs/wiki/index.md") not in docs
     assert str(clever_root / "clever-context-monorepo/docs/services/service-template.md") not in docs
     assert (
@@ -398,6 +402,7 @@ def test_cli_emits_template_harness_metadata_from_flags():
     assert packet["override_scope"] == "customer-config-only"
     assert packet["lifecycle_action"] == "adopt"
     assert "- lifecycle_action: adopt" in packet["project_start_issue"]["body"]
+    assert "change id only after approval" in packet["project_start_issue"]["body"]
 
 
 def test_cli_rejects_invalid_lifecycle_action():

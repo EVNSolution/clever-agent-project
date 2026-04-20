@@ -4,13 +4,44 @@ CLEVER 작업을 시작할 때 가장 먼저 여는 intake / bootstrap 포털이
 
 이 레포는 구현 저장소가 아니라, 작업 성격을 분기하고, 템플릿 선택을 정리하고, `project-start` 초안과 handoff 방향을 잡는 시작점이다. 상세 설정과 운영 절차는 [docs/setting.md](docs/setting.md)에서 다룬다.
 
+## 세션 시작 템플릿
+
+새 세션은 아래 템플릿으로 시작하는 것을 기본값으로 둔다. 사용자는 이 블록을 그대로 붙여 넣어도 되고, 자유문으로 시작해도 된다. 자유문으로 시작한 경우에도 에이전트는 같은 구조로 다시 정리해 받아야 한다.
+
+```text
+[작업 시작]
+1. 새 서비스 개발 vs. 기존 서비스 추가:
+2. 서비스 기반 (MSA vs. MONO):
+3. 타입 명확하게 분류하기:
+
+추가 설명
+- 하려는 일:
+- 왜 필요한지:
+- 제약:
+- 기대 결과:
+- 관련 repo/service가 있으면:
+```
+
+운영 규칙은 아래와 같다.
+
+- 첫 질문은 반드시 위 3단계로 시작한다.
+- `change-control`의 내부 타입 분류는 에이전트가 해석한다.
+- `project-start` 초안, repo bootstrap, 구현 계획은 위 템플릿과 추가 설명이 충분히 채워지기 전에는 진행하지 않는다.
+
+## 시나리오 다이어그램
+
+- [Scenario Diagrams](docs/diagrams/README.md)
+- [Three-repo control plane overview](docs/diagrams/clever-control-plane-overview.md)
+- [Session start to target-repo execution](docs/diagrams/clever-work-lifecycle.md)
+- [Three-repo directory map](docs/diagrams/clever-repo-directory-map.md)
+
 ## 빠른 이해
 
 | 저장소 | 역할 | 다음에 읽을 위치 |
 | --- | --- | --- |
 | `clever-agent-project` | 시작점, intake, bootstrap, handoff 안내 | [README.md](README.md), [docs/setting.md](docs/setting.md) |
-| `clever-context-monorepo` | 템플릿, 서비스 메타, 배포 기준의 정본 | [template registry](https://github.com/EVNSolution/clever-context-monorepo/blob/main/docs/templates/index.md), [template governance](https://github.com/EVNSolution/clever-context-monorepo/blob/main/docs/root/template-harness-governance.md) |
-| `clever-change-control` | `project-start`, change request, 승인과 추적 | [README](https://github.com/EVNSolution/clever-change-control/blob/main/README.md) |
+| `clever-context-monorepo` | 해석 정본, 템플릿, 서비스 메타, 배포 기준 | [authority boundaries](https://github.com/EVNSolution/clever-context-monorepo/blob/main/docs/root/authority-boundaries.md), [template registry](https://github.com/EVNSolution/clever-context-monorepo/blob/main/docs/templates/index.md) |
+| `clever-change-control` | `project-start` root, scoped change request, 승인과 추적 | [README](https://github.com/EVNSolution/clever-change-control/blob/main/README.md), [project-start template](https://github.com/EVNSolution/clever-change-control/blob/main/.github/ISSUE_TEMPLATE/project-start.yml) |
 
 ## 신규 개발 시작
 
@@ -19,7 +50,7 @@ CLEVER 작업을 시작할 때 가장 먼저 여는 intake / bootstrap 포털이
 - 시작 위치: `clever-agent-project`
 - 첫 앵커: 템플릿 후보 검토
 - 다음 정본: `clever-context-monorepo`의 template registry / deploy governance
-- 이후 흐름: `project-start` 초안 생성 -> 승인 -> `clever-change-control` 기록 -> 대상 repo handoff
+- 이후 흐름: `project-start` 초안 생성 -> 승인 -> `clever-change-control`의 root issue 기록 -> 대상 repo handoff
 
 ## 기존 서비스 변경
 
@@ -28,7 +59,7 @@ CLEVER 작업을 시작할 때 가장 먼저 여는 intake / bootstrap 포털이
 - 시작 위치: `clever-agent-project`
 - 첫 앵커: 서비스 문서의 `template_id`, `template_version`, `deploy_profile`, `override_scope`, `lifecycle_state`
 - 다음 정본: `clever-context-monorepo/docs/services/<service>/index.md`
-- 이후 흐름: 동일 계열 유지 또는 migration 판단 -> change request 정리 -> 대상 repo handoff
+- 이후 흐름: 동일 계열 유지 또는 migration 판단 -> root issue 확인 -> scoped change request 정리 -> 대상 repo handoff
 
 ## 템플릿 영역
 
