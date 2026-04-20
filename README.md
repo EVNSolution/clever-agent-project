@@ -4,6 +4,16 @@ CLEVER 작업을 시작할 때 가장 먼저 여는 intake / bootstrap 포털이
 
 이 레포는 구현 저장소가 아니라, 작업 성격을 분기하고, 템플릿 선택을 정리하고, `project-start` 초안과 handoff 방향을 잡는 시작점이다. 상세 설정과 운영 절차는 [docs/setting.md](docs/setting.md)에서 다룬다.
 
+## 바로가기
+
+- [세션 시작 템플릿](#세션-시작-템플릿)
+- [시나리오 다이어그램](#시나리오-다이어그램)
+- [Three-repo control plane overview](docs/diagrams/clever-control-plane-overview.md)
+- [Session start to target-repo execution](docs/diagrams/clever-work-lifecycle.md)
+- [Three-repo directory map](docs/diagrams/clever-repo-directory-map.md)
+- [clever-context-monorepo](https://github.com/EVNSolution/clever-context-monorepo)
+- [clever-change-control](https://github.com/EVNSolution/clever-change-control)
+
 ## 세션 시작 템플릿
 
 새 세션은 아래 템플릿으로 시작하는 것을 기본값으로 둔다. 사용자는 이 블록을 그대로 붙여 넣어도 되고, 자유문으로 시작해도 된다. 자유문으로 시작한 경우에도 에이전트는 같은 구조로 다시 정리해 받아야 한다.
