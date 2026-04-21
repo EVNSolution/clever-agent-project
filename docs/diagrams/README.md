@@ -6,7 +6,11 @@
 
 - [clever-control-plane-overview.md](./clever-control-plane-overview.md): 3레포와 대상 레포지토리를 레포 수준에서 디렉터리 수준까지 내려서 보여주는 구조도
 - [clever-work-lifecycle.md](./clever-work-lifecycle.md): 세션 시작, 3단계 하드 게이트, `project-start`, 범위가 고정된 변경, 대상 레포지토리 handoff를 실제 디렉터리/파일 기준으로 보여주는 실행도
-- [clever-repo-directory-map.md](./clever-repo-directory-map.md): 3레포와 대상 레포지토리를 트리 시점에서 보는 구조 지도
+- [clever-repository-responsibility-map.md](./clever-repository-responsibility-map.md): 3레포와 대상 레포지토리의 책임 분담을 읽기 쉽게 보여주는 책임 분담도
+
+## 상세 구조 문서
+
+- [clever-repo-directory-map.md](./clever-repo-directory-map.md): 3레포와 대상 레포지토리를 트리 시점에서 보는 상세 구조 지도
 
 ## 로컬 상세 버전
 

@@ -118,7 +118,8 @@ CLEVER를 제대로 실행하려면 아래 조건이 먼저 만족되어야 한�
 - [다이어그램 인덱스](docs/diagrams/README.md)
 - [3레포 제어 평면 개요](docs/diagrams/clever-control-plane-overview.md)
 - [세션 시작부터 대상 레포지토리 실행까지](docs/diagrams/clever-work-lifecycle.md)
-- [3레포 디렉터리 맵](docs/diagrams/clever-repo-directory-map.md)
+- [3레포 책임 분담도](docs/diagrams/clever-repository-responsibility-map.md)
+- [상세 디렉터리 맵](docs/diagrams/clever-repo-directory-map.md)
 
 ### README에서 바로 펼쳐보기
 
@@ -219,65 +220,41 @@ sequenceDiagram
 </details>
 
 <details>
-<summary>3레포 디렉터리 맵</summary>
+<summary>3레포 책임 분담도</summary>
 
 ```mermaid
 flowchart TB
-    root["CLEVER control plane"]
+    start["시작 / 요청 접수 / 시작 패킷"]
+    interpret["정본 해석 / 템플릿 계보 / 서비스 메타데이터"]
+    approve["루트 열기 / project-start"]
+    scope["범위 확정 / change request / change_id"]
+    implement["구현 / 테스트 / 빌드"]
+    evidence["배포 증적 / 롤백 추적 / 릴리스 기록"]
 
-    root --> ap["clever-agent-project"]
-    root --> ctx["clever-context-monorepo"]
-    root --> cc["clever-change-control"]
-    root --> tr["대상 레포지토리"]
+    ap["clever-agent-project<br/>README.md · SKILL.md · scripts"]
+    ctx["clever-context-monorepo<br/>docs/root · docs/services · docs/templates"]
+    cc_root["clever-change-control<br/>README.md · ISSUE_TEMPLATE"]
+    cc_scope["clever-change-control<br/>changes · releases"]
+    tr["대상 레포지토리<br/>src/app · tests · CI/deploy"]
 
-    ap --> ap_readme["README.md"]
-    ap --> ap_agent[".agent/skills/bootstrap-clever-work/"]
-    ap --> ap_docs["docs/"]
-    ap --> ap_scripts["scripts/"]
-    ap --> ap_tests["tests/"]
+    start --> ap
+    interpret --> ctx
+    approve --> cc_root
+    scope --> cc_scope
+    implement --> tr
+    evidence --> cc_scope
 
-    ap_agent --> ap_skill["SKILL.md"]
-    ap_agent --> ap_skill_script["scripts/bootstrap_clever_work.py"]
-    ap_docs --> ap_diagrams["docs/diagrams/"]
-    ap_docs --> ap_guides["docs/guides/"]
-    ap_docs --> ap_super["docs/superpowers/"]
-    ap_docs --> ap_templates["docs/templates/"]
-    ap_docs --> ap_setting["docs/setting.md"]
-
-    ctx --> ctx_root["docs/root/"]
-    ctx --> ctx_services["docs/services/"]
-    ctx --> ctx_templates["docs/templates/"]
-    ctx --> ctx_wiki["docs/wiki/"]
-    ctx --> ctx_deploy["templates/deploy/"]
-    ctx --> ctx_contracts["contracts/"]
-    ctx --> ctx_placeholders["apps/ + packages/ + services/"]
-
-    ctx_root --> ctx_authority["authority-boundaries.md"]
-    ctx_root --> ctx_runtime["agent-runtime-governance.md"]
-    ctx_root --> ctx_pipeline["pipeline-governance.md"]
-    ctx_services --> ctx_service_template["service-template.md"]
-    ctx_services --> ctx_service_docs["service-*/index.md"]
-    ctx_templates --> ctx_registry["index.md"]
-
-    cc --> cc_readme["README.md"]
-    cc --> cc_issue[".github/ISSUE_TEMPLATE/"]
-    cc --> cc_changes["changes/"]
-    cc --> cc_releases["releases/"]
-
-    cc_issue --> cc_project_start["project-start.yml"]
-    cc_issue --> cc_change_req["change-request.yml"]
-    cc_issue --> cc_rollback["rollback-request.yml"]
-    cc_releases --> cc_dev["dev/"]
-    cc_releases --> cc_stg["stg/"]
-    cc_releases --> cc_prod["prod/"]
-
-    tr --> tr_code["src/ 또는 app/"]
-    tr --> tr_test["tests/"]
-    tr --> tr_ci[".github/ 또는 deploy config/"]
-    tr --> tr_docs["docs/ 또는 specs/"]
+    ap -. 해석 요청 .-> ctx
+    ap -. 루트 연결 .-> cc_root
+    cc_scope -. 구현 handoff .-> tr
+    tr -. 증적 환류 .-> cc_scope
 ```
 
 </details>
+
+상세 디렉터리 구조는 별도 문서에서 본다.
+
+- [3레포 디렉터리 맵](docs/diagrams/clever-repo-directory-map.md)
 
 ## 상세 문서
 
