@@ -120,22 +120,164 @@ CLEVER를 제대로 실행하려면 아래 조건이 먼저 만족되어야 한�
 - [세션 시작부터 대상 레포지토리 실행까지](docs/diagrams/clever-work-lifecycle.md)
 - [3레포 디렉터리 맵](docs/diagrams/clever-repo-directory-map.md)
 
-### 요약 다이어그램
+### README에서 바로 펼쳐보기
+
+<details>
+<summary>3레포 제어 평면 개요</summary>
 
 ```mermaid
 flowchart LR
     user["사용자 세션"]
-    ap["clever-agent-project<br/>시작점 / intake / bootstrap"]
-    ctx["clever-context-monorepo<br/>규칙 / 템플릿 계보 / 서비스 메타데이터"]
-    cc["clever-change-control<br/>project-start / 범위 추적 / 릴리스"]
-    tr["대상 레포지토리<br/>구현 / 테스트 / 배포"]
 
-    user --> ap
-    ap --> ctx
-    ap --> cc
-    ctx -. 해석 기준 .-> tr
-    cc --> tr
+    subgraph AP["clever-agent-project"]
+        ap_readme["README.md<br/>세션 시작 템플릿"]
+        ap_skill[".agent/skills/bootstrap-clever-work/<br/>SKILL.md + bootstrap_clever_work.py"]
+        ap_docs["docs/<br/>setting.md · guides · diagrams"]
+        ap_runtime["scripts/ + tests/<br/>bootstrap 진입점 + 검증"]
+    end
+
+    subgraph CTX["clever-context-monorepo"]
+        ctx_root["docs/root/<br/>권한 경계 · 런타임 규칙 · 파이프라인 규칙"]
+        ctx_services["docs/services/<br/>service-template + service-*/index.md"]
+        ctx_templates["docs/templates/<br/>템플릿 레지스트리 + 계보"]
+        ctx_support["templates/deploy/ + contracts + wiki<br/>배포 골격 + 참조 앵커"]
+    end
+
+    subgraph CC["clever-change-control"]
+        cc_readme["README.md<br/>루트 식별자 + change_id 규칙"]
+        cc_issue[".github/ISSUE_TEMPLATE/<br/>project-start · 변경 요청 · 롤백"]
+        cc_changes["changes/<br/>범위가 고정된 변경 anchor"]
+        cc_releases["releases/dev · stg · prod<br/>릴리스 증적"]
+    end
+
+    subgraph TR["대상 레포지토리"]
+        tr_code["src/ 또는 app/<br/>실제 구현"]
+        tr_tests["tests/ + CI/deploy config<br/>검증 + 빌드"]
+        tr_docs["docs/specs if needed<br/>로컬 구현 문맥"]
+    end
+
+    user --> ap_readme
+    ap_readme --> ap_skill
+    ap_skill --> ap_docs
+    ap_skill --> ctx_root
+    ap_skill --> ctx_templates
+    ap_docs --> ctx_services
+    ctx_root --> ctx_services
+    ctx_templates --> ctx_support
+    ap_skill --> cc_readme
+    ap_skill --> cc_issue
+    cc_issue --> cc_changes
+    cc_changes --> cc_releases
+    ctx_services -. 규칙 + 계보 .-> tr_code
+    cc_changes --> tr_code
+    tr_code --> tr_tests
+    tr_tests --> tr_docs
+    tr_tests -. 증적 환류 .-> cc_releases
 ```
+
+</details>
+
+<details>
+<summary>세션 시작부터 대상 레포지토리 실행까지</summary>
+
+```mermaid
+sequenceDiagram
+    actor U as 사용자
+    participant AP as clever-agent-project
+    participant CTX as clever-context-monorepo
+    participant CC as clever-change-control
+    participant TR as 대상 레포지토리
+
+    U->>AP: 세션 시작<br/>README.md
+    AP->>U: 3단계 시작 템플릿 강제<br/>README.md + SKILL.md
+    U->>AP: 작업 유형 + MSA/MONO + 추가 설명 입력
+
+    AP->>AP: 요청 정규화<br/>docs/setting.md + guides
+    AP->>CTX: 권한과 계보 해석<br/>docs/root/index.md<br/>authority-boundaries.md
+    CTX-->>AP: 루트 규칙 + 후보 템플릿 계보 반환
+    AP->>CTX: 필요 시 서비스 메타데이터 조회<br/>docs/services/service-*/index.md
+    CTX-->>AP: 배포 프로파일 + 기존 계보 반환
+
+    AP->>AP: bootstrap packet 생성<br/>bootstrap_clever_work.py
+    AP-->>U: project-start payload 초안 제시<br/>후보 레포/service + 계보
+    U->>AP: 초안 승인
+
+    AP->>CC: 루트 line 생성<br/>project-start template + README rules
+    CC-->>AP: 루트 기준 식별자 = project-start issue #
+
+    AP->>CTX: 범위가 좁혀진 서비스 문맥 재확인
+    CTX-->>AP: target service와 서비스별 메타데이터 확인
+
+    AP->>CC: 범위가 고정된 실행으로 전환<br/>change request + changes/ + releases/
+    CC-->>AP: 범위 확정<br/>repo + service + change_id
+
+    AP->>TR: 구현 레포로 넘김
+    TR->>TR: 구현 + 테스트 + 빌드
+    TR-->>CC: PR + 배포/롤백 증적 연결
+```
+
+</details>
+
+<details>
+<summary>3레포 디렉터리 맵</summary>
+
+```mermaid
+flowchart TB
+    root["CLEVER control plane"]
+
+    root --> ap["clever-agent-project"]
+    root --> ctx["clever-context-monorepo"]
+    root --> cc["clever-change-control"]
+    root --> tr["대상 레포지토리"]
+
+    ap --> ap_readme["README.md"]
+    ap --> ap_agent[".agent/skills/bootstrap-clever-work/"]
+    ap --> ap_docs["docs/"]
+    ap --> ap_scripts["scripts/"]
+    ap --> ap_tests["tests/"]
+
+    ap_agent --> ap_skill["SKILL.md"]
+    ap_agent --> ap_skill_script["scripts/bootstrap_clever_work.py"]
+    ap_docs --> ap_diagrams["docs/diagrams/"]
+    ap_docs --> ap_guides["docs/guides/"]
+    ap_docs --> ap_super["docs/superpowers/"]
+    ap_docs --> ap_templates["docs/templates/"]
+    ap_docs --> ap_setting["docs/setting.md"]
+
+    ctx --> ctx_root["docs/root/"]
+    ctx --> ctx_services["docs/services/"]
+    ctx --> ctx_templates["docs/templates/"]
+    ctx --> ctx_wiki["docs/wiki/"]
+    ctx --> ctx_deploy["templates/deploy/"]
+    ctx --> ctx_contracts["contracts/"]
+    ctx --> ctx_placeholders["apps/ + packages/ + services/"]
+
+    ctx_root --> ctx_authority["authority-boundaries.md"]
+    ctx_root --> ctx_runtime["agent-runtime-governance.md"]
+    ctx_root --> ctx_pipeline["pipeline-governance.md"]
+    ctx_services --> ctx_service_template["service-template.md"]
+    ctx_services --> ctx_service_docs["service-*/index.md"]
+    ctx_templates --> ctx_registry["index.md"]
+
+    cc --> cc_readme["README.md"]
+    cc --> cc_issue[".github/ISSUE_TEMPLATE/"]
+    cc --> cc_changes["changes/"]
+    cc --> cc_releases["releases/"]
+
+    cc_issue --> cc_project_start["project-start.yml"]
+    cc_issue --> cc_change_req["change-request.yml"]
+    cc_issue --> cc_rollback["rollback-request.yml"]
+    cc_releases --> cc_dev["dev/"]
+    cc_releases --> cc_stg["stg/"]
+    cc_releases --> cc_prod["prod/"]
+
+    tr --> tr_code["src/ 또는 app/"]
+    tr --> tr_test["tests/"]
+    tr --> tr_ci[".github/ 또는 deploy config/"]
+    tr --> tr_docs["docs/ 또는 specs/"]
+```
+
+</details>
 
 ## 상세 문서
 
