@@ -1,6 +1,6 @@
-# Three-Repo Directory Map
+# 3레포 디렉터리 맵
 
-트리 시점에서 3레포와 target repo를 한 번에 보는 구조도다. 저장소 화면에서 바로 훑는 용도라서 repo root에서 directory level까지 내려가는 모양을 그대로 유지했다.
+트리 시점에서 3레포와 대상 레포지토리를 한 번에 보는 구조도다. 저장소 화면에서 바로 훑는 용도라서 레포 루트에서 디렉터리 수준까지 내려가는 모양을 그대로 유지했다.
 
 ```mermaid
 flowchart TB
@@ -9,7 +9,7 @@ flowchart TB
     root --> ap["clever-agent-project"]
     root --> ctx["clever-context-monorepo"]
     root --> cc["clever-change-control"]
-    root --> tr["target repo"]
+    root --> tr["대상 레포지토리"]
 
     ap --> ap_readme["README.md"]
     ap --> ap_agent[".agent/skills/bootstrap-clever-work/"]
@@ -52,15 +52,15 @@ flowchart TB
     cc_releases --> cc_stg["stg/"]
     cc_releases --> cc_prod["prod/"]
 
-    tr --> tr_code["src/ or app/"]
+    tr --> tr_code["src/ 또는 app/"]
     tr --> tr_test["tests/"]
-    tr --> tr_ci[".github/ or deploy config/"]
-    tr --> tr_docs["docs/ or specs/"]
+    tr --> tr_ci[".github/ 또는 deploy config/"]
+    tr --> tr_docs["docs/ 또는 specs/"]
 ```
 
 ## 포인트
 
-- `clever-agent-project`는 시작 규칙, bootstrap helper, 시나리오 안내를 가진 entry repo다.
-- `clever-context-monorepo`는 실제 내용이 `docs/root`, `docs/services`, `docs/templates`에 집중된 문맥 정본 repo다.
-- `clever-change-control`은 구조는 작지만 `project-start`, change request, release evidence를 남기는 ledger repo다.
-- target repo는 control-plane 바깥의 실제 구현 레포다.
+- `clever-agent-project`는 시작 규칙, bootstrap helper, 시나리오 안내를 가진 시작 레포다.
+- `clever-context-monorepo`는 실제 내용이 `docs/root`, `docs/services`, `docs/templates`에 집중된 문맥 정본 레포다.
+- `clever-change-control`은 구조는 작지만 `project-start`, change request, release evidence를 남기는 ledger 레포다.
+- 대상 레포지토리는 control-plane 바깥의 실제 구현 레포다.

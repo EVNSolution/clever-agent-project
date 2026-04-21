@@ -1,22 +1,79 @@
-# clever-agent-project
+# CLEVER Agent Project
 
-CLEVER 작업을 시작할 때 가장 먼저 여는 intake / bootstrap 포털이다.
+> CLEVER는 단일 레포지토리 에이전트가 아니다.  
+> 로컬에 함께 내려받은 3개 레포지토리를 함께 읽고, 이후 실제 구현 대상 레포지토리로 실행을 넘기는 워크스페이스 우선 제어 평면 런타임이다.
 
-이 레포는 구현 저장소가 아니라, 작업 성격을 분기하고, 템플릿 선택을 정리하고, `project-start` 초안과 handoff 방향을 잡는 시작점이다. 상세 설정과 운영 절차는 [docs/setting.md](docs/setting.md)에서 다룬다.
+## 워크스페이스 레포지토리
 
-## 바로가기
+- [`clever-agent-project`](https://github.com/EVNSolution/clever-agent-project): 시작점, 요청 접수, 시작 패킷 생성
+- [`clever-context-monorepo`](https://github.com/EVNSolution/clever-context-monorepo): 해석 정본, 템플릿 계보, 서비스 메타데이터, 배포 기준
+- [`clever-change-control`](https://github.com/EVNSolution/clever-change-control): `project-start` 루트, 범위가 고정된 변경 요청, 배포/롤백 추적
 
-- [세션 시작 템플릿](#세션-시작-템플릿)
+## 빠른 링크
+
+- [빠른 시작](#빠른-시작)
+- [필수 워크스페이스 계약](#필수-워크스페이스-계약)
+- [레포 맵](#레포-맵)
 - [시나리오 다이어그램](#시나리오-다이어그램)
-- [Three-repo control plane overview](docs/diagrams/clever-control-plane-overview.md)
-- [Session start to target-repo execution](docs/diagrams/clever-work-lifecycle.md)
-- [Three-repo directory map](docs/diagrams/clever-repo-directory-map.md)
-- [clever-context-monorepo](https://github.com/EVNSolution/clever-context-monorepo)
-- [clever-change-control](https://github.com/EVNSolution/clever-change-control)
+- [상세 문서](#상세-문서)
+- [관련 레포](#관련-레포)
+- [운영 설명서](docs/setting.md)
+- [작업 흐름 가이드](docs/guides/clever-project-workflows.md)
 
-## 세션 시작 템플릿
+## CLEVER란 무엇인가
 
-새 세션은 아래 템플릿으로 시작하는 것을 기본값으로 둔다. 사용자는 이 블록을 그대로 붙여 넣어도 되고, 자유문으로 시작해도 된다. 자유문으로 시작한 경우에도 에이전트는 같은 구조로 다시 정리해 받아야 한다.
+CLEVER의 실행 단위는 단일 레포가 아니다.
+
+CLEVER는 아래 3개 레포가 **같은 로컬 워크스페이스 루트에 함께 존재하는 상태**를 전제로 동작한다.
+
+1. `clever-agent-project`
+2. `clever-context-monorepo`
+3. `clever-change-control`
+
+에이전트는 이 세 레포를 함께 읽어서 시작 규칙, 해석 기준, 추적 기준을 합쳐 사용한다.  
+그 다음 실제 구현 작업은 별도의 대상 레포지토리로 넘어간다.
+
+## 왜 3개 레포가 모두 필요한가
+
+| 레포지토리 | 책임 | 빠지면 생기는 문제 |
+| --- | --- | --- |
+| `clever-agent-project` | 시작점, 요청 접수, 시작 패킷 생성 | 작업 시작은 가능하지만 해석과 추적이 분리되지 않아 제어 평면이 성립하지 않음 |
+| `clever-context-monorepo` | 규칙, 템플릿 계보, 서비스 메타데이터, 배포 기준 | 정본 해석이 사라지고 서비스 문맥 판단 품질이 크게 떨어짐 |
+| `clever-change-control` | `project-start` 루트, 범위가 고정된 변경 요청, 배포/롤백 추적 | 루트 이슈, 변경 식별자, ledger 연결이 사라짐 |
+
+짧게 말하면:
+
+- `clever-agent-project`는 시작을 연다.
+- `clever-context-monorepo`는 해석을 제공한다.
+- `clever-change-control`은 승인과 추적을 남긴다.
+- 실제 구현은 대상 레포지토리에서 수행한다.
+
+## 필수 워크스페이스 계약
+
+CLEVER를 제대로 실행하려면 아래 조건이 먼저 만족되어야 한다.
+
+- 3개 레포가 같은 로컬 워크스페이스 루트에 있어야 한다.
+- 에이전트가 세 레포의 로컬 파일을 직접 읽을 수 있어야 한다.
+- 웹 링크만으로는 충분하지 않다.
+- 3개 중 하나라도 없으면 실행 품질이 크게 저하된다.
+
+즉, 현재 CLEVER는 **단일 레포 런타임이 아니라 3레포 로컬 워크스페이스 런타임**이다.
+
+## 빠른 시작
+
+### 1. 로컬 워크스페이스 준비
+
+먼저 같은 로컬 루트 아래에 아래 3개 레포를 준비한다.
+
+- `clever-agent-project`
+- `clever-context-monorepo`
+- `clever-change-control`
+
+### 2. 세션 시작
+
+세션은 항상 `clever-agent-project`에서 시작한다.
+
+기본 시작 템플릿은 아래와 같다.
 
 ```text
 [작업 시작]
@@ -38,138 +95,68 @@ CLEVER 작업을 시작할 때 가장 먼저 여는 intake / bootstrap 포털이
 - `change-control`의 내부 타입 분류는 에이전트가 해석한다.
 - `project-start` 초안, repo bootstrap, 구현 계획은 위 템플릿과 추가 설명이 충분히 채워지기 전에는 진행하지 않는다.
 
+### 3. 실행 흐름
+
+1. `clever-agent-project`에서 작업 시작
+2. `clever-context-monorepo`에서 규칙, 템플릿 계보, 서비스 메타데이터 해석
+3. `clever-change-control`에서 `project-start` 루트와 범위가 고정된 실행 추적 연결
+4. 대상 레포지토리로 넘긴 뒤 구현, 검증, 배포 진행
+
+## 레포 맵
+
+| 레포지토리 | 역할 | 대표 위치 |
+| --- | --- | --- |
+| `clever-agent-project` | 시작점, 요청 접수, bootstrap, handoff 안내 | `README.md`, `.agent/skills/bootstrap-clever-work/`, `docs/`, `scripts/`, `tests/` |
+| `clever-context-monorepo` | 해석 정본, 템플릿 계보, 서비스 메타데이터, 배포 기준 | `docs/root/`, `docs/services/`, `docs/templates/`, `templates/deploy/`, `contracts/` |
+| `clever-change-control` | `project-start` 루트, 범위가 고정된 변경 요청, 배포/롤백 추적 | `README.md`, `.github/ISSUE_TEMPLATE/`, `changes/`, `releases/` |
+| 대상 레포지토리 | 실제 구현, 테스트, 빌드, 배포 | `src/` 또는 `app/`, `tests/`, `.github/`, 배포/런타임 설정 |
+
 ## 시나리오 다이어그램
 
-- [Scenario Diagrams](docs/diagrams/README.md)
-- [Three-repo control plane overview](docs/diagrams/clever-control-plane-overview.md)
-- [Session start to target-repo execution](docs/diagrams/clever-work-lifecycle.md)
-- [Three-repo directory map](docs/diagrams/clever-repo-directory-map.md)
+아래 다이어그램은 저장소 화면에서 바로 읽을 수 있는 Markdown + Mermaid 기준이다.
 
-## 빠른 이해
+- [다이어그램 인덱스](docs/diagrams/README.md)
+- [3레포 제어 평면 개요](docs/diagrams/clever-control-plane-overview.md)
+- [세션 시작부터 대상 레포지토리 실행까지](docs/diagrams/clever-work-lifecycle.md)
+- [3레포 디렉터리 맵](docs/diagrams/clever-repo-directory-map.md)
 
-| 저장소 | 역할 | 다음에 읽을 위치 |
-| --- | --- | --- |
-| `clever-agent-project` | 시작점, intake, bootstrap, handoff 안내 | [README.md](README.md), [docs/setting.md](docs/setting.md) |
-| `clever-context-monorepo` | 해석 정본, 템플릿, 서비스 메타, 배포 기준 | [authority boundaries](https://github.com/EVNSolution/clever-context-monorepo/blob/main/docs/root/authority-boundaries.md), [template registry](https://github.com/EVNSolution/clever-context-monorepo/blob/main/docs/templates/index.md) |
-| `clever-change-control` | `project-start` root, scoped change request, 승인과 추적 | [README](https://github.com/EVNSolution/clever-change-control/blob/main/README.md), [project-start template](https://github.com/EVNSolution/clever-change-control/blob/main/.github/ISSUE_TEMPLATE/project-start.yml) |
-
-## 신규 개발 시작
-
-신규 개발은 템플릿 후보를 먼저 보고 고른 뒤 시작한다. 선택한 `template_id`, `template_version`, `deploy_profile`이 bootstrap packet과 이후 서비스 메타의 기준이 된다.
-
-- 시작 위치: `clever-agent-project`
-- 첫 앵커: 템플릿 후보 검토
-- 다음 정본: `clever-context-monorepo`의 template registry / deploy governance
-- 이후 흐름: `project-start` 초안 생성 -> 승인 -> `clever-change-control`의 root issue 기록 -> 대상 repo handoff
-
-## 기존 서비스 변경
-
-변경이나 유지보수는 바로 구현으로 들어가지 않는다. 먼저 서비스 메타를 읽고, 기존 템플릿 계보와 배포 프로파일을 확인한 뒤 같은 계열 유지인지 `migration`인지 판단한다.
-
-- 시작 위치: `clever-agent-project`
-- 첫 앵커: 서비스 문서의 `template_id`, `template_version`, `deploy_profile`, `override_scope`, `lifecycle_state`
-- 다음 정본: `clever-context-monorepo/docs/services/<service>/index.md`
-- 이후 흐름: 동일 계열 유지 또는 migration 판단 -> root issue 확인 -> scoped change request 정리 -> 대상 repo handoff
-
-## 템플릿 영역
-
-아래는 시작 시 사용자에게 보여줄 템플릿 선택 영역의 기준 자리다. 신규 개발은 여기서 후보를 보고 선택하고, 유지보수는 기존 서비스 메타를 먼저 읽은 뒤 필요하면 여기서 migration 후보를 다시 본다.
-
-| 템플릿 | 용도 | 배포 방식 | 상태 | 상세 |
-| --- | --- | --- | --- | --- |
-| `erik-project-template@v1` | 일반 서비스 시작용 예시 | 표준 웹/서비스 배포 기준 | `recommended` | [registry entry](https://github.com/EVNSolution/clever-context-monorepo/blob/main/docs/templates/test-erik-project-template/index.md) |
-| `msa-saas-standard@v1` | 복제형 SaaS 시작용 예시 | 고객사별 이미지 분기 운영 | `candidate` | registry 연결 예정 |
-| `general-service-minimal@v1` | 경량 서비스 시작용 예시 | 단일 서비스 기준 | `candidate` | registry 연결 예정 |
-| `custom candidate` | 비등록 템플릿 후보 | 선택 후 메타 기록 필요 | `candidate` | 사용자 지정 |
-
-짧게 정리하면 아래와 같다.
-
-- 신규는 여기서 템플릿을 보고 고른다.
-- 유지보수는 기존 서비스 메타를 먼저 읽고, 필요하면 여기서 migration 후보를 다시 본다.
-
-## 전체 흐름도
-
-<details>
-<summary>신규 개발 / 유지보수 / 템플릿 선택 / handoff 흐름 보기</summary>
+### 요약 다이어그램
 
 ```mermaid
-flowchart TB
-    U["사용자 요청"] --> A["clever-agent-project<br/>시작점 / intake surface"]
+flowchart LR
+    user["사용자 세션"]
+    ap["clever-agent-project<br/>시작점 / intake / bootstrap"]
+    ctx["clever-context-monorepo<br/>규칙 / 템플릿 계보 / 서비스 메타데이터"]
+    cc["clever-change-control<br/>project-start / 범위 추적 / 릴리스"]
+    tr["대상 레포지토리<br/>구현 / 테스트 / 배포"]
 
-    subgraph ENTRY["1. 시작 분기"]
-        A --> B["작업 성격 확인"]
-        B --> C["신규 개발"]
-        B --> D["기존 서비스 변경 / 유지보수"]
-    end
-
-    subgraph TEMPLATE["2. 템플릿 영역"]
-        C --> T0["템플릿 후보 표시"]
-        T0 --> T1["erik-project-template@v1<br/>일반 서비스 시작용"]
-        T0 --> T2["msa-saas-standard@v1<br/>복제형 SaaS 시작용"]
-        T0 --> T3["general-service-minimal@v1<br/>경량 서비스 시작용"]
-        T0 --> T4["custom candidate<br/>비등록 템플릿 후보"]
-        T1 --> TS["선택 결과 기록"]
-        T2 --> TS
-        T3 --> TS
-        T4 --> TS
-    end
-
-    subgraph MAINT["3. 유지보수 진입"]
-        D --> M1["대상 서비스 확인"]
-        M1 --> M2["서비스 문서 조회"]
-        M2 --> M3["template_id<br/>template_version<br/>deploy_profile<br/>override_scope<br/>lifecycle_state 확인"]
-        M3 --> M4["같은 계열 유지 여부 판단"]
-        M4 --> M5["같은 계열 유지"]
-        M4 --> M6["migration 후보 검토"]
-        M6 --> T0
-    end
-
-    subgraph SSOT["4. 정본 확인"]
-        TS --> S1["template registry 확인"]
-        M5 --> S1
-        S1 --> S2["template governance 확인"]
-        S2 --> S3["deploy governance 확인"]
-        S3 --> S4["service metadata / lineage 확인"]
-    end
-
-    subgraph PACKET["5. bootstrap / 기록"]
-        S4 --> P1["bootstrap packet 생성"]
-        P1 --> P2["project-start 초안 생성"]
-        P2 --> P3["repo bootstrap 제안"]
-        P3 --> P4["repo session handoff 제안"]
-    end
-
-    subgraph TRACE["6. 추적"]
-        P2 --> C1["clever-change-control"]
-        C1 --> C2["project-start 또는 change request 기록"]
-        C2 --> C3["work type / template metadata 반영"]
-    end
-
-    subgraph HANDOFF["7. 대상 repo 진행"]
-        P4 --> H1["대상 repo 확인 또는 생성"]
-        H1 --> H2["clone / pull"]
-        H2 --> H3["새 세션 handoff"]
-        H3 --> H4["계획 / 구현 / 배포 작업"]
-    end
+    user --> ap
+    ap --> ctx
+    ap --> cc
+    ctx -. 해석 기준 .-> tr
+    cc --> tr
 ```
-
-</details>
-
-## 핵심 폴더
-
-- [.agent/skills/bootstrap-clever-work/](.agent/skills/bootstrap-clever-work): 에이전트가 CLEVER 작업을 시작할 때 따르는 bootstrap 규칙과 helper 자산
-- [docs/](docs): 설정 문서, workflow 가이드, 템플릿 문서, spec/plan 기록
-- [scripts/](scripts): bootstrap / issue sync 같은 repo-local 보조 진입점
-- [tests/](tests): helper와 규칙 문서 변경을 검증하는 테스트
 
 ## 상세 문서
 
-- [docs/setting.md](docs/setting.md): 설치, 인증, bootstrap helper, 폴더 역할까지 포함한 운영 설명서
-- [docs/guides/clever-project-workflows.md](docs/guides/clever-project-workflows.md): 새 프로젝트 시작 / 기존 repo 개선 / 재구현 시나리오 가이드
-- [.agent/skills/bootstrap-clever-work/SKILL.md](.agent/skills/bootstrap-clever-work/SKILL.md): 에이전트가 실제로 따라야 하는 시작 규칙
+- [운영 설명서](docs/setting.md): 설치, 인증, bootstrap helper, 폴더 역할을 포함한 운영 설명
+- [작업 흐름 가이드](docs/guides/clever-project-workflows.md): 신규 시작, 기존 서비스 변경, handoff 흐름
+- [다이어그램 인덱스](docs/diagrams/README.md): 저장소 화면용 구조/흐름 다이어그램 모음
+- [.agent/skills/bootstrap-clever-work/SKILL.md](.agent/skills/bootstrap-clever-work/SKILL.md): 에이전트가 실제로 따르는 시작 규칙
 
-## 운영 메모
+## 핵심 폴더
 
-- 이 저장소는 `main` 기준 direct push 운영을 기본으로 한다.
-- 일반적인 구현 저장소가 아니라 intake와 orchestration surface 역할을 가진다.
-- 시작 절차의 상세 규칙은 이 `README.md`보다 [docs/setting.md](docs/setting.md)와 SSOT repo 문서를 우선한다.
+- [.agent/skills/bootstrap-clever-work/](.agent/skills/bootstrap-clever-work): 시작 규칙과 bootstrap helper 자산
+- [docs/](docs): 운영 설명, 가이드, 다이어그램, plan/spec 문서
+- [scripts/](scripts): bootstrap / issue sync 같은 로컬 보조 진입점
+- [tests/](tests): helper와 규칙 문서 변경 검증
+
+## 관련 레포
+
+- [`clever-agent-project`](https://github.com/EVNSolution/clever-agent-project)
+- [`clever-context-monorepo`](https://github.com/EVNSolution/clever-context-monorepo)
+- [`clever-change-control`](https://github.com/EVNSolution/clever-change-control)
+
+## 한 줄 정리
+
+CLEVER는 **단일 레포지토리가 아니라, 로컬에 함께 내려받은 3개 레포지토리 워크스페이스 위에서 동작하는 제어 평면 런타임**이다.
