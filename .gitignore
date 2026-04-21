@@ -3,6 +3,7 @@
 
 # Allow only the repository-owned shared assets.
 !/.gitignore
+!/AGENTS.md
 !/README.md
 
 !/.agent/
