@@ -9,6 +9,7 @@
 - [README.md](../README.md): GitHub 첫 화면용 포털
 - `docs/setting.md`: 설치, 인증, bootstrap, 메타 해석, 폴더 역할 설명서
 - [docs/guides/clever-project-workflows.md](guides/clever-project-workflows.md): 새 프로젝트 / 기존 repo / 재구현 시나리오 가이드
+- [docs/guides/session-start-smoke-test.md](guides/session-start-smoke-test.md): 새 세션 시작 하드 게이트 검증용 운영 시나리오
 - [.agent/skills/bootstrap-clever-work/SKILL.md](../.agent/skills/bootstrap-clever-work/SKILL.md): 에이전트 실행 규칙 정본
 
 이 저장소는 `main` 기준 direct push 운영을 기본으로 한다. 승인 후 변경 내용을 `main`에 바로 반영하고, PR은 사용자가 별도로 요청할 때만 사용한다.
@@ -147,11 +148,37 @@ CLEVER 관련 저장소는 하나의 workspace root 아래에 두는 것을 권�
   clever-context-monorepo/
 ```
 
-세션은 `<CLEVER_ROOT>/clever-agent-project`에서 시작한다. 승인 후 target GitHub repo를 생성하거나 확인한 다음, 로컬에 clone 또는 pull 하고 그 target repo 루트에서 새 세션을 시작한다.
+generic CLEVER startup 세션은 `<CLEVER_ROOT>/clever-agent-project`에서 시작한다. 승인 후 target GitHub repo를 생성하거나 확인한 다음, 로컬에 clone 또는 pull 하고 그 target repo 루트에서 새 세션을 시작한다.
+
+예외는 sibling control-plane repo 자체를 직접 수정하는 경우다.
+
+- `clever-context-monorepo` 정본 문서 수정
+- `clever-change-control` issue template 또는 traceability 규칙 수정
+
+이 경우에는 해당 레포에서 세션을 열 수 있지만, 먼저 `workspace-check`로 generic startup이 아니라 repo-local maintenance인지 확인해야 한다.
 
 즉 `superpowers`는 사용자 에이전트 환경에 설치되고, 새 프로젝트 repo는 그 환경 위에서 실행되는 작업 대상 repo가 된다.
 
 ## 첫 대화 하드 게이트
+
+첫 질문을 던지기 전에 에이전트는 먼저 로컬 workspace 상태를 자동 감지한다.
+
+```bash
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+```
+
+현재 control-plane 저장소 자체를 직접 수정하는 세션이면 아래처럼 유지보수 모드로 확인한다.
+
+```bash
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --current-repo-maintenance --json
+```
+
+이 명령은 아래 중 하나를 돌려준다.
+
+- `proceed-with-hard-gate`: 현재 위치에서 시작 템플릿으로 진행
+- `current-repo-maintenance`: 현재 control-plane 저장소 자체를 수정하는 세션으로 보고 여기서 계속
+- `switch-to-clever-agent-project`: `clever-agent-project`에서 다시 시작
+- `stop-and-fix-workspace`: 3레포 로컬 workspace가 불완전하므로 먼저 보완
 
 새 세션에서 에이전트는 아래 템플릿을 첫 응답 기본값으로 사용한다.
 
@@ -185,9 +212,14 @@ CLEVER 관련 저장소는 하나의 workspace root 아래에 두는 것을 권�
 
 즉 시작 템플릿이 먼저고, `project-start` 초안 생성과 repo bootstrap은 그 다음이다.
 
+시작 게이트가 실제로 잘 걸리는지 확인하려면 [세션 시작 스모크 테스트 시나리오](guides/session-start-smoke-test.md)를 먼저 따라 본다.
+현재 정본 기준, 어긋나는 문구, 덜 작성된 항목은 [3레포 시작 모델 정합성 정리](guides/three-repo-startup-alignment.md)에서 본다.
+
 ## 먼저 읽을 문서 순서
 
 작업 성격을 정리하기 전에는 아래 순서를 먼저 따른다.
+
+아래 링크는 GitHub mirror 기준으로 걸려 있지만, 실제 authority 판단은 같은 로컬 workspace 안의 sibling repo 파일을 우선으로 본다.
 
 1. [README.md](../README.md)
 2. [.agent/skills/bootstrap-clever-work/SKILL.md](../.agent/skills/bootstrap-clever-work/SKILL.md)

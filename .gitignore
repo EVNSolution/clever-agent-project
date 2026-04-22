@@ -22,6 +22,8 @@
 !/docs/diagrams/*.html
 !/docs/guides/
 !/docs/guides/clever-project-workflows.md
+!/docs/guides/session-start-smoke-test.md
+!/docs/guides/three-repo-startup-alignment.md
 !/docs/setting.md
 !/docs/superpowers/
 !/docs/superpowers/plans/

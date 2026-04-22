@@ -13,6 +13,24 @@ from typing import Any, Iterable
 
 CONTEXT_REPO_NAME = "clever-context-monorepo"
 CHANGE_REPO_NAME = "clever-change-control"
+START_REPO_NAME = "clever-agent-project"
+CONTROL_PLANE_REPOS = (
+    START_REPO_NAME,
+    CONTEXT_REPO_NAME,
+    CHANGE_REPO_NAME,
+)
+REPO_LOCAL_TASK_HINTS = {
+    CONTEXT_REPO_NAME: (
+        "current-repo-maintenance",
+        "This session appears to be editing `clever-context-monorepo` itself. "
+        "Stay in the current repository and treat it as the target for this session.",
+    ),
+    CHANGE_REPO_NAME: (
+        "current-repo-maintenance",
+        "This session appears to be editing `clever-change-control` itself. "
+        "Stay in the current repository and treat it as the target for this session.",
+    ),
+}
 ALLOWED_LIFECYCLE_ACTIONS = {
     "adopt",
     "modify",
@@ -91,6 +109,13 @@ def find_git_root(start: Path) -> Path:
     raise FileNotFoundError(f"Could not locate git root from {start}")
 
 
+def try_find_git_root(start: Path) -> Path | None:
+    try:
+        return find_git_root(start)
+    except FileNotFoundError:
+        return None
+
+
 def repo_full_name(repo_path: Path) -> str | None:
     remote = run_command(["git", "-C", str(repo_path), "remote", "get-url", "origin"])
     if not remote:
@@ -119,9 +144,147 @@ def repo_name(repo_path: Path) -> str:
     return find_git_root(repo_path).name
 
 
+def try_repo_name(repo_path: Path | None) -> str | None:
+    if repo_path is None:
+        return None
+    try:
+        return repo_name(repo_path)
+    except FileNotFoundError:
+        return None
+
+
 def is_checkout_root(path: Path) -> bool:
     output = run_command(["git", "-C", str(path), "rev-parse", "--show-toplevel"])
     return bool(output and Path(output).resolve() == path.resolve())
+
+
+def infer_workspace_root(start: Path, git_root: Path | None = None) -> Path:
+    seen: set[Path] = set()
+    candidates: list[Path] = list(iter_ancestors(start))
+    if git_root is not None:
+        candidates.extend(iter_ancestors(git_root))
+
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        if any((resolved / repo_name_value).exists() for repo_name_value in CONTROL_PLANE_REPOS):
+            return resolved
+
+    if git_root is not None:
+        return git_root.parent.resolve()
+    return start.resolve()
+
+
+def probe_repo_checkout(
+    *,
+    clever_root: Path,
+    repo_name_value: str,
+    preferred_branch: str | None = None,
+    preferred_checkout_name: str | None = None,
+) -> Path | None:
+    try:
+        return resolve_repo_checkout(
+            clever_root=clever_root,
+            repo_name_value=repo_name_value,
+            preferred_branch=preferred_branch,
+            preferred_checkout_name=preferred_checkout_name,
+        )
+    except FileNotFoundError:
+        direct = (clever_root / repo_name_value).resolve()
+        if direct.exists() and is_checkout_root(direct):
+            return direct
+        return None
+
+
+def build_workspace_check(start: Path, *, current_repo_maintenance: bool = False) -> dict[str, Any]:
+    cwd = start.resolve()
+    git_root = try_find_git_root(cwd)
+    current_repo = try_repo_name(git_root)
+    branch_name = current_branch(git_root) if git_root else None
+    preferred_checkout_name = git_root.name if git_root else None
+    clever_root = infer_workspace_root(cwd, git_root)
+
+    repos: dict[str, dict[str, Any]] = {}
+    missing_repositories: list[str] = []
+    unresolved_repositories: list[str] = []
+    for repo_name_value in CONTROL_PLANE_REPOS:
+        direct_path = clever_root / repo_name_value
+        resolved_checkout = probe_repo_checkout(
+            clever_root=clever_root,
+            repo_name_value=repo_name_value,
+            preferred_branch=branch_name,
+            preferred_checkout_name=preferred_checkout_name,
+        )
+        repo_state = {
+            "directory_present": direct_path.exists(),
+            "directory_path": str(direct_path),
+            "checkout_resolved": resolved_checkout is not None,
+            "checkout_path": str(resolved_checkout) if resolved_checkout else None,
+        }
+        repos[repo_name_value] = repo_state
+        if not repo_state["directory_present"]:
+            missing_repositories.append(repo_name_value)
+        elif not repo_state["checkout_resolved"]:
+            unresolved_repositories.append(repo_name_value)
+
+    control_plane_complete = all(
+        repos[repo_name_value]["checkout_resolved"] for repo_name_value in CONTROL_PLANE_REPOS
+    )
+    current_repo_is_start = current_repo == START_REPO_NAME
+    repo_local_maintenance = current_repo_maintenance and current_repo in REPO_LOCAL_TASK_HINTS
+    startup_ready = control_plane_complete and (current_repo_is_start or repo_local_maintenance)
+
+    if not control_plane_complete:
+        action = "stop-and-fix-workspace"
+        message = (
+            "CLEVER requires a local three-repository workspace: "
+            "`clever-agent-project`, `clever-context-monorepo`, and `clever-change-control`. "
+            "This workspace is incomplete, so startup interpretation and traceability are "
+            "degraded."
+        )
+    elif repo_local_maintenance:
+        action, message = REPO_LOCAL_TASK_HINTS[current_repo]
+    elif not current_repo_is_start:
+        action = "switch-to-clever-agent-project"
+        message = (
+            "The control-plane workspace is present, but startup should begin from "
+            "`clever-agent-project`. Switch there before applying the first-response hard gate."
+        )
+    else:
+        action = "proceed-with-hard-gate"
+        message = (
+            "The three-repository local workspace is ready. Start from "
+            "`clever-agent-project` and continue with the first-response hard gate."
+        )
+
+    return {
+        "cwd": str(cwd),
+        "git_root": str(git_root) if git_root else None,
+        "current_repo": current_repo,
+        "current_branch": branch_name,
+        "clever_root": str(clever_root),
+        "control_plane_complete": control_plane_complete,
+        "current_repo_is_start": current_repo_is_start,
+        "current_repo_maintenance_requested": current_repo_maintenance,
+        "repo_local_maintenance_candidate": repo_local_maintenance,
+        "startup_ready": startup_ready,
+        "missing_repositories": missing_repositories,
+        "unresolved_repositories": unresolved_repositories,
+        "recommended_start_repo": str(
+            probe_repo_checkout(
+                clever_root=clever_root,
+                repo_name_value=START_REPO_NAME,
+                preferred_branch=branch_name,
+                preferred_checkout_name=preferred_checkout_name,
+            )
+            or (clever_root / START_REPO_NAME)
+        ),
+        "agent_action": action,
+        "message": message,
+        "repos": repos,
+    }
 
 
 def list_git_worktrees(repo_path: Path) -> list[dict[str, str]]:
@@ -291,6 +454,7 @@ def build_packet(
     recorded_template_version: str | None = None,
     recorded_deploy_profile: str | None = None,
     issue_repo: str = CHANGE_REPO_NAME,
+    workspace_check: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if ui_impact not in ALLOWED_UI_IMPACTS:
         allowed = ", ".join(sorted(ALLOWED_UI_IMPACTS))
@@ -381,7 +545,7 @@ def build_packet(
         )
     )
 
-    return {
+    packet = {
         "user_session": user_session,
         "current_working_repo": current_working_repo,
         "current_working_repo_path": current_working_repo_path,
@@ -445,6 +609,9 @@ def build_packet(
             "target-repo session."
         ),
     }
+    if workspace_check is not None:
+        packet["workspace_check"] = workspace_check
+    return packet
 
 
 def parse_args() -> argparse.Namespace:
@@ -453,18 +620,27 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--cwd", default=os.getcwd(), help="Working directory to inspect")
     parser.add_argument("--user-session", default=os.environ.get("USER", "unknown-session"))
+    parser.add_argument(
+        "--workspace-check",
+        action="store_true",
+        help="Inspect the local three-repository workspace and report startup readiness.",
+    )
+    parser.add_argument(
+        "--current-repo-maintenance",
+        action="store_true",
+        help="Treat the current control-plane repo as the intended maintenance target.",
+    )
     parser.add_argument("--target-repo")
     parser.add_argument("--purpose", default="needs-input")
     parser.add_argument("--constraints", default="needs-input")
     parser.add_argument("--ui-impact", default="unknown", choices=sorted(ALLOWED_UI_IMPACTS))
     parser.add_argument("--expected-result", default="needs-input")
-    parser.add_argument("--template-id", required=True)
-    parser.add_argument("--template-version", required=True)
-    parser.add_argument("--deploy-profile", required=True)
-    parser.add_argument("--override-scope", required=True)
+    parser.add_argument("--template-id")
+    parser.add_argument("--template-version")
+    parser.add_argument("--deploy-profile")
+    parser.add_argument("--override-scope")
     parser.add_argument(
         "--lifecycle-action",
-        required=True,
         choices=sorted(ALLOWED_LIFECYCLE_ACTIONS),
     )
     parser.add_argument("--recorded-template-id")
@@ -497,7 +673,38 @@ def build_ssot_docs(
     ]
 
 
+def print_workspace_check(workspace_check: dict[str, Any]) -> None:
+    print("WORKSPACE_CHECK_BEGIN")
+    print(f"cwd: {workspace_check['cwd']}")
+    print(f"git-root: {workspace_check['git_root']}")
+    print(f"current-repo: {workspace_check['current_repo']}")
+    print(f"clever-root: {workspace_check['clever_root']}")
+    print(
+        "control-plane-complete: "
+        f"{'yes' if workspace_check['control_plane_complete'] else 'no'}"
+    )
+    print(f"current-repo-is-start: {'yes' if workspace_check['current_repo_is_start'] else 'no'}")
+    print(f"startup-ready: {'yes' if workspace_check['startup_ready'] else 'no'}")
+    print(f"agent-action: {workspace_check['agent_action']}")
+    print(f"message: {workspace_check['message']}")
+    if workspace_check["missing_repositories"]:
+        print("missing-repositories:")
+        for item in workspace_check["missing_repositories"]:
+            print(f"- {item}")
+    if workspace_check["unresolved_repositories"]:
+        print("unresolved-repositories:")
+        for item in workspace_check["unresolved_repositories"]:
+            print(f"- {item}")
+    print(f"recommended-start-repo: {workspace_check['recommended_start_repo']}")
+    print("WORKSPACE_CHECK_END")
+
+
 def print_text_packet(packet: dict[str, Any]) -> None:
+    workspace_check = packet.get("workspace_check")
+    if workspace_check:
+        print_workspace_check(workspace_check)
+        print()
+
     print("BOOTSTRAP_PACKET_BEGIN")
     print(f"user-session: {packet['user_session']}")
     print(f"current-working-repo: {packet['current_working_repo']}")
@@ -560,7 +767,34 @@ def print_text_packet(packet: dict[str, Any]) -> None:
 def main() -> int:
     args = parse_args()
     cwd = Path(args.cwd).resolve()
-    clever_root = find_clever_root(cwd)
+    workspace_check = build_workspace_check(
+        cwd,
+        current_repo_maintenance=args.current_repo_maintenance,
+    )
+
+    if args.workspace_check:
+        if args.json:
+            print(json.dumps({"workspace_check": workspace_check}, ensure_ascii=False, indent=2))
+        else:
+            print_workspace_check(workspace_check)
+        return 0 if workspace_check["startup_ready"] else 3
+
+    required_template_flags = {
+        "template_id": args.template_id,
+        "template_version": args.template_version,
+        "deploy_profile": args.deploy_profile,
+        "override_scope": args.override_scope,
+        "lifecycle_action": args.lifecycle_action,
+    }
+    missing_template_flags = [name for name, value in required_template_flags.items() if not value]
+    if missing_template_flags:
+        missing_rendered = ", ".join(f"--{item.replace('_', '-')}" for item in missing_template_flags)
+        raise SystemExit(f"Missing required arguments: {missing_rendered}")
+
+    if not workspace_check["control_plane_complete"]:
+        raise FileNotFoundError(workspace_check["message"])
+
+    clever_root = Path(workspace_check["clever_root"])
     git_root = find_git_root(cwd)
     branch_name = current_branch(git_root)
 
@@ -601,6 +835,7 @@ def main() -> int:
             preferred_checkout_name=git_root.name,
         ),
         issue_repo=repo_full_name(change_repo_path) or CHANGE_REPO_NAME,
+        workspace_check=workspace_check,
     )
 
     if args.json:

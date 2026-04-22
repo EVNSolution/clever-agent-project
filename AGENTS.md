@@ -19,6 +19,25 @@ If any of these repositories are missing, the workspace is incomplete.
 Do not pretend web links are a substitute for local context.
 Stop and state that the three-repository local workspace is required.
 
+At startup, run this automatic check first:
+
+```bash
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+```
+
+If the session is explicitly about editing the current control-plane repo itself, run:
+
+```bash
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --current-repo-maintenance --json
+```
+
+Use the returned `agent_action` field as the startup branch:
+
+- `proceed-with-hard-gate`
+- `current-repo-maintenance`
+- `switch-to-clever-agent-project`
+- `stop-and-fix-workspace`
+
 ## What Each Repository Owns
 
 - `clever-agent-project`
@@ -62,6 +81,11 @@ Treat the main documents in `clever-agent-project` as separate layers:
   - Scenario guide
   - New build vs. maintenance vs. handoff flow
 
+- `docs/guides/session-start-smoke-test.md`
+  - Startup smoke test scenario
+  - First-session validation examples
+  - Pass / fail expectations for the hard gate
+
 - `.agent/skills/bootstrap-clever-work/SKILL.md`
   - Agent execution rulebook
   - Startup hard gate
@@ -77,10 +101,11 @@ When starting work from this repository, read in this order:
 1. `README.md`
 2. `docs/setting.md`
 3. `docs/guides/clever-project-workflows.md`
-4. `.agent/skills/bootstrap-clever-work/SKILL.md`
-5. `../clever-context-monorepo/docs/root/authority-boundaries.md`
-6. `../clever-context-monorepo/docs/root/index.md`
-7. `../clever-change-control/README.md`
+4. `docs/guides/session-start-smoke-test.md`
+5. `.agent/skills/bootstrap-clever-work/SKILL.md`
+6. `../clever-context-monorepo/docs/root/authority-boundaries.md`
+7. `../clever-context-monorepo/docs/root/index.md`
+8. `../clever-change-control/README.md`
 
 If the task is service-specific, also read:
 
@@ -93,6 +118,8 @@ If the task is template-specific, also read:
 ## First-Response Contract
 
 Do not jump straight into implementation.
+
+If the automatic workspace check returns `stop-and-fix-workspace`, do not continue as if the environment were complete.
 
 For a new session, begin by collecting the startup frame:
 

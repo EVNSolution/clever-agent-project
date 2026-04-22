@@ -108,6 +108,24 @@ def run_cli(*args):
     return json.loads(proc.stdout)
 
 
+def run_workspace_check(*args, cwd: Path | None = None):
+    proc = subprocess.run(
+        [
+            "python3",
+            str(MODULE_PATH),
+            "--cwd",
+            str(cwd or REPO_ROOT),
+            "--workspace-check",
+            "--json",
+            *args,
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return proc, json.loads(proc.stdout)
+
+
 def test_build_packet_uses_project_start_fields():
     packet = build_packet()
 
@@ -223,6 +241,61 @@ def test_build_packet_allows_migrate_for_recorded_lineage_mismatch():
     assert packet["lifecycle_action"] == "migrate"
 
 
+def test_build_workspace_check_reports_ready_from_agent_project():
+    module = load_module()
+
+    report = module.build_workspace_check(REPO_ROOT)
+
+    assert report["control_plane_complete"] is True
+    assert report["current_repo"] == "clever-agent-project"
+    assert report["current_repo_is_start"] is True
+    assert report["startup_ready"] is True
+    assert report["agent_action"] == "proceed-with-hard-gate"
+    assert report["missing_repositories"] == []
+
+
+def test_build_workspace_check_requires_switch_when_started_from_change_control():
+    module = load_module()
+    change_repo = REPO_ROOT.parent / "clever-change-control"
+
+    report = module.build_workspace_check(change_repo)
+
+    assert report["control_plane_complete"] is True
+    assert report["current_repo"] == "clever-change-control"
+    assert report["current_repo_is_start"] is False
+    assert report["startup_ready"] is False
+    assert report["agent_action"] == "switch-to-clever-agent-project"
+
+
+def test_build_workspace_check_allows_current_repo_maintenance_when_requested():
+    module = load_module()
+    change_repo = REPO_ROOT.parent / "clever-change-control"
+
+    report = module.build_workspace_check(change_repo, current_repo_maintenance=True)
+
+    assert report["control_plane_complete"] is True
+    assert report["current_repo"] == "clever-change-control"
+    assert report["current_repo_maintenance_requested"] is True
+    assert report["repo_local_maintenance_candidate"] is True
+    assert report["startup_ready"] is True
+    assert report["agent_action"] == "current-repo-maintenance"
+
+
+def test_build_workspace_check_reports_incomplete_workspace(tmp_path: Path):
+    module = load_module()
+    workspace = tmp_path / "workspace"
+    start_repo = workspace / "clever-agent-project"
+    start_repo.mkdir(parents=True)
+
+    report = module.build_workspace_check(start_repo)
+
+    assert report["control_plane_complete"] is False
+    assert report["startup_ready"] is False
+    assert report["agent_action"] == "stop-and-fix-workspace"
+    assert "clever-context-monorepo" in report["missing_repositories"]
+    assert "clever-change-control" in report["missing_repositories"]
+
+
 @pytest.mark.skipif(
     not CHANGE_WORKTREE.is_dir()
     or not CONTEXT_WORKTREE.is_dir()
@@ -335,6 +408,42 @@ def test_cli_without_target_repo_keeps_target_repo_as_needs_confirmation():
         "created or selected after the project-start issue exists."
         in packet["project_start_issue"]["body"]
     )
+
+
+def test_cli_workspace_check_returns_ready_status_in_start_repo():
+    proc, payload = run_workspace_check()
+
+    assert proc.returncode == 0
+    report = payload["workspace_check"]
+    assert report["startup_ready"] is True
+    assert report["agent_action"] == "proceed-with-hard-gate"
+    assert report["current_repo"] == "clever-agent-project"
+
+
+def test_cli_workspace_check_allows_current_repo_maintenance_when_flagged():
+    change_repo = REPO_ROOT.parent / "clever-change-control"
+
+    proc, payload = run_workspace_check("--current-repo-maintenance", cwd=change_repo)
+
+    assert proc.returncode == 0
+    report = payload["workspace_check"]
+    assert report["startup_ready"] is True
+    assert report["agent_action"] == "current-repo-maintenance"
+    assert report["current_repo"] == "clever-change-control"
+
+
+def test_cli_workspace_check_returns_nonzero_for_incomplete_workspace(tmp_path: Path):
+    workspace = tmp_path / "workspace"
+    start_repo = workspace / "clever-agent-project"
+    start_repo.mkdir(parents=True)
+
+    proc, payload = run_workspace_check(cwd=start_repo)
+
+    assert proc.returncode == 3
+    report = payload["workspace_check"]
+    assert report["startup_ready"] is False
+    assert report["agent_action"] == "stop-and-fix-workspace"
+    assert "clever-context-monorepo" in report["missing_repositories"]
 
 
 def test_resolve_repo_checkout_prefers_matching_branch_in_wrapper_root(

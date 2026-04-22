@@ -25,6 +25,25 @@ The canonical identifier is the created `project-start` issue number in `clever-
 
 ## First-Response Hard Gate
 
+Before showing the first-response template, automatically inspect the local workspace:
+
+```bash
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+```
+
+If the session is explicitly about editing the current control-plane repo itself, run:
+
+```bash
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --current-repo-maintenance --json
+```
+
+Interpret the result like this:
+
+- `agent_action=proceed-with-hard-gate`: continue in the current session
+- `agent_action=current-repo-maintenance`: stay in the current control-plane repo and treat it as the target
+- `agent_action=switch-to-clever-agent-project`: move startup to `clever-agent-project` first
+- `agent_action=stop-and-fix-workspace`: stop and clearly state that the local three-repository workspace is incomplete
+
 Before planning, implementation, `project-start` creation, or repo bootstrap, the agent must first normalize the session into the same opening structure.
 
 Use this exact first-response template:

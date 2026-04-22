@@ -69,9 +69,30 @@ CLEVER를 제대로 실행하려면 아래 조건이 먼저 만족되어야 한�
 - `clever-context-monorepo`
 - `clever-change-control`
 
+세션을 시작하기 전에 에이전트는 아래 명령으로 로컬 3레포 상태를 자동 감지할 수 있다.
+
+```bash
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+```
+
+현재 control-plane 저장소 자체를 직접 수정하는 세션이면 아래처럼 유지보수 모드로 확인한다.
+
+```bash
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --current-repo-maintenance --json
+```
+
+반환된 `agent_action`이 `proceed-with-hard-gate`면 그대로 시작 템플릿으로 진행하고, `current-repo-maintenance`면 현재 control-plane 저장소를 직접 수정하는 세션으로 보고 여기서 계속하며, `switch-to-clever-agent-project`면 시작 위치를 옮기고, `stop-and-fix-workspace`면 누락된 레포를 먼저 보완한다.
+
 ### 2. 세션 시작
 
-세션은 항상 `clever-agent-project`에서 시작한다.
+generic CLEVER startup은 `clever-agent-project`에서 시작한다.
+
+다만 아래처럼 현재 control-plane 레포 자체를 직접 수정하는 세션은 예외다.
+
+- `clever-context-monorepo` 정본 문서/규칙 수정
+- `clever-change-control` issue template/traceability 규칙 수정
+
+이 경우에는 해당 레포에서 세션을 열 수 있지만, 먼저 `workspace-check`를 돌려 generic startup이 아니라 repo-local maintenance인지 확인한다.
 
 기본 시작 템플릿은 아래와 같다.
 
@@ -260,6 +281,8 @@ flowchart TB
 
 - [운영 설명서](docs/setting.md): 설치, 인증, bootstrap helper, 폴더 역할을 포함한 운영 설명
 - [작업 흐름 가이드](docs/guides/clever-project-workflows.md): 신규 시작, 기존 서비스 변경, handoff 흐름
+- [세션 시작 스모크 테스트](docs/guides/session-start-smoke-test.md): 새 세션이 시작 하드 게이트를 제대로 따르는지 확인하는 운영 시나리오
+- [3레포 시작 모델 정합성 정리](docs/guides/three-repo-startup-alignment.md): 현재 정본 기준, 어긋남, 덜 작성된 점을 한 번에 정리한 문서
 - [다이어그램 인덱스](docs/diagrams/README.md): 저장소 화면용 구조/흐름 다이어그램 모음
 - [.agent/skills/bootstrap-clever-work/SKILL.md](.agent/skills/bootstrap-clever-work/SKILL.md): 에이전트가 실제로 따르는 시작 규칙
 
