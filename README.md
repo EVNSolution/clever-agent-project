@@ -3,6 +3,46 @@
 > CLEVER는 단일 레포지토리 에이전트가 아니다.  
 > 로컬에 함께 내려받은 3개 레포지토리를 함께 읽고, 이후 실제 구현 대상 레포지토리로 실행을 넘기는 워크스페이스 우선 제어 평면 런타임이다.
 
+## How to Start
+
+먼저 같은 로컬 워크스페이스 루트에 아래 3개 레포를 내려받는다.
+
+```bash
+git clone https://github.com/EVNSolution/clever-agent-project.git
+git clone https://github.com/EVNSolution/clever-context-monorepo.git
+git clone https://github.com/EVNSolution/clever-change-control.git
+```
+
+그다음 `clever-agent-project`에서 세션을 열고, 아래 블록을 첫 메시지로 그대로 붙여 넣는다.
+
+```text
+작업 시작
+
+1. 작업 종류:
+- 새 작업 시작
+- 기존 서비스 변경
+- 현재 저장소 자체 수정
+
+2. 구조:
+- MONO
+- MSA
+
+3. 이번 세션 목표:
+- 요구사항/문서 정의
+- 서비스 온보딩 정의
+- 구현 repo 작업
+- 배포 준비
+
+추가 설명
+- 하려는 일:
+- 왜 필요한지:
+- 제약:
+- 기대 결과:
+- 알고 있는 repo/service가 있으면:
+```
+
+에이전트는 이 입력을 시작 분기로 해석하고, 먼저 startup branch state를 채운 뒤에만 `project-start` 초안, repo bootstrap, 구현 계획으로 내려간다.
+
 ## 워크스페이스 레포지토리
 
 - [`clever-agent-project`](https://github.com/EVNSolution/clever-agent-project): 시작점, 요청 접수, 시작 패킷 생성
