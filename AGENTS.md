@@ -86,6 +86,11 @@ Treat the main documents in `clever-agent-project` as separate layers:
   - First-session validation examples
   - Pass / fail expectations for the hard gate
 
+- `docs/templates/startup-branch-state-template.md`
+  - Normalized startup branch state
+  - Mapping from first-response answers into internal intake fields
+  - Required pre-packet state
+
 - `.agent/skills/bootstrap-clever-work/SKILL.md`
   - Agent execution rulebook
   - Startup hard gate
@@ -100,12 +105,13 @@ When starting work from this repository, read in this order:
 
 1. `README.md`
 2. `docs/setting.md`
-3. `docs/guides/clever-project-workflows.md`
-4. `docs/guides/session-start-smoke-test.md`
-5. `.agent/skills/bootstrap-clever-work/SKILL.md`
-6. `../clever-context-monorepo/docs/root/authority-boundaries.md`
-7. `../clever-context-monorepo/docs/root/index.md`
-8. `../clever-change-control/README.md`
+3. `docs/templates/startup-branch-state-template.md`
+4. `docs/guides/clever-project-workflows.md`
+5. `docs/guides/session-start-smoke-test.md`
+6. `.agent/skills/bootstrap-clever-work/SKILL.md`
+7. `../clever-context-monorepo/docs/root/authority-boundaries.md`
+8. `../clever-context-monorepo/docs/root/index.md`
+9. `../clever-change-control/README.md`
 
 If the task is service-specific, also read:
 
@@ -121,21 +127,42 @@ Do not jump straight into implementation.
 
 If the automatic workspace check returns `stop-and-fix-workspace`, do not continue as if the environment were complete.
 
-For a new session, begin by collecting the startup frame:
+For a new session, begin by collecting the startup branch first.
 
-1. New service development vs. existing service extension
-2. Service base: MSA vs. MONO
-3. Explicit work type classification
+Use this exact first-response template:
 
-Also collect:
+```text
+[시작 분기]
+1. 작업 종류:
+- 새 작업 시작
+- 기존 서비스 변경
+- 현재 저장소 자체 수정
 
-- what the user wants to do
-- why it is needed
-- constraints
-- expected result
-- related repo or service, if already known
+2. 구조:
+- MONO
+- MSA
 
-If the user starts in free-form text, normalize their request into this structure before proceeding.
+3. 이번 세션 목표:
+- 요구사항/문서 정의
+- 서비스 온보딩 정의
+- 구현 repo 작업
+- 배포 준비
+
+추가 설명
+- 하려는 일:
+- 왜 필요한지:
+- 제약:
+- 기대 결과:
+- 알고 있는 repo/service가 있으면:
+```
+
+Normalize the answers into the startup branch state template in:
+
+- `docs/templates/startup-branch-state-template.md`
+
+The template must be filled before `project-start` drafting, repo bootstrap, or implementation planning.
+
+If the user starts in free-form text, restate the request into this structure and ask only for the missing fields.
 
 ## Authority Rules
 
@@ -154,6 +181,39 @@ Short version:
 - anchor and trace in `clever-change-control`
 - implement in the target repository
 
+## Branch Operating Contract
+
+Treat git branch roles like this:
+
+- `main`
+  - deployment branch
+  - remote bootstrap branch only for the first repository publish
+  - after `dev` exists, do not push directly to `main`
+- `dev`
+  - working integration branch
+  - default base branch for follow-up work after the initial remote bootstrap
+- task branches
+  - role-specific or unit-of-work branches
+  - preferred default for non-trivial work
+  - may branch from `dev`
+  - may also branch from another task branch when the work is explicitly a child branch of that branch
+
+Operational rule:
+
+1. A newly created remote repo may use `main` for the initial remote bootstrap commit.
+2. Immediately after that initial remote commit, create and push `dev`.
+3. After `dev` exists, set a local guard that blocks direct pushes to `main`.
+4. Small or urgent work may happen directly on `dev`, but the preferred default is a task branch.
+5. Promotion into `main` happens as a reviewed merge unit, not as normal day-to-day working push traffic.
+
+When the agent bootstraps or confirms a target repo, it should preserve this meaning:
+
+- `main = deploy`
+- `dev = work`
+- `branch = role-specific work`
+
+If local branch protection is requested or available, prefer a repo-local `pre-push` guard for `main`.
+
 ## What Not To Do
 
 Do not:
@@ -171,12 +231,15 @@ The expected operating flow is:
 
 1. Verify the three-repository local workspace
 2. Gather the startup frame
+   - collect `work_kind`, `architecture_kind`, `session_goal`
+   - fill the startup branch state template
 3. Read canonical context
 4. Draft the `project-start` payload
 5. Anchor the root line in `clever-change-control`
 6. Fix scoped execution
-7. Handoff to the target repository
-8. Feed rollout / rollback / release evidence back into `clever-change-control`
+7. Apply or confirm the repo branch operating contract
+8. Handoff to the target repository
+9. Feed rollout / rollback / release evidence back into `clever-change-control`
 
 ## If The Workspace Is Incomplete
 

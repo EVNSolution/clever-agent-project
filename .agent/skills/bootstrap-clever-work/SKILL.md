@@ -12,8 +12,8 @@ Use this skill as the single entry point for new CLEVER work.
 It forces the same start sequence for every user and every repo:
 
 1. Read the two SSOT repos first.
-2. Classify whether the work is `MSA/SaaS 복제형` or `일반 개발`.
-3. If it is MSA/SaaS replication-oriented, determine the target service by conversation and read the relevant root/service docs.
+2. Collect the startup branch.
+3. If it is MSA-oriented and service-specific, determine the target service by conversation and read the relevant root/service docs.
 4. Infer the work context from the current repo.
 5. Convert the request into a `project-start` draft packet.
 6. Ask for one final approval.
@@ -49,17 +49,28 @@ Before planning, implementation, `project-start` creation, or repo bootstrap, th
 Use this exact first-response template:
 
 ```text
-[작업 시작]
-1. 새 서비스 개발 vs. 기존 서비스 추가:
-2. 서비스 기반 (MSA vs. MONO):
-3. 타입 명확하게 분류하기:
+[시작 분기]
+1. 작업 종류:
+- 새 작업 시작
+- 기존 서비스 변경
+- 현재 저장소 자체 수정
+
+2. 구조:
+- MONO
+- MSA
+
+3. 이번 세션 목표:
+- 요구사항/문서 정의
+- 서비스 온보딩 정의
+- 구현 repo 작업
+- 배포 준비
 
 추가 설명
 - 하려는 일:
 - 왜 필요한지:
 - 제약:
 - 기대 결과:
-- 관련 repo/service가 있으면:
+- 알고 있는 repo/service가 있으면:
 ```
 
 Rules:
@@ -68,6 +79,7 @@ Rules:
 - If the user started in freeform, restate the request into this template and ask only for the missing parts.
 - Do not skip straight to planning, implementation, `project-start` drafting, or repo bootstrap before this structure is sufficiently filled.
 - `change-control` taxonomy is internal. The user does not need to choose `work_type_group` or `work_type_detail` directly.
+- Fill the normalized branch state from `docs/templates/startup-branch-state-template.md` before continuing.
 
 ## SSOT Order
 
@@ -119,9 +131,9 @@ The workflow must not require a fixed `target-service` for general work or a gen
 
 To clear the hard gate, the intake must have enough information for:
 
-- `1. 새 서비스 개발 vs. 기존 서비스 추가`
-- `2. 서비스 기반 (MSA vs. MONO)`
-- `3. 타입 명확하게 분류하기`
+- `1. 작업 종류`
+- `2. 구조`
+- `3. 이번 세션 목표`
 - `왜 필요한지`
 - `제약`
 - `기대 결과`
@@ -136,16 +148,26 @@ The user-facing questions stay simple, but the agent must interpret them against
 
 Interpret the first three answers in this order:
 
-1. `새 서비스 개발` vs `기존 서비스 추가`
-2. `MSA` vs `MONO`
-3. the user explanation for `타입 명확하게 분류하기`
+1. `작업 종류`
+2. `구조`
+3. `이번 세션 목표`
 
 Map them like this:
 
-- `새 서비스 개발` + `MSA`: default to `MSA/SaaS`, detail `신규`, unless the explanation is clearly a template/customer replication path, then prefer `복제`
-- `새 서비스 개발` + `MONO`: default to `일반 개발`, detail `신규 개발`
-- `기존 서비스 추가` + `MSA`: interpret into `MSA/SaaS` and choose among `복제`, `수정`, `변경`, `신규`
-- `기존 서비스 추가` + `MONO`: interpret into `일반 개발` and choose among `신규 개발`, `수정`, `변경`, `리팩토링`
+- `새 작업 시작` + `MSA`: default to MSA-oriented onboarding or requirements work
+- `새 작업 시작` + `MONO`: default to general development onboarding or requirements work
+- `기존 서비스 변경` + `MSA`: default to existing MSA workload change
+- `기존 서비스 변경` + `MONO`: default to existing MONO workload change
+- `현재 저장소 자체 수정`: treat the current control-plane repo as the target and do not route into generic startup
+
+Then derive:
+
+- `MONO` -> `workload_shape=single_workload`
+- `MSA` -> `workload_shape=multiple_workloads`
+- `요구사항/문서 정의` -> requirements-first session
+- `서비스 온보딩 정의` -> service onboarding session
+- `구현 repo 작업` -> target repo implementation session
+- `배포 준비` -> deploy preparation session
 
 If the explanation is still too vague after the first template pass, ask a short follow-up question before continuing.
 
@@ -154,17 +176,15 @@ After this interpretation, classify the task into one of these paths:
 - `MSA/SaaS 복제형 작업`
 - `일반 개발 작업`
 
-Treat the task as `MSA/SaaS 복제형 작업` when the user is trying to:
+Treat MSA-oriented new or existing service work as the MSA path.
 
-- replicate an MSA service based on a shared template
-- deploy customer-specific variants as separate images or containers
-- organize work around `복제 / 수정 / 변경 / 신규` decisions for SaaS rollout
+Treat MONO-oriented service work as the general development path.
 
-Treat everything else as `일반 개발 작업`.
+Treat `현재 저장소 자체 수정` as control-plane maintenance and do not force a target service.
 
 ### MSA/SaaS Replication Path
 
-If the task is MSA/SaaS replication-oriented:
+If the task is MSA-oriented:
 
 1. Determine the target service or service family by conversation first.
 2. Read `clever-context-monorepo/docs/root/msa-saas-replication-governance.md`.
@@ -203,9 +223,9 @@ If the user selects a different template or a different template version than th
 
 ## First Step
 
-First, clear the first-response hard gate.
+First, clear the first-response hard gate and fill the startup branch state template.
 
-If the task has already been classified as MSA/SaaS replication-oriented, finish the target service conversation and the required SSOT reads first.
+If the task has already been classified as MSA-oriented service work, finish the target service conversation and the required SSOT reads first.
 
 After that, or immediately for general development, finish the template choice conversation and then run the helper script from this repository.
 
@@ -264,7 +284,12 @@ Once the user approves:
 3. Use the created issue number as the canonical identifier.
 4. Propose creation or confirmation of the target repo after the issue exists.
 5. Clone or pull the target repo locally.
-6. Recommend a new session in the cloned target repo for planning or implementation.
+6. Apply or confirm the branch operating contract in the target repo:
+   - initial remote bootstrap commit may land on `main`
+   - immediately after that, create and push `dev`
+   - after `dev` exists, block direct local pushes to `main`
+   - default new work to task branches from `dev` unless the work is intentionally direct-on-`dev`
+7. Recommend a new session in the cloned target repo for planning or implementation.
 
 Only after the root issue is approved and the execution scope is fixed should a scoped change request introduce a `change-id`.
 
@@ -272,7 +297,47 @@ Do not create service-doc drafts in the normal start path.
 
 ## Standard Packet
 
-Every run should normalize the start state into this shape:
+Before the helper script, every run should normalize the startup branch state into this shape:
+
+```yaml
+startup_branch:
+  work_kind:
+  architecture_kind:
+  session_goal:
+
+context:
+  requested_work_summary:
+  why_now:
+  constraints:
+  expected_result:
+  known_repo:
+  known_service:
+
+workspace:
+  current_repo:
+  workspace_check_mode:
+  workspace_check_result:
+
+routing:
+  start_surface:
+  interpretation_source:
+  tracking_source:
+
+derived:
+  workload_shape:
+  deploy_template_candidate:
+  deploy_profile_candidate:
+  next_action:
+
+deferred:
+  project_start_issue_number:
+  change_id:
+  target_repo:
+  target_service:
+  rollout_scope:
+```
+
+After that, the helper run should normalize the project-start packet into this shape:
 
 ```text
 user-session:
@@ -296,6 +361,23 @@ next-step:
 ```
 
 Never replace this with a looser narrative summary.
+
+## Git Branch Meaning
+
+After a target repo exists, enforce this git meaning:
+
+- `main = deploy`
+- `dev = work`
+- `branch = role-specific work`
+
+Rules:
+
+- the initial commit to a brand-new remote repo may use `main`
+- after that initial remote publish, create and push `dev`
+- once `dev` exists, do not use direct push to `main`
+- direct work on `dev` is allowed, but task branches are the preferred default
+- child branches from task branches are allowed when the work is explicitly nested
+- a reviewed merge unit into `main` is the point where the agent should also prepare the global context wiki update prompt
 
 ## Common Mistakes
 

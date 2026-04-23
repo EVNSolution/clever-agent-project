@@ -56,7 +56,10 @@
 7. 첫 target repo를 결정한다.
 8. 필요하면 GitHub repo를 만든다.
 9. 로컬에 clone 또는 pull 한다.
-10. 그 target repo에서 새 세션으로 이동한다.
+10. 초기 remote bootstrap이면 `main`에 첫 commit을 올린다.
+11. 곧바로 `dev` branch를 만들고 push 한다.
+12. `dev`가 생기면 로컬에서 `main` direct push를 막는다.
+13. 그 target repo에서 새 세션으로 이동한다.
 
 결과는 아래와 같다.
 
@@ -81,7 +84,8 @@
 3. 작업 성격에 맞는 child issue를 만든다.
 4. child issue에서 parent `project-start #`를 참조한다.
 5. 기존 target repo의 로컬 checkout을 확인하거나 refresh 한다.
-6. 그 repo 세션에서 구현을 계속한다.
+6. `dev` 또는 task branch 기준으로 작업을 이어간다.
+7. `main`은 deploy branch로 유지한다.
 
 child issue 유형은 보통 아래 중 하나다.
 
@@ -176,6 +180,7 @@ child issue 유형은 보통 아래 중 하나다.
 - SSOT source를 함부로 수정하기
 - `change_id`를 다시 root identifier로 되돌리기
 - root issue 초안 전에 `target_service`를 필수로 요구하기
+- `dev`가 생긴 뒤에도 습관적으로 `main`에 직접 push 하기
 
 ## 짧은 요약
 

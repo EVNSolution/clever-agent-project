@@ -12,7 +12,7 @@
 - [docs/guides/session-start-smoke-test.md](guides/session-start-smoke-test.md): 새 세션 시작 하드 게이트 검증용 운영 시나리오
 - [.agent/skills/bootstrap-clever-work/SKILL.md](../.agent/skills/bootstrap-clever-work/SKILL.md): 에이전트 실행 규칙 정본
 
-이 저장소는 `main` 기준 direct push 운영을 기본으로 한다. 승인 후 변경 내용을 `main`에 바로 반영하고, PR은 사용자가 별도로 요청할 때만 사용한다.
+이 저장소는 작업 시작과 제어 평면 운영을 설명하는 저장소다. target repo의 branch 운영 기준은 `main = deploy`, `dev = work`, `branch = 역할별 작업`을 기본으로 한다.
 
 ## 필수 사전 조건
 
@@ -159,6 +159,66 @@ generic CLEVER startup 세션은 `<CLEVER_ROOT>/clever-agent-project`에서 시�
 
 즉 `superpowers`는 사용자 에이전트 환경에 설치되고, 새 프로젝트 repo는 그 환경 위에서 실행되는 작업 대상 repo가 된다.
 
+## Target Repo 브랜치 운영 기준
+
+target repo를 처음 remote에 올릴 때는 아래 순서를 기본으로 한다.
+
+1. brand-new remote bootstrap이면 초기 commit은 `main`에 올릴 수 있다.
+2. 초기 remote publish가 끝나면 바로 `dev` branch를 만든다.
+3. 이후 일상 작업은 `dev` 또는 `dev`에서 파생된 task branch에서 한다.
+4. `dev`가 생긴 뒤에는 로컬에서 `main` direct push를 막는다.
+
+브랜치 의미는 아래처럼 고정한다.
+
+- `main = deploy`
+- `dev = work`
+- `branch = 역할별 작업`
+
+작업 원칙은 아래다.
+
+- 작은 작업이나 긴급 수정은 `dev`에 직접 작업할 수 있다.
+- 기본 추천은 작업 단위별 branch를 만드는 것이다.
+- task branch는 보통 `dev`에서 분기한다.
+- 이미 진행 중인 task branch 아래에서 세부 역할을 더 쪼개야 하면 child branch를 만들어도 된다.
+
+즉 `dev`는 통합 작업선이고, task branch는 역할별 작업선이다.
+
+### 로컬 `main` push 금지 가드
+
+`dev`를 만든 뒤에는 target repo 로컬에서 `main` direct push를 막는 것을 권장한다.
+
+권장 방식은 repo-local `pre-push` hook이다.
+
+예시:
+
+```bash
+cat > .git/hooks/pre-push <<'EOF'
+#!/bin/sh
+branch="$(git rev-parse --abbrev-ref HEAD)"
+if [ "$branch" = "main" ]; then
+  echo "Direct pushes to main are blocked locally. Use dev or a task branch."
+  exit 1
+fi
+EOF
+chmod +x .git/hooks/pre-push
+```
+
+이 가드는 local repo 단위로만 적용된다. 다른 저장소까지 자동으로 막지는 않는다.
+
+### `main` 머지 단위의 글로벌 컨텍스트 wiki 정리
+
+`main`으로 들어가는 PR merge 단위는 deploy 단위이기도 하다.
+
+따라서 에이전트는 `main` merge 준비 시 아래도 함께 본다.
+
+- `clever-context-monorepo/docs/services/<service>/index.md` 갱신 필요 여부
+- `clever-context-monorepo/docs/wiki/` 탐색 문서 또는 요약 문서 갱신 필요 여부
+- template lineage, deploy profile, env/secret category, public contract 변화가 service 문서에 반영됐는지
+
+복사해 쓰는 프롬프트는 아래 문서에 둔다.
+
+- [main PR global context wiki prompt](templates/main-pr-global-context-wiki-prompt.md)
+
 ## 첫 대화 하드 게이트
 
 첫 질문을 던지기 전에 에이전트는 먼저 로컬 workspace 상태를 자동 감지한다.
@@ -183,17 +243,28 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --curren
 새 세션에서 에이전트는 아래 템플릿을 첫 응답 기본값으로 사용한다.
 
 ```text
-[작업 시작]
-1. 새 서비스 개발 vs. 기존 서비스 추가:
-2. 서비스 기반 (MSA vs. MONO):
-3. 타입 명확하게 분류하기:
+[시작 분기]
+1. 작업 종류:
+- 새 작업 시작
+- 기존 서비스 변경
+- 현재 저장소 자체 수정
+
+2. 구조:
+- MONO
+- MSA
+
+3. 이번 세션 목표:
+- 요구사항/문서 정의
+- 서비스 온보딩 정의
+- 구현 repo 작업
+- 배포 준비
 
 추가 설명
 - 하려는 일:
 - 왜 필요한지:
 - 제약:
 - 기대 결과:
-- 관련 repo/service가 있으면:
+- 알고 있는 repo/service가 있으면:
 ```
 
 운영 규칙은 아래와 같다.
@@ -203,12 +274,16 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --curren
 - 질문 순서는 항상 `1 -> 2 -> 3`을 먼저 고정한다.
 - `change-control`용 `work_type_group`, `work_type_detail`은 사용자가 직접 고르지 않는다. 에이전트가 해석한다.
 - 아래가 충분히 채워지기 전에는 다음 단계로 넘어가지 않는다.
-  - `1. 새 서비스 개발 vs. 기존 서비스 추가`
-  - `2. 서비스 기반 (MSA vs. MONO)`
-  - `3. 타입 명확하게 분류하기`
+  - `1. 작업 종류`
+  - `2. 구조`
+  - `3. 이번 세션 목표`
   - `왜 필요한지`
   - `제약`
   - `기대 결과`
+
+에이전트는 이 응답을 바로 narrative로 넘기지 않고, 먼저 아래 템플릿으로 정규화해야 한다.
+
+- [startup branch state template](templates/startup-branch-state-template.md)
 
 즉 시작 템플릿이 먼저고, `project-start` 초안 생성과 repo bootstrap은 그 다음이다.
 

@@ -97,22 +97,34 @@ generic CLEVER startup은 `clever-agent-project`에서 시작한다.
 기본 시작 템플릿은 아래와 같다.
 
 ```text
-[작업 시작]
-1. 새 서비스 개발 vs. 기존 서비스 추가:
-2. 서비스 기반 (MSA vs. MONO):
-3. 타입 명확하게 분류하기:
+[시작 분기]
+1. 작업 종류:
+- 새 작업 시작
+- 기존 서비스 변경
+- 현재 저장소 자체 수정
+
+2. 구조:
+- MONO
+- MSA
+
+3. 이번 세션 목표:
+- 요구사항/문서 정의
+- 서비스 온보딩 정의
+- 구현 repo 작업
+- 배포 준비
 
 추가 설명
 - 하려는 일:
 - 왜 필요한지:
 - 제약:
 - 기대 결과:
-- 관련 repo/service가 있으면:
+- 알고 있는 repo/service가 있으면:
 ```
 
 운영 규칙은 아래와 같다.
 
 - 첫 질문은 반드시 위 3단계로 시작한다.
+- 에이전트는 답변을 [startup branch state template](docs/templates/startup-branch-state-template.md)로 먼저 정규화한다.
 - `change-control`의 내부 타입 분류는 에이전트가 해석한다.
 - `project-start` 초안, repo bootstrap, 구현 계획은 위 템플릿과 추가 설명이 충분히 채워지기 전에는 진행하지 않는다.
 

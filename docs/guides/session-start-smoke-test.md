@@ -103,10 +103,10 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --curren
 ### 테스트 입력
 
 ```text
-[작업 시작]
-1. 새 서비스 개발 vs. 기존 서비스 추가: 기존 서비스 추가
-2. 서비스 기반 (MSA vs. MONO): MSA
-3. 타입 명확하게 분류하기: 정산 기능 변경
+[시작 분기]
+1. 작업 종류: 기존 서비스 변경
+2. 구조: MSA
+3. 이번 세션 목표: 요구사항/문서 정의
 
 추가 설명
 - 하려는 일: 정산 서비스에 월별 집계 기준을 추가하고 싶다.
@@ -121,7 +121,7 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --curren
 에이전트는 아래처럼 움직여야 한다.
 
 1. 입력을 intake로 받아들인다.
-2. `기존 서비스 추가`, `MSA`, `정산 기능 변경`을 시작 프레임으로 고정한다.
+2. `기존 서비스 변경`, `MSA`, `요구사항/문서 정의`를 시작 분기로 고정한다.
 3. 내부적으로는 `change-control` taxonomy 후보를 해석하되, 사용자가 taxonomy 필드를 직접 채우게 하지 않는다.
 4. `clever-context-monorepo/docs/services/service-settlement/index.md` 같은 관련 서비스 문서를 읽을 준비를 한다.
 5. 필요한 경우에만 부족한 칸을 좁혀 묻는다.
@@ -153,9 +153,9 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --curren
 1. 자유문을 그대로 받되, 바로 구현으로 들어가지 않는다.
 2. 사용자의 문장을 시작 템플릿 구조로 다시 정리한다.
 3. 먼저 아래를 분명하게 만든다.
-   - `1. 새 서비스 개발 vs. 기존 서비스 추가`
-   - `2. 서비스 기반 (MSA vs. MONO)`
-   - `3. 타입 명확하게 분류하기`
+   - `1. 작업 종류`
+   - `2. 구조`
+   - `3. 이번 세션 목표`
 4. 이후 `왜 필요한지`, `제약`, `기대 결과`를 보강한다.
 5. 사용자가 `change-control` taxonomy를 직접 선택하게 하지 않는다.
 6. 필요한 경우 `service-settlement` 같은 candidate service를 제안하되, generic intake 시작 단계에서 확정 강제는 하지 않는다.
