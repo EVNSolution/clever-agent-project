@@ -5,12 +5,13 @@
 
 ## How to Start
 
-먼저 같은 로컬 워크스페이스 루트에 아래 3개 레포를 내려받는다.
+먼저 같은 로컬 워크스페이스 루트에 아래 블록을 그대로 실행한다.
 
-```bash
+```text
 git clone https://github.com/EVNSolution/clever-agent-project.git
 git clone https://github.com/EVNSolution/clever-context-monorepo.git
 git clone https://github.com/EVNSolution/clever-change-control.git
+작업을 시작하세요.
 ```
 
 그다음 `clever-agent-project`에서 세션을 열고, 아래 블록을 첫 메시지로 그대로 붙여 넣는다.
