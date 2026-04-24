@@ -181,6 +181,67 @@ Short version:
 - anchor and trace in `clever-change-control`
 - implement in the target repository
 
+## Target Repository Traceability Gate
+
+This gate applies to every target project opened with this three-repository control
+plane, regardless of the directory where the agent session starts.
+
+Do not treat GitHub automatic references as sufficient traceability. Plain issue
+mentions such as `<context-owner>/<root-context-repo>#<issue>` or
+`<control-owner>/clever-change-control#<issue>` may create links in GitHub, but
+the agent must still build and maintain the working trace.
+
+Do not hard-code a GitHub organization, root context repository, or target
+repository name in this rule. Resolve repository identifiers from the current
+workspace, `git remote -v`, issue URLs, or explicit user instructions.
+
+Before any target-repository implementation, the agent must establish an
+issue-to-branch trace chain anchored in `clever-change-control`.
+
+Required chain:
+
+1. Identify the root context issue when one exists, such as
+   `<context-owner>/<root-context-repo>#<issue>`.
+2. Identify or create the `clever-change-control` anchor:
+   - `project-start` issue for the root start record
+   - `change-request` issue for scoped execution
+3. Identify or create the target repository issue for the actual work, such as
+   `<target-owner>/<target-repo>#<issue>`.
+4. Cross-link the records with explicit issue mentions:
+   - the `clever-change-control` issue mentions the root context issue and target
+     repository issue
+   - the target repository issue mentions the `clever-change-control` issue
+5. Create or confirm a branch for the scoped work before implementation.
+
+Branch rules:
+
+- A branch must correspond to a tracked issue or scoped work item.
+- One parent issue may have many child branches.
+- Prefer branch names that include the trace identifier, for example:
+  - `cc-12-issue-34-login-timeout`
+  - `issue-34-login-timeout`
+- If multiple branches belong to one issue, list all active branches on the
+  `clever-change-control` issue.
+
+The agent must not begin implementation if the trace chain is missing. First
+create or identify the required issue records, add the bidirectional mentions,
+and state the branch that will carry the work.
+
+During and after the work, update the `clever-change-control` issue with:
+
+- current session phase: documentation, implementation, verification, or release
+  preparation
+- target repository
+- branch name
+- relevant commits
+- PR link, when one exists
+- current status
+- next action
+
+Use `fixes`, `closes`, or similar GitHub keywords only when the PR merge is
+intended to close the referenced issue. For context linking without automatic
+closure, use plain issue mentions.
+
 ## Branch Operating Contract
 
 Treat git branch roles like this:
