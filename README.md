@@ -3,7 +3,7 @@
 > CLEVER는 단일 레포지토리 에이전트가 아니다.  
 > 로컬에 함께 내려받은 3개 레포지토리를 함께 읽고, 이후 실제 구현 대상 레포지토리로 실행을 넘기는 워크스페이스 우선 제어 평면 런타임이다.
 
-## 1분 설치
+## 빠른 시작
 
 아래 박스를 그대로 복사해서 실행한다.
 
@@ -17,6 +17,19 @@ git clone https://github.com/EVNSolution/clever-change-control.git
 
 cd clever-agent-project
 python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+```
+
+에이전트 종류별 실행 예시:
+
+```bash
+# Codex
+codex --yolo
+
+# Claude Code
+claude --dangerously-skip-permissions
+
+# Gemini CLI
+gemini --yolo
 ```
 
 그다음 `clever-agent-project`에서 에이전트 세션을 연다.
@@ -131,7 +144,7 @@ CLEVER를 제대로 실행하려면 아래 조건이 먼저 만족되어야 한�
 
 즉, 현재 CLEVER는 **단일 레포 런타임이 아니라 3레포 로컬 워크스페이스 런타임**이다.
 
-## 빠른 시작
+## 상세 빠른 시작
 
 ### 1. 로컬 워크스페이스 준비
 

@@ -564,7 +564,9 @@ def test_agent_project_agents_file_is_clone_ready_for_startup_questions():
 def test_readme_exposes_copyable_first_clone_command_box():
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
 
-    assert "## 1분 설치" in readme
+    assert "## 1분 설치" not in readme
+    assert readme.count("## 빠른 시작") == 1
+    assert "## 상세 빠른 시작" in readme
     assert "아래 박스를 그대로 복사해서 실행한다" in readme
     assert "```bash\nmkdir -p clever-agent-workspace" in readme
     assert "git clone https://github.com/EVNSolution/clever-agent-project.git" in readme
@@ -572,6 +574,10 @@ def test_readme_exposes_copyable_first_clone_command_box():
     assert "git clone https://github.com/EVNSolution/clever-change-control.git" in readme
     assert "cd clever-agent-project" in readme
     assert "python3 scripts/bootstrap_clever_work.py --cwd \"$PWD\" --workspace-check --json" in readme
+    assert "에이전트 종류별 실행 예시" in readme
+    assert "codex --yolo" in readme
+    assert "claude --dangerously-skip-permissions" in readme
+    assert "gemini --yolo" in readme
     assert "```text\n작업 시작" in readme
     assert "아래 양식을 채워도 되고, 자연어로 편하게 설명해도 된다" in readme
     assert "혹은 자연어로 편하게 대화하며 진행하세요" in readme
