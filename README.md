@@ -176,6 +176,12 @@ ruleset 기반으로 `main`/`dev` direct push를 막고 PR 필수 정책을 쓰�
 - merge/write는 repo admin 권한자만 수행
 - admin bypass는 `pull_request` 모드만 허용
 
+`main` merge commit 제목은 PR merge임이 드러나게 아래 형식을 쓴다.
+
+```text
+PR-MERGE <owner>/<repo>#<pr-number>: <pr-title>
+```
+
 ### 세션 시작
 
 generic CLEVER startup은 `clever-agent-project`에서 시작한다.
