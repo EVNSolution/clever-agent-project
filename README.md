@@ -158,6 +158,23 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --curren
 GitHub Free 조직에서 private repo ruleset이 enforce되지 않는다.
 ruleset 기반으로 `main`/`dev` direct push를 막고 PR 필수 정책을 쓰려면 새 target repo를 public으로 생성한다.
 
+### control-plane repo 보호 기준
+
+3개 control-plane repo는 public으로 운영한다.
+
+- `clever-agent-project`
+- `clever-context-monorepo`
+- `clever-change-control`
+
+각 repo의 `main`은 GitHub ruleset `CLEVER protect main`으로 보호한다.
+
+- `main` direct push 금지
+- `main` 삭제 금지
+- force push 금지
+- `main` 변경은 PR 필수
+- PR 승인 1명 이상 필수
+- admin bypass는 `pull_request` 모드만 허용
+
 ### 세션 시작
 
 generic CLEVER startup은 `clever-agent-project`에서 시작한다.
