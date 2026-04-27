@@ -26,6 +26,15 @@
 
 -
 
+## Concurrent Work Gate
+
+- parallel work decision: `done` / `blocked` / `allowed-with-non-overlap` / `user-forced-proceed`
+- target repo issue:
+- clever-change-control issue:
+- open PR checked:
+- conflict candidates:
+- user-forced-proceed reason:
+
 ## CLEVER PR review completion
 
 - target branch: `dev` / `main`

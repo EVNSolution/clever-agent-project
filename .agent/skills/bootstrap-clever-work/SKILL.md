@@ -313,6 +313,31 @@ Only after the root issue is approved and the execution scope is fixed should a 
 
 Do not create service-doc drafts in the normal start path.
 
+## Concurrent Work Gate
+
+Before target-repository implementation, and again before opening a PR, verify
+the target repo issue and clever-change-control issue together.
+
+The agent must check active issues, active branches, and every open PR that can
+affect the same target repo, service, API, data model, deployment surface, or
+file path.
+
+Record exactly one decision:
+
+- `done`: the related issue already has a merged or closed PR and no active
+  follow-up branch, so it is ignored as a blocker.
+- `blocked`: another issue, branch, or open PR is still in progress and overlaps
+  the same scope, so implementation must not proceed.
+- `allowed-with-non-overlap`: another issue, branch, or open PR is active, but
+  the agent judges at issue level that service, API, data, deploy, and file
+  scope do not overlap.
+- `user-forced-proceed`: the user explicitly says `완전 무시모드`, `강제 진행`,
+  or `user-forced-proceed`. This is a user override, not an agent safety
+  approval. The agent must record conflict candidates, known merge risk, and
+  사용자 강제 진행 in the target repo issue, clever-change-control issue, and PR
+  body, then continue until a real git conflict, test failure, or merge failure
+  must be resolved.
+
 ## Standard Packet
 
 Before the helper script, every run should normalize the startup branch state into this shape:
