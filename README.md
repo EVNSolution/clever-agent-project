@@ -21,6 +21,7 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
 
 그다음 `clever-agent-project`에서 에이전트 세션을 연다.
 아래 양식을 채워도 되고, 자연어로 편하게 설명해도 된다.
+혹은 자연어로 편하게 대화하며 진행하세요.
 에이전트가 내용을 시작 분기로 다시 정리하고, 부족한 값만 추가로 묻는다.
 
 ## How to Start
@@ -35,6 +36,7 @@ git clone https://github.com/EVNSolution/clever-change-control.git
 
 그다음 `clever-agent-project`에서 세션을 연다.
 아래 양식을 채워도 되고, 자연어로 편하게 설명해도 된다.
+혹은 자연어로 편하게 대화하며 진행하세요.
 에이전트가 내용을 시작 분기로 다시 정리하고, 부족한 값만 추가로 묻는다.
 
 ```text

@@ -473,6 +473,7 @@ def test_readme_exposes_copyable_first_clone_command_box():
     assert "python3 scripts/bootstrap_clever_work.py --cwd \"$PWD\" --workspace-check --json" in readme
     assert "```text\n작업 시작" in readme
     assert "아래 양식을 채워도 되고, 자연어로 편하게 설명해도 된다" in readme
+    assert "혹은 자연어로 편하게 대화하며 진행하세요" in readme
     assert "자연어 예시" in readme
 
 
