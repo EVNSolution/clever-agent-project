@@ -70,7 +70,8 @@ scripts/apply-github-rulesets.sh <target_repo_full_name>
 표준 ruleset:
 
 - main: PR 경유만 허용. direct push는 GitHub ruleset에서 막는다. 승인 수는 0명으로 둔다.
-- dev: PR 1명 이상 승인 필요.
+- dev: PR 경유만 허용. direct push는 GitHub ruleset에서 막는다.
+- 승인 수는 둘 다 0명으로 고정한다.
 - 그 외 branch: GitHub ruleset 미적용. 자유롭게 push할 수 있다.
 
 적용 스크립트는 `gh api`를 사용한다.

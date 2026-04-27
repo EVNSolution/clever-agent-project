@@ -104,7 +104,7 @@ TARGET_REPO_SEED_FILES = [
         "role": "GitHub repository ruleset bootstrap",
         "purpose": (
             "Apply the standard target repo branch rulesets: protect main, "
-            "require one approval for dev PRs, and leave other branches unrestricted. "
+            "require PR-only updates for dev, and leave other branches unrestricted. "
             "The target repo must be public when the organization uses GitHub Free."
         ),
         "required_placeholders": [

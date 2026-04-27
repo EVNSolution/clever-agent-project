@@ -403,7 +403,7 @@ def test_build_packet_includes_target_repo_seed_files():
             "role": "GitHub repository ruleset bootstrap",
             "purpose": (
                 "Apply the standard target repo branch rulesets: protect main, "
-                "require one approval for dev PRs, and leave other branches unrestricted. "
+                "require PR-only updates for dev, and leave other branches unrestricted. "
                 "The target repo must be public when the organization uses GitHub Free."
             ),
             "required_placeholders": [
@@ -474,18 +474,19 @@ def test_target_repo_ruleset_template_applies_main_and_dev_only():
 
     assert "gh api" in ruleset_script
     assert "CLEVER protect main" in ruleset_script
-    assert "CLEVER review dev" in ruleset_script
+    assert "CLEVER protect dev" in ruleset_script
     assert "visibility" in ruleset_script
     assert "PUBLIC" in ruleset_script
     assert "GitHub Free organization rulesets require a public repository" in ruleset_script
     assert '"include":["refs/heads/main"]' in ruleset_script
     assert '"include":["refs/heads/dev"]' in ruleset_script
-    assert '"required_approving_review_count":0' in ruleset_script
-    assert '"required_approving_review_count":1' in ruleset_script
+    assert ruleset_script.count('"required_approving_review_count":0') == 2
+    assert '"required_approving_review_count":1' not in ruleset_script
     assert "refs/heads/*" not in ruleset_script
     assert "~ALL" not in ruleset_script
     assert "main: PR 경유만 허용" in agents
-    assert "dev: PR 1명 이상 승인 필요" in agents
+    assert "dev: PR 경유만 허용" in agents
+    assert "승인 수는 둘 다 0명" in agents
     assert "그 외 branch: GitHub ruleset 미적용" in agents
     assert "새 프로젝트 repo는 public으로 만든다" in agents
 

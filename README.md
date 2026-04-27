@@ -159,7 +159,7 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --curren
 
 새 프로젝트 repo는 public으로 만든다.
 GitHub Free 조직에서 private repo ruleset이 enforce되지 않는다.
-ruleset 기반으로 `main` direct push와 `dev` review 정책을 쓰려면 새 target repo를 public으로 생성한다.
+ruleset 기반으로 `main`/`dev` direct push를 막고 PR 필수 정책을 쓰려면 새 target repo를 public으로 생성한다.
 
 ### 2. 세션 시작
 

@@ -207,7 +207,7 @@ scripts/apply-github-rulesets.sh <owner>/<repo>
 표준 ruleset은 GitHub repository rulesets API를 사용해 아래 두 branch에만 적용한다.
 
 - `main`: PR 경유만 허용하고 direct push를 막는다. 승인 수는 0명이다.
-- `dev`: PR 경유만 허용하고 1명 이상의 approving review를 요구한다.
+- `dev`: PR 경유만 허용하고 direct push를 막는다. 승인 수는 0명이다.
 - 그 외 branch: GitHub ruleset을 적용하지 않는다.
 
 이 작업에는 `gh` 인증과 target repo의 GitHub Administration write 권한이 필요하다.

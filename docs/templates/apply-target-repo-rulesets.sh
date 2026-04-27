@@ -11,7 +11,7 @@ Applies the standard CLEVER GitHub branch rulesets to a target repo.
 Policy:
   repository visibility: public required for GitHub Free organizations.
   main: PR-only updates, no required approving reviewers.
-  dev: PR-only updates with at least one approving reviewer.
+  dev: PR-only updates, no required approving reviewers.
   all other branches: no GitHub ruleset from this script.
 
 Requires:
@@ -91,10 +91,10 @@ cat > "$main_payload" <<'JSON'
 JSON
 
 cat > "$dev_payload" <<'JSON'
-{"name":"CLEVER review dev","target":"branch","enforcement":"active","conditions":{"ref_name":{"include":["refs/heads/dev"],"exclude":[]}},"rules":[{"type":"pull_request","parameters":{"allowed_merge_methods":["merge","squash","rebase"],"dismiss_stale_reviews_on_push":true,"require_code_owner_review":false,"require_last_push_approval":false,"required_approving_review_count":1,"required_review_thread_resolution":false}},{"type":"deletion"},{"type":"non_fast_forward"}]}
+{"name":"CLEVER protect dev","target":"branch","enforcement":"active","conditions":{"ref_name":{"include":["refs/heads/dev"],"exclude":[]}},"rules":[{"type":"pull_request","parameters":{"allowed_merge_methods":["merge","squash","rebase"],"dismiss_stale_reviews_on_push":true,"require_code_owner_review":false,"require_last_push_approval":false,"required_approving_review_count":0,"required_review_thread_resolution":false}},{"type":"deletion"},{"type":"non_fast_forward"}]}
 JSON
 
 upsert_ruleset "CLEVER protect main" "$main_payload"
-upsert_ruleset "CLEVER review dev" "$dev_payload"
+upsert_ruleset "CLEVER protect dev" "$dev_payload"
 
 echo "CLEVER GitHub rulesets applied to ${repo_full_name}."
