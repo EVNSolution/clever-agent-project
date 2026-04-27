@@ -33,21 +33,10 @@ gemini --yolo
 ```
 
 그다음 `clever-agent-project`에서 에이전트 세션을 연다.
-아래 양식을 채워도 되고, 자연어로 편하게 설명해도 된다.
-혹은 자연어로 편하게 대화하며 진행하세요.
-에이전트가 내용을 시작 분기로 다시 정리하고, 부족한 값만 추가로 묻는다.
+첫 메시지는 [시작 입력](#시작-입력)의 양식 또는 자연어 예시를 사용한다.
 
-## How to Start
+## 시작 입력
 
-먼저 같은 로컬 워크스페이스 루트에 아래 블록을 그대로 실행한다.
-
-```bash
-git clone https://github.com/EVNSolution/clever-agent-project.git
-git clone https://github.com/EVNSolution/clever-context-monorepo.git
-git clone https://github.com/EVNSolution/clever-change-control.git
-```
-
-그다음 `clever-agent-project`에서 세션을 연다.
 아래 양식을 채워도 되고, 자연어로 편하게 설명해도 된다.
 혹은 자연어로 편하게 대화하며 진행하세요.
 에이전트가 내용을 시작 분기로 다시 정리하고, 부족한 값만 추가로 묻는다.
@@ -97,6 +86,7 @@ git clone https://github.com/EVNSolution/clever-change-control.git
 ## 빠른 링크
 
 - [빠른 시작](#빠른-시작)
+- [시작 입력](#시작-입력)
 - [필수 워크스페이스 계약](#필수-워크스페이스-계약)
 - [레포 맵](#레포-맵)
 - [시나리오 다이어그램](#시나리오-다이어그램)
@@ -144,15 +134,9 @@ CLEVER를 제대로 실행하려면 아래 조건이 먼저 만족되어야 한�
 
 즉, 현재 CLEVER는 **단일 레포 런타임이 아니라 3레포 로컬 워크스페이스 런타임**이다.
 
-## 상세 빠른 시작
+## 운영 세부 기준
 
-### 1. 로컬 워크스페이스 준비
-
-먼저 같은 로컬 루트 아래에 아래 3개 레포를 준비한다.
-
-- `clever-agent-project`
-- `clever-context-monorepo`
-- `clever-change-control`
+### 워크스페이스 확인
 
 세션을 시작하기 전에 에이전트는 아래 명령으로 로컬 3레포 상태를 자동 감지할 수 있다.
 
@@ -174,7 +158,7 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --curren
 GitHub Free 조직에서 private repo ruleset이 enforce되지 않는다.
 ruleset 기반으로 `main`/`dev` direct push를 막고 PR 필수 정책을 쓰려면 새 target repo를 public으로 생성한다.
 
-### 2. 세션 시작
+### 세션 시작
 
 generic CLEVER startup은 `clever-agent-project`에서 시작한다.
 
@@ -185,33 +169,6 @@ generic CLEVER startup은 `clever-agent-project`에서 시작한다.
 
 이 경우에는 해당 레포에서 세션을 열 수 있지만, 먼저 `workspace-check`를 돌려 generic startup이 아니라 repo-local maintenance인지 확인한다.
 
-기본 시작 템플릿은 아래와 같다.
-
-```text
-[시작 분기]
-1. 작업 종류:
-- 새 작업 시작
-- 기존 서비스 변경
-- 현재 저장소 자체 수정
-
-2. 구조:
-- MONO
-- MSA
-
-3. 이번 세션 목표:
-- 요구사항/문서 정의
-- 서비스 온보딩 정의
-- 구현 repo 작업
-- 배포 준비
-
-추가 설명
-- 하려는 일:
-- 왜 필요한지:
-- 제약:
-- 기대 결과:
-- 알고 있는 repo/service가 있으면:
-```
-
 운영 규칙은 아래와 같다.
 
 - 첫 질문은 반드시 위 3단계로 시작한다.
@@ -219,7 +176,7 @@ generic CLEVER startup은 `clever-agent-project`에서 시작한다.
 - `change-control`의 내부 타입 분류는 에이전트가 해석한다.
 - `project-start` 초안, repo bootstrap, 구현 계획은 위 템플릿과 추가 설명이 충분히 채워지기 전에는 진행하지 않는다.
 
-### 3. 실행 흐름
+### 실행 흐름
 
 1. `clever-agent-project`에서 작업 시작
 2. `clever-context-monorepo`에서 규칙, 템플릿 계보, 서비스 메타데이터 해석

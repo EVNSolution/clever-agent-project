@@ -566,12 +566,18 @@ def test_readme_exposes_copyable_first_clone_command_box():
 
     assert "## 1분 설치" not in readme
     assert readme.count("## 빠른 시작") == 1
-    assert "## 상세 빠른 시작" in readme
+    assert "## How to Start" not in readme
+    assert "## 시작 입력" in readme
+    assert "## 운영 세부 기준" in readme
+    assert "## 상세 빠른 시작" not in readme
     assert "아래 박스를 그대로 복사해서 실행한다" in readme
     assert "```bash\nmkdir -p clever-agent-workspace" in readme
     assert "git clone https://github.com/EVNSolution/clever-agent-project.git" in readme
     assert "git clone https://github.com/EVNSolution/clever-context-monorepo.git" in readme
     assert "git clone https://github.com/EVNSolution/clever-change-control.git" in readme
+    assert readme.count("git clone https://github.com/EVNSolution/clever-agent-project.git") == 1
+    assert readme.count("git clone https://github.com/EVNSolution/clever-context-monorepo.git") == 1
+    assert readme.count("git clone https://github.com/EVNSolution/clever-change-control.git") == 1
     assert "cd clever-agent-project" in readme
     assert "python3 scripts/bootstrap_clever_work.py --cwd \"$PWD\" --workspace-check --json" in readme
     assert "에이전트 종류별 실행 예시" in readme
@@ -581,6 +587,8 @@ def test_readme_exposes_copyable_first_clone_command_box():
     assert "```text\n작업 시작" in readme
     assert "아래 양식을 채워도 되고, 자연어로 편하게 설명해도 된다" in readme
     assert "혹은 자연어로 편하게 대화하며 진행하세요" in readme
+    assert readme.count("아래 양식을 채워도 되고, 자연어로 편하게 설명해도 된다") == 1
+    assert readme.count("혹은 자연어로 편하게 대화하며 진행하세요") == 1
     assert "자연어 예시" in readme
 
 
