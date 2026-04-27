@@ -110,7 +110,7 @@ repo와 service가 둘 다 확정되지 않았으면 빈 값으로 둔다.
 
 ### workspace
 
-- 시작 전에 `workspace-check` 결과를 기록한다.
+- 시작 전에 `preflight` 결과와 `workspace_check.agent_action`을 기록한다.
 - generic startup이면 `workspace_check_mode: generic_startup`
 - 현재 저장소 직접 수정이면 `workspace_check_mode: current_repo_maintenance`
 

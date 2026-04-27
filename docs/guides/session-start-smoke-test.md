@@ -51,15 +51,16 @@
 운영 환경에서는 첫 질문 전에 아래 자동 감지 명령을 먼저 돌린다.
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
-이 문서의 시나리오는 그 결과가 `proceed-with-hard-gate`일 때 시작 하드 게이트가 제대로 적용되는지 보는 테스트다.
+이 문서의 시나리오는 그 결과가 `preflight_check.ready=true`이고
+`workspace_check.agent_action=proceed-with-hard-gate`일 때 시작 하드 게이트가 제대로 적용되는지 보는 테스트다.
 
 현재 control-plane 저장소 자체를 직접 수정하는 세션은 아래처럼 유지보수 모드로 따로 확인한다.
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --current-repo-maintenance --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
 ```
 
 ## 합격 기준
@@ -205,7 +206,7 @@ This workspace is incomplete, so startup interpretation and traceability are deg
 
 에이전트는 아래처럼 움직여야 한다.
 
-1. 먼저 `workspace-check`를 돌린다.
+1. 먼저 `preflight`를 돌린다.
 2. 로컬 3레포 workspace가 완전하다고 확인한다.
 3. 하지만 현재 위치가 generic startup surface가 아니라는 점을 인식한다.
 4. `switch-to-clever-agent-project`로 분기한다.
@@ -231,7 +232,7 @@ Switch there before applying the first-response hard gate.
 
 에이전트는 아래처럼 움직여야 한다.
 
-1. 먼저 `workspace-check`를 돌린다.
+1. 먼저 `preflight`를 돌린다.
 2. 로컬 3레포 workspace가 완전하다고 확인한다.
 3. 현재 control-plane 저장소 자체를 수정하는 세션이라고 본다.
 4. `current-repo-maintenance`로 분기한다.
@@ -278,4 +279,4 @@ Stay in the current repository and treat it as the target for this session.
 
 1. `project-start` payload 초안 품질
 2. target repo handoff 규칙
-3. workspace check 자동화
+3. preflight 자동화
