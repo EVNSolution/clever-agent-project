@@ -55,10 +55,77 @@
 초기 remote bootstrap 후에는 `dev`를 만들고, 이후 일반 작업은 `dev` 또는 task branch에서 진행한다.
 `dev`가 생긴 뒤에는 `main`에 직접 push하지 않는다.
 
-권장 branch 이름:
+## 브랜치 역할별 접두사
 
-- `cc-<change-control-issue>-issue-<target-issue>-<short-topic>`
-- `issue-<target-issue>-<short-topic>`
+task branch는 프로젝트명이나 repo명으로 시작하지 않는다.
+`clever-` 같은 제품/조직/프로젝트 이름은 branch 역할 접두사가 아니다.
+필요하면 topic 뒤에만 넣는다.
+
+허용 branch:
+
+- `main`: deploy branch
+- `dev`: integration work branch
+- `feature/<issue-or-cc>-<short-topic>`: 신규 기능
+- `fix/<issue-or-cc>-<short-topic>`: 버그 수정
+- `change/<issue-or-cc>-<short-topic>`: 동작 변경
+- `refactor/<issue-or-cc>-<short-topic>`: 구조 개선
+- `docs/<issue-or-cc>-<short-topic>`: 문서 작업
+- `chore/<issue-or-cc>-<short-topic>`: 설정, 관리, 빌드 보조 작업
+- `test/<issue-or-cc>-<short-topic>`: 테스트 보강
+- `release/<env-or-version>`: 릴리스 준비
+- `hotfix/<issue-or-cc>-<short-topic>`: 긴급 수정
+
+예:
+
+- 좋음: `feature/issue-24-login-timeout`
+- 좋음: `fix/cc-12-issue-24-login-timeout`
+- 나쁨: `clever-login-timeout`
+- 나쁨: `issue-24-login-timeout`
+
+브랜치 역할 접두사를 로컬에서 강제하려면 target repo에서 아래 명령을 실행한다.
+
+```bash
+cat > .git/hooks/pre-commit <<'EOF'
+#!/bin/sh
+branch="$(git rev-parse --abbrev-ref HEAD)"
+case "$branch" in
+  main|dev|feature/*|fix/*|change/*|refactor/*|docs/*|chore/*|test/*|release/*|hotfix/*)
+    exit 0
+    ;;
+  *)
+    echo "Invalid branch name: $branch"
+    echo "Use main, dev, or a role-prefixed task branch:"
+    echo "feature/* fix/* change/* refactor/* docs/* chore/* test/* release/* hotfix/*"
+    exit 1
+    ;;
+esac
+EOF
+chmod +x .git/hooks/pre-commit
+
+cat > .git/hooks/pre-push <<'EOF'
+#!/bin/sh
+branch="$(git rev-parse --abbrev-ref HEAD)"
+case "$branch" in
+  main)
+    echo "Direct pushes to main are blocked locally. Use dev or a role-prefixed task branch."
+    exit 1
+    ;;
+  dev|feature/*|fix/*|change/*|refactor/*|docs/*|chore/*|test/*|release/*|hotfix/*)
+    exit 0
+    ;;
+  *)
+    echo "Invalid branch name: $branch"
+    echo "Use dev or a role-prefixed task branch:"
+    echo "feature/* fix/* change/* refactor/* docs/* chore/* test/* release/* hotfix/*"
+    exit 1
+    ;;
+esac
+EOF
+chmod +x .git/hooks/pre-push
+```
+
+`pre-commit`은 잘못된 branch 이름에서 commit 생성을 막는다.
+`pre-push`는 `main` direct push와 잘못된 branch 이름 push를 막는다.
 
 ## Issue 연결 규칙
 

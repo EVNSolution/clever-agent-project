@@ -419,6 +419,30 @@ def test_target_repo_seed_templates_separate_execution_rules_from_project_brief(
     assert "agent 작업 절차" in project_brief
 
 
+def test_target_repo_agents_template_enforces_role_based_branch_prefixes():
+    agents_template = REPO_ROOT / "docs/templates/target-repo-AGENTS.md"
+
+    agents = agents_template.read_text(encoding="utf-8")
+
+    assert "브랜치 역할별 접두사" in agents
+    for branch_prefix in [
+        "feature/",
+        "fix/",
+        "change/",
+        "refactor/",
+        "docs/",
+        "chore/",
+        "test/",
+        "release/",
+        "hotfix/",
+    ]:
+        assert branch_prefix in agents
+    assert "cat > .git/hooks/pre-commit <<'EOF'" in agents
+    assert "cat > .git/hooks/pre-push <<'EOF'" in agents
+    assert "main|dev|feature/*|fix/*|change/*|refactor/*|docs/*|chore/*|test/*|release/*|hotfix/*)" in agents
+    assert "clever-" in agents
+
+
 def test_build_packet_includes_post_create_clone_and_handoff_plan():
     packet = build_packet()
 

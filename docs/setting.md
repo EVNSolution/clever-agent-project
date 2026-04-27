@@ -243,6 +243,7 @@ chmod +x .git/hooks/pre-push
 - [target repo project brief template](templates/target-repo-project-brief.md) -> target repo `docs/project-brief.md`
 
 `AGENTS.md`는 프로젝트 설명서가 아니다. agent가 따라야 할 작업 순서, branch/issue 연결 방식, 테스트와 검증 순서, context 문서 반영 기준, 완료 조건을 담는다.
+또한 target repo에서 실행할 수 있는 branch role prefix 강제 hook 설치 명령을 포함한다.
 
 `docs/project-brief.md`는 프로젝트 기획 초안이다. 목적, 기대 결과, 제약, 초기 범위, 미정 사항, 다음 작업 목록을 담는다.
 
