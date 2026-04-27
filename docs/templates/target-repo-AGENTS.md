@@ -80,6 +80,19 @@ preflight는 최소한 `gh auth status`, GitHub login `OziinG`, `EVNSolution` or
 초기 remote bootstrap 후에는 `dev`를 만들고, 이후 일반 작업은 `dev` 또는 task branch에서 진행한다.
 `dev`가 생긴 뒤에는 `main`에 직접 push하지 않는다.
 
+### PR merge commit 제목
+
+`main`으로 PR을 merge할 때는 GitHub 기본형 merge subject를 쓴다.
+agent가 squash merge를 쓰는 경우에도 subject를 아래 형식으로 명시한다.
+
+```bash
+gh pr merge <pr-number> --squash \
+  --subject "Merge pull request #<pr-number> from <owner>/<source-branch>" \
+  --body-file <merge-body-file>
+```
+
+별도 커스텀 접두사는 쓰지 않는다.
+
 ### PR 완료 후 branch 정리
 
 PR이 merge됐거나 source branch를 버리기로 하고 closed 처리된 뒤에는 task
