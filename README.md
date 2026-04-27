@@ -16,7 +16,7 @@ git clone https://github.com/EVNSolution/clever-context-monorepo.git
 git clone https://github.com/EVNSolution/clever-change-control.git
 
 cd clever-agent-project
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 에이전트 종류별 실행 예시:
@@ -131,26 +131,44 @@ CLEVER를 제대로 실행하려면 아래 조건이 먼저 만족되어야 한�
 - 에이전트가 세 레포의 로컬 파일을 직접 읽을 수 있어야 한다.
 - 웹 링크만으로는 충분하지 않다.
 - 3개 중 하나라도 없으면 실행 품질이 크게 저하된다.
+- `gh` CLI가 설치되어 있고 `gh auth status`가 통과해야 한다.
+- 기본 GitHub 계정은 `OziinG`으로 검증한다. 다른 계정을 써야 하면 `CLEVER_EXPECTED_GITHUB_LOGIN` 또는 `--expected-github-login`으로 명시한다.
+- GitHub 계정이 `EVNSolution` org active member인지 확인한다.
+- 세 control-plane repo의 origin은 `EVNSolution/*`이어야 한다.
+- 세 control-plane repo는 public이어야 하고 issue, PR, ruleset 조회가 가능해야 한다.
 
 즉, 현재 CLEVER는 **단일 레포 런타임이 아니라 3레포 로컬 워크스페이스 런타임**이다.
 
 ## 운영 세부 기준
 
-### 워크스페이스 확인
+### Preflight Gate
 
-세션을 시작하기 전에 에이전트는 아래 명령으로 로컬 3레포 상태를 자동 감지할 수 있다.
+세션을 시작하기 전에 에이전트는 아래 명령으로 로컬 3레포, `gh auth status`, GitHub 계정, 원격 접근, issue/PR/ruleset 조회 가능 여부를 자동 감지한다.
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 현재 control-plane 저장소 자체를 직접 수정하는 세션이면 아래처럼 유지보수 모드로 확인한다.
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --current-repo-maintenance --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
 ```
 
-반환된 `agent_action`이 `proceed-with-hard-gate`면 그대로 시작 템플릿으로 진행하고, `current-repo-maintenance`면 현재 control-plane 저장소를 직접 수정하는 세션으로 보고 여기서 계속하며, `switch-to-clever-agent-project`면 시작 위치를 옮기고, `stop-and-fix-workspace`면 누락된 레포를 먼저 보완한다.
+반환된 `preflight_check.ready`가 `false`면 시작 템플릿으로 내려가지 않는다.
+`true`이면 내부 `workspace_check.agent_action`을 읽는다.
+`proceed-with-hard-gate`면 그대로 시작 템플릿으로 진행하고, `current-repo-maintenance`면 현재 control-plane 저장소를 직접 수정하는 세션으로 보고 여기서 계속하며, `switch-to-clever-agent-project`면 시작 위치를 옮기고, `stop-and-fix-workspace`면 누락된 레포를 먼저 보완한다.
+
+repo 생성, ruleset 적용, 보호 설정처럼 GitHub admin 권한이 필요한 작업 직전에는 대상 repo를 지정해 admin preflight를 다시 통과해야 한다.
+새 repo 생성 권한은 destructive create 없이 완전히 증명할 수 없으므로, preflight는 org membership과 token/API 접근을 먼저 확인하고 실제 생성 성공은 `gh repo create` 결과로 확정한다.
+
+```bash
+python3 scripts/bootstrap_clever_work.py \
+  --cwd "$PWD" \
+  --admin-preflight \
+  --target-repo-full-name EVNSolution/<target-repo> \
+  --json
+```
 
 ### 새 프로젝트 repo visibility
 
@@ -191,7 +209,7 @@ generic CLEVER startup은 `clever-agent-project`에서 시작한다.
 - `clever-context-monorepo` 정본 문서/규칙 수정
 - `clever-change-control` issue template/traceability 규칙 수정
 
-이 경우에는 해당 레포에서 세션을 열 수 있지만, 먼저 `workspace-check`를 돌려 generic startup이 아니라 repo-local maintenance인지 확인한다.
+이 경우에는 해당 레포에서 세션을 열 수 있지만, 먼저 `preflight`를 돌려 generic startup이 아니라 repo-local maintenance인지 확인한다.
 
 운영 규칙은 아래와 같다.
 

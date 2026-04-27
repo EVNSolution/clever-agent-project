@@ -506,6 +506,23 @@ def test_target_repo_ruleset_template_applies_main_and_dev_only():
     assert "새 프로젝트 repo는 public으로 만든다" in agents
 
 
+def test_docs_require_remote_task_branch_cleanup_after_pr_completion():
+    docs = [
+        REPO_ROOT / "AGENTS.md",
+        REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md",
+        REPO_ROOT / "docs/setting.md",
+        REPO_ROOT / "docs/templates/target-repo-AGENTS.md",
+    ]
+
+    for doc_path in docs:
+        text = doc_path.read_text(encoding="utf-8")
+        assert "PR 완료 후 branch 정리" in text
+        assert "git push origin --delete <source-branch>" in text
+        assert "git branch -d <source-branch>" in text
+        assert "main`과 `dev`는 삭제 대상이 아니다" in text
+        assert "open PR" in text
+
+
 def test_target_repo_pr_template_makes_review_finish_with_wiki_update():
     pr_template = (
         REPO_ROOT / "docs/templates/target-repo-PULL_REQUEST_TEMPLATE.md"
@@ -553,7 +570,7 @@ def test_agent_project_agents_file_is_clone_ready_for_startup_questions():
     assert "질문 원장" in agents
     assert "known answer" in agents
     assert "needs-input" in agents
-    assert "python3 scripts/bootstrap_clever_work.py --cwd \"$PWD\" --workspace-check --json" in agents
+    assert "python3 scripts/bootstrap_clever_work.py --cwd \"$PWD\" --preflight --json" in agents
     assert "작업 종류" in agents
     assert "구조" in agents
     assert "이번 세션 목표" in agents
@@ -579,7 +596,7 @@ def test_readme_exposes_copyable_first_clone_command_box():
     assert readme.count("git clone https://github.com/EVNSolution/clever-context-monorepo.git") == 1
     assert readme.count("git clone https://github.com/EVNSolution/clever-change-control.git") == 1
     assert "cd clever-agent-project" in readme
-    assert "python3 scripts/bootstrap_clever_work.py --cwd \"$PWD\" --workspace-check --json" in readme
+    assert "python3 scripts/bootstrap_clever_work.py --cwd \"$PWD\" --preflight --json" in readme
     assert "에이전트 종류별 실행 예시" in readme
     assert "codex --yolo" in readme
     assert "claude --dangerously-skip-permissions" in readme
@@ -679,6 +696,227 @@ def test_cli_workspace_check_returns_ready_status_in_start_repo():
     assert report["startup_ready"] is True
     assert report["agent_action"] == "proceed-with-hard-gate"
     assert report["current_repo"] == "clever-agent-project"
+
+
+def test_preflight_check_passes_when_github_account_workspace_and_remotes_are_ready(
+    monkeypatch,
+):
+    module = load_module()
+    command_log: list[tuple[str, ...]] = []
+
+    def fake_which(name: str) -> str | None:
+        return f"/usr/bin/{name}" if name in {"git", "gh"} else None
+
+    def fake_workspace_check(cwd: Path, *, current_repo_maintenance: bool = False):
+        return {
+            "startup_ready": True,
+            "agent_action": "proceed-with-hard-gate",
+            "repos": {
+                "clever-agent-project": {"checkout_path": "/workspace/clever-agent-project"},
+                "clever-context-monorepo": {
+                    "checkout_path": "/workspace/clever-context-monorepo"
+                },
+                "clever-change-control": {"checkout_path": "/workspace/clever-change-control"},
+            },
+        }
+
+    def fake_run(cmd: list[str], cwd: Path | None = None):
+        command_log.append(tuple(cmd))
+        if cmd[:3] == ["gh", "api", "user"]:
+            return module.CommandResult(0, "OziinG\n", "")
+        if cmd[:3] == ["gh", "api", "user/memberships/orgs/EVNSolution"]:
+            return module.CommandResult(0, json.dumps({"state": "active", "role": "admin"}), "")
+        if cmd[:2] == ["gh", "auth"]:
+            return module.CommandResult(0, "Logged in to github.com as OziinG\n", "")
+        if cmd[:3] == ["git", "-C", "/workspace/clever-agent-project"]:
+            if cmd[3:] == ["remote", "get-url", "origin"]:
+                return module.CommandResult(
+                    0, "https://github.com/EVNSolution/clever-agent-project.git\n", ""
+                )
+            if cmd[3:] == ["status", "--short"]:
+                return module.CommandResult(0, "", "")
+            if cmd[3:] == ["fetch", "--dry-run", "origin"]:
+                return module.CommandResult(0, "", "")
+        if cmd[:3] == ["git", "-C", "/workspace/clever-context-monorepo"]:
+            if cmd[3:] == ["remote", "get-url", "origin"]:
+                return module.CommandResult(
+                    0, "https://github.com/EVNSolution/clever-context-monorepo.git\n", ""
+                )
+            if cmd[3:] == ["status", "--short"]:
+                return module.CommandResult(0, "", "")
+            if cmd[3:] == ["fetch", "--dry-run", "origin"]:
+                return module.CommandResult(0, "", "")
+        if cmd[:3] == ["git", "-C", "/workspace/clever-change-control"]:
+            if cmd[3:] == ["remote", "get-url", "origin"]:
+                return module.CommandResult(
+                    0, "https://github.com/EVNSolution/clever-change-control.git\n", ""
+                )
+            if cmd[3:] == ["status", "--short"]:
+                return module.CommandResult(0, "", "")
+            if cmd[3:] == ["fetch", "--dry-run", "origin"]:
+                return module.CommandResult(0, "", "")
+        if cmd[:3] == ["gh", "repo", "view"]:
+            return module.CommandResult(
+                0,
+                json.dumps(
+                    {
+                        "nameWithOwner": cmd[3],
+                        "visibility": "PUBLIC",
+                        "isPrivate": False,
+                        "viewerPermission": "ADMIN",
+                    }
+                ),
+                "",
+            )
+        if cmd[:2] == ["gh", "issue"]:
+            return module.CommandResult(0, "[]\n", "")
+        if cmd[:2] == ["gh", "pr"]:
+            return module.CommandResult(0, "[]\n", "")
+        if cmd[:2] == ["gh", "api"] and cmd[2].endswith("/rulesets"):
+            return module.CommandResult(0, "[]\n", "")
+        raise AssertionError(f"unexpected command: {cmd}")
+
+    monkeypatch.setattr(module.shutil, "which", fake_which)
+    monkeypatch.setattr(module, "build_workspace_check", fake_workspace_check)
+    monkeypatch.setattr(module, "run_command_result", fake_run)
+
+    report = module.build_preflight_check(
+        cwd=REPO_ROOT,
+        expected_github_login="OziinG",
+        github_owner="EVNSolution",
+    )
+
+    assert report["ready"] is True
+    assert report["mode"] == "basic"
+    assert report["github_login"] == "OziinG"
+    assert {check["name"]: check["status"] for check in report["checks"]} == {
+        "git-cli": "pass",
+        "gh-cli": "pass",
+        "gh-auth": "pass",
+        "github-account": "pass",
+        "github-org-membership": "pass",
+        "workspace": "pass",
+        "control-plane-remotes": "pass",
+        "control-plane-worktrees-clean": "pass",
+        "control-plane-remote-fetch": "pass",
+        "github-repo-access": "pass",
+        "github-issue-pr-access": "pass",
+        "ruleset-read": "pass",
+    }
+    assert ("gh", "api", "user", "--jq", ".login") in command_log
+
+
+def test_preflight_check_fails_before_startup_when_github_login_is_wrong(monkeypatch):
+    module = load_module()
+
+    monkeypatch.setattr(module.shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(
+        module,
+        "build_workspace_check",
+        lambda cwd, *, current_repo_maintenance=False: {
+            "startup_ready": True,
+            "agent_action": "proceed-with-hard-gate",
+            "repos": {},
+        },
+    )
+    monkeypatch.setattr(
+        module,
+        "run_command_result",
+        lambda cmd, cwd=None: module.CommandResult(
+            0,
+            "jiinlim\n" if cmd[:3] == ["gh", "api", "user"] else "",
+            "",
+        ),
+    )
+
+    report = module.build_preflight_check(
+        cwd=REPO_ROOT,
+        expected_github_login="OziinG",
+        github_owner="EVNSolution",
+    )
+
+    assert report["ready"] is False
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["github-account"]["status"] == "fail"
+    assert "OziinG" in checks["github-account"]["message"]
+    assert "jiinlim" in checks["github-account"]["message"]
+
+
+def test_admin_preflight_requires_admin_permission_for_target_repo(monkeypatch):
+    module = load_module()
+
+    monkeypatch.setattr(module.shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(
+        module,
+        "build_workspace_check",
+        lambda cwd, *, current_repo_maintenance=False: {
+            "startup_ready": True,
+            "agent_action": "proceed-with-hard-gate",
+            "repos": {},
+        },
+    )
+
+    def fake_run(cmd: list[str], cwd: Path | None = None):
+        if cmd[:2] == ["gh", "auth"]:
+            return module.CommandResult(0, "Logged in\n", "")
+        if cmd[:3] == ["gh", "api", "user"]:
+            return module.CommandResult(0, "OziinG\n", "")
+        if cmd[:3] == ["gh", "api", "user/memberships/orgs/EVNSolution"]:
+            return module.CommandResult(0, json.dumps({"state": "active", "role": "admin"}), "")
+        if cmd[:3] == ["gh", "repo", "view"]:
+            return module.CommandResult(
+                0,
+                json.dumps(
+                    {
+                        "nameWithOwner": cmd[3],
+                        "visibility": "PUBLIC",
+                        "isPrivate": False,
+                        "viewerPermission": "WRITE",
+                    }
+                ),
+                "",
+            )
+        if cmd[:2] == ["gh", "issue"] or cmd[:2] == ["gh", "pr"]:
+            return module.CommandResult(0, "[]\n", "")
+        if cmd[:2] == ["gh", "api"] and cmd[2].endswith("/rulesets"):
+            return module.CommandResult(0, "[]\n", "")
+        if cmd[:1] == ["git"]:
+            return module.CommandResult(0, "", "")
+        raise AssertionError(f"unexpected command: {cmd}")
+
+    monkeypatch.setattr(module, "run_command_result", fake_run)
+
+    report = module.build_preflight_check(
+        cwd=REPO_ROOT,
+        expected_github_login="OziinG",
+        github_owner="EVNSolution",
+        admin=True,
+        target_repo_full_name="EVNSolution/example-target",
+    )
+
+    assert report["ready"] is False
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["target-repo-admin"]["status"] == "fail"
+    assert "ADMIN" in checks["target-repo-admin"]["message"]
+
+
+def test_docs_require_preflight_before_startup_and_admin_repo_bootstrap():
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    skill = (REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    target_agents = (REPO_ROOT / "docs/templates/target-repo-AGENTS.md").read_text(
+        encoding="utf-8"
+    )
+
+    for text in (readme, agents, skill):
+        assert "--preflight" in text
+        assert "gh auth status" in text
+        assert "OziinG" in text
+        assert "--admin-preflight" in text
+    assert "Preflight Gate" in target_agents
+    assert "team-work automation" in target_agents
 
 
 def test_cli_workspace_check_allows_current_repo_maintenance_when_flagged():

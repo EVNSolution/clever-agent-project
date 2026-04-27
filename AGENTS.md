@@ -19,24 +19,65 @@ If any of these repositories are missing, the workspace is incomplete.
 Do not pretend web links are a substitute for local context.
 Stop and state that the three-repository local workspace is required.
 
-At startup, run this automatic check first:
+At startup, run this automatic preflight first:
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 If the session is explicitly about editing the current control-plane repo itself, run:
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --current-repo-maintenance --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
 ```
 
-Use the returned `agent_action` field as the startup branch:
+The preflight must verify at least:
+
+- local `git` and `gh` CLIs
+- `gh auth status`
+- authenticated GitHub login, defaulting to `OziinG`
+- active membership in the `EVNSolution` GitHub org
+- local three-repository workspace readiness
+- control-plane origin remotes under `EVNSolution/*`
+- clean control-plane worktrees
+- remote fetch access
+- GitHub repo visibility and issue/PR/ruleset read access
+
+If `preflight_check.ready` is false, stop before startup questions and report the
+failed checks.
+
+If it is true, use the returned `workspace_check.agent_action` field as the
+startup branch:
 
 - `proceed-with-hard-gate`
 - `current-repo-maintenance`
 - `switch-to-clever-agent-project`
 - `stop-and-fix-workspace`
+
+Before creating a target repo, applying rulesets, or changing GitHub protection
+settings, run admin preflight with the target repo:
+
+```bash
+python3 scripts/bootstrap_clever_work.py \
+  --cwd "$PWD" \
+  --admin-preflight \
+  --target-repo-full-name EVNSolution/<target-repo> \
+  --json
+```
+
+Repository creation permission cannot be proven without the actual write attempt.
+Treat org membership and token/API access as the pre-create gate, then treat
+`gh repo create` success as the creation proof.
+
+## PR 완료 후 branch 정리
+
+PR merge가 끝나고 source branch에 open PR이 더 없으면 remote/local task branch를 정리한다.
+`main`과 `dev`는 삭제 대상이 아니다.
+
+```bash
+git push origin --delete <source-branch>
+git branch -d <source-branch>
+```
 
 ## Clone-Ready Startup Contract
 
@@ -49,11 +90,14 @@ conversation if the answers are not already present.
 First action:
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 Then apply the result:
 
+- `preflight_check.ready=false`: show failed checks and stop before asking
+  project-start questions.
+- `preflight_check.ready=true`: read `workspace_check.agent_action` and continue.
 - `proceed-with-hard-gate`: 작업 시작 질문을 남긴다.
 - `switch-to-clever-agent-project`: tell the user to reopen or continue from
   `clever-agent-project`, then 작업 시작 질문을 남긴다.
@@ -451,6 +495,32 @@ Merge body should start with the PR title, then include:
 
 Do not use a plain feature/doc commit title as the main merge commit subject.
 
+## PR Branch Cleanup Contract
+
+PR 완료 후 branch 정리:
+
+After a PR is merged, or closed with the source branch intentionally abandoned,
+clean up the task branch unless it still has an open PR, linked follow-up issue,
+child branch, or active release/hotfix use.
+
+Default command sequence:
+
+```bash
+git switch dev
+git pull --ff-only origin dev
+git branch -d <source-branch>
+git push origin --delete <source-branch>
+git fetch --prune origin
+```
+
+- `main`과 `dev`는 삭제 대상이 아니다.
+- Use `git branch -d <source-branch>` by default.
+- Use `git branch -D <source-branch>` only when the PR was closed without merge
+  and the user explicitly confirms the branch can be discarded.
+- Do not delete a remote branch if it still backs an open PR, follow-up issue,
+  child branch, or active release/hotfix.
+- If GitHub already deleted the remote branch, still run `git fetch --prune origin`.
+
 ## What Not To Do
 
 Do not:
@@ -466,7 +536,7 @@ Do not:
 
 The expected operating flow is:
 
-1. Verify the three-repository local workspace
+1. Run preflight for the three-repository local workspace and GitHub account
 2. Gather the startup frame
    - collect `work_kind`, `architecture_kind`, `session_goal`
    - fill the startup branch state template

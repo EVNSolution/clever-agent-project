@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -42,6 +44,8 @@ ALLOWED_UI_IMPACTS = {
     "있음",
     "없음",
 }
+DEFAULT_GITHUB_OWNER = "EVNSolution"
+DEFAULT_EXPECTED_GITHUB_LOGIN = "OziinG"
 
 CONTEXT_DOCS = [
     "README.md",
@@ -127,18 +131,32 @@ TARGET_REPO_SEED_FILES = [
 ]
 
 
-def run_command(cmd: list[str], cwd: Path | None = None) -> str | None:
+@dataclass(frozen=True)
+class CommandResult:
+    returncode: int
+    stdout: str
+    stderr: str
+
+
+def run_command_result(cmd: list[str], cwd: Path | None = None) -> CommandResult:
     try:
         proc = subprocess.run(
             cmd,
             cwd=str(cwd) if cwd else None,
-            check=True,
+            check=False,
             text=True,
             capture_output=True,
         )
-    except (FileNotFoundError, subprocess.CalledProcessError):
+    except FileNotFoundError as exc:
+        return CommandResult(127, "", str(exc))
+    return CommandResult(proc.returncode, proc.stdout, proc.stderr)
+
+
+def run_command(cmd: list[str], cwd: Path | None = None) -> str | None:
+    result = run_command_result(cmd, cwd=cwd)
+    if result.returncode != 0:
         return None
-    return proc.stdout.strip()
+    return result.stdout.strip()
 
 
 def current_branch(repo_path: Path) -> str | None:
@@ -347,6 +365,382 @@ def build_workspace_check(start: Path, *, current_repo_maintenance: bool = False
         "agent_action": action,
         "message": message,
         "repos": repos,
+    }
+
+
+def add_preflight_check(
+    checks: list[dict[str, Any]],
+    *,
+    name: str,
+    passed: bool,
+    message: str,
+    details: dict[str, Any] | None = None,
+) -> None:
+    check: dict[str, Any] = {
+        "name": name,
+        "status": "pass" if passed else "fail",
+        "message": message,
+    }
+    if details:
+        check["details"] = details
+    checks.append(check)
+
+
+def command_message(result: CommandResult) -> str:
+    output = (result.stderr or result.stdout).strip()
+    return output if output else f"command exited with {result.returncode}"
+
+
+def parse_json_object(raw: str) -> dict[str, Any] | None:
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def normalize_repo_full_name(repo: str | None, *, github_owner: str) -> str | None:
+    if not repo:
+        return None
+    return repo if "/" in repo else f"{github_owner}/{repo}"
+
+
+def collect_control_plane_paths(workspace_check: dict[str, Any]) -> dict[str, Path]:
+    paths: dict[str, Path] = {}
+    repos = workspace_check.get("repos", {})
+    for repo_name_value in CONTROL_PLANE_REPOS:
+        repo_state = repos.get(repo_name_value, {})
+        checkout_path = repo_state.get("checkout_path")
+        if checkout_path:
+            paths[repo_name_value] = Path(checkout_path)
+    return paths
+
+
+def build_preflight_check(
+    *,
+    cwd: Path,
+    expected_github_login: str = DEFAULT_EXPECTED_GITHUB_LOGIN,
+    github_owner: str = DEFAULT_GITHUB_OWNER,
+    admin: bool = False,
+    target_repo_full_name: str | None = None,
+    current_repo_maintenance: bool = False,
+) -> dict[str, Any]:
+    mode = "admin" if admin else "basic"
+    checks: list[dict[str, Any]] = []
+
+    git_path = shutil.which("git")
+    add_preflight_check(
+        checks,
+        name="git-cli",
+        passed=bool(git_path),
+        message=git_path or "git CLI is required before CLEVER startup.",
+    )
+
+    gh_path = shutil.which("gh")
+    add_preflight_check(
+        checks,
+        name="gh-cli",
+        passed=bool(gh_path),
+        message=gh_path or "GitHub CLI is required. Run `gh auth login` after installing gh.",
+    )
+
+    gh_auth_ok = False
+    github_login: str | None = None
+    if gh_path:
+        auth_result = run_command_result(["gh", "auth", "status"])
+        gh_auth_ok = auth_result.returncode == 0
+        add_preflight_check(
+            checks,
+            name="gh-auth",
+            passed=gh_auth_ok,
+            message=(
+                "`gh auth status` passed."
+                if gh_auth_ok
+                else f"`gh auth status` failed: {command_message(auth_result)}"
+            ),
+        )
+
+        user_result = run_command_result(["gh", "api", "user", "--jq", ".login"])
+        github_login = user_result.stdout.strip() if user_result.returncode == 0 else None
+        login_ok = github_login == expected_github_login
+        add_preflight_check(
+            checks,
+            name="github-account",
+            passed=login_ok,
+            message=(
+                f"GitHub account is {github_login}."
+                if login_ok
+                else (
+                    "Expected GitHub account "
+                    f"{expected_github_login}, got {github_login or command_message(user_result)}."
+                )
+            ),
+            details={
+                "expected": expected_github_login,
+                "actual": github_login,
+            },
+        )
+        membership_result = run_command_result(
+            ["gh", "api", f"user/memberships/orgs/{github_owner}"]
+        )
+        membership_info = parse_json_object(membership_result.stdout)
+        membership_ok = (
+            membership_result.returncode == 0
+            and membership_info is not None
+            and membership_info.get("state") == "active"
+        )
+        add_preflight_check(
+            checks,
+            name="github-org-membership",
+            passed=membership_ok,
+            message=(
+                f"GitHub account is an active member of {github_owner}."
+                if membership_ok
+                else (
+                    f"Cannot confirm active {github_owner} org membership: "
+                    f"{command_message(membership_result)}"
+                )
+            ),
+            details={
+                "org": github_owner,
+                "state": membership_info.get("state") if membership_info else None,
+                "role": membership_info.get("role") if membership_info else None,
+            },
+        )
+    else:
+        add_preflight_check(
+            checks,
+            name="gh-auth",
+            passed=False,
+            message="Cannot run `gh auth status` because gh CLI is missing.",
+        )
+        add_preflight_check(
+            checks,
+            name="github-account",
+            passed=False,
+            message=f"Cannot confirm expected GitHub account {expected_github_login}.",
+            details={"expected": expected_github_login, "actual": None},
+        )
+        add_preflight_check(
+            checks,
+            name="github-org-membership",
+            passed=False,
+            message=f"Cannot confirm {github_owner} org membership because gh CLI is missing.",
+            details={"org": github_owner, "state": None, "role": None},
+        )
+
+    workspace_check = build_workspace_check(
+        cwd,
+        current_repo_maintenance=current_repo_maintenance,
+    )
+    workspace_ok = bool(workspace_check.get("startup_ready"))
+    add_preflight_check(
+        checks,
+        name="workspace",
+        passed=workspace_ok,
+        message=workspace_check.get("message", "workspace check completed"),
+        details={
+            "agent_action": workspace_check.get("agent_action"),
+            "control_plane_complete": workspace_check.get("control_plane_complete"),
+        },
+    )
+
+    control_paths = collect_control_plane_paths(workspace_check)
+
+    remote_messages: list[str] = []
+    remote_ok = len(control_paths) == len(CONTROL_PLANE_REPOS)
+    for repo_name_value in CONTROL_PLANE_REPOS:
+        repo_path = control_paths.get(repo_name_value)
+        expected_full_name = f"{github_owner}/{repo_name_value}"
+        actual_full_name = repo_full_name(repo_path) if repo_path else None
+        if actual_full_name != expected_full_name:
+            remote_ok = False
+            remote_messages.append(
+                f"{repo_name_value}: expected {expected_full_name}, got {actual_full_name or 'missing'}"
+            )
+    add_preflight_check(
+        checks,
+        name="control-plane-remotes",
+        passed=remote_ok,
+        message=(
+            f"All control-plane remotes point to {github_owner}."
+            if remote_ok
+            else "; ".join(remote_messages)
+        ),
+    )
+
+    clean_messages: list[str] = []
+    clean_ok = len(control_paths) == len(CONTROL_PLANE_REPOS)
+    for repo_name_value, repo_path in control_paths.items():
+        result = run_command_result(["git", "-C", str(repo_path), "status", "--short"])
+        if result.returncode != 0 or result.stdout.strip():
+            clean_ok = False
+            clean_messages.append(
+                f"{repo_name_value}: {command_message(result) if result.returncode != 0 else result.stdout.strip()}"
+            )
+    add_preflight_check(
+        checks,
+        name="control-plane-worktrees-clean",
+        passed=clean_ok,
+        message=(
+            "All control-plane worktrees are clean."
+            if clean_ok
+            else "; ".join(clean_messages or ["control-plane checkout is incomplete"])
+        ),
+    )
+
+    fetch_messages: list[str] = []
+    fetch_ok = len(control_paths) == len(CONTROL_PLANE_REPOS)
+    for repo_name_value, repo_path in control_paths.items():
+        result = run_command_result(["git", "-C", str(repo_path), "fetch", "--dry-run", "origin"])
+        if result.returncode != 0:
+            fetch_ok = False
+            fetch_messages.append(f"{repo_name_value}: {command_message(result)}")
+    add_preflight_check(
+        checks,
+        name="control-plane-remote-fetch",
+        passed=fetch_ok,
+        message=(
+            "All control-plane remotes are reachable."
+            if fetch_ok
+            else "; ".join(fetch_messages or ["control-plane checkout is incomplete"])
+        ),
+    )
+
+    repo_access_messages: list[str] = []
+    issue_pr_messages: list[str] = []
+    ruleset_messages: list[str] = []
+    repo_access_ok = bool(gh_path) and len(control_paths) == len(CONTROL_PLANE_REPOS)
+    issue_pr_ok = bool(gh_path) and len(control_paths) == len(CONTROL_PLANE_REPOS)
+    ruleset_ok = bool(gh_path) and len(control_paths) == len(CONTROL_PLANE_REPOS)
+    for repo_name_value in CONTROL_PLANE_REPOS:
+        expected_full_name = f"{github_owner}/{repo_name_value}"
+        view_result = run_command_result(
+            [
+                "gh",
+                "repo",
+                "view",
+                expected_full_name,
+                "--json",
+                "nameWithOwner,visibility,isPrivate,viewerPermission",
+            ]
+        )
+        repo_info = parse_json_object(view_result.stdout)
+        if view_result.returncode != 0 or not repo_info:
+            repo_access_ok = False
+            repo_access_messages.append(f"{expected_full_name}: {command_message(view_result)}")
+        elif repo_info.get("visibility") != "PUBLIC" or repo_info.get("isPrivate"):
+            repo_access_ok = False
+            repo_access_messages.append(f"{expected_full_name}: repository must be PUBLIC")
+
+        for issue_or_pr in ("issue", "pr"):
+            list_result = run_command_result(
+                [
+                    "gh",
+                    issue_or_pr,
+                    "list",
+                    "--repo",
+                    expected_full_name,
+                    "--limit",
+                    "1",
+                    "--json",
+                    "number",
+                ]
+            )
+            if list_result.returncode != 0:
+                issue_pr_ok = False
+                issue_pr_messages.append(f"{expected_full_name} {issue_or_pr}: {command_message(list_result)}")
+
+        ruleset_result = run_command_result(["gh", "api", f"repos/{expected_full_name}/rulesets"])
+        if ruleset_result.returncode != 0:
+            ruleset_ok = False
+            ruleset_messages.append(f"{expected_full_name}: {command_message(ruleset_result)}")
+
+    add_preflight_check(
+        checks,
+        name="github-repo-access",
+        passed=repo_access_ok,
+        message=(
+            "All control-plane GitHub repos are readable and public."
+            if repo_access_ok
+            else "; ".join(repo_access_messages or ["gh CLI is unavailable or workspace is incomplete"])
+        ),
+    )
+    add_preflight_check(
+        checks,
+        name="github-issue-pr-access",
+        passed=issue_pr_ok,
+        message=(
+            "Issues and PRs are readable for every control-plane repo."
+            if issue_pr_ok
+            else "; ".join(issue_pr_messages or ["gh CLI is unavailable or workspace is incomplete"])
+        ),
+    )
+    add_preflight_check(
+        checks,
+        name="ruleset-read",
+        passed=ruleset_ok,
+        message=(
+            "Rulesets are readable for every control-plane repo."
+            if ruleset_ok
+            else "; ".join(ruleset_messages or ["gh CLI is unavailable or workspace is incomplete"])
+        ),
+    )
+
+    normalized_target_repo = normalize_repo_full_name(
+        target_repo_full_name,
+        github_owner=github_owner,
+    )
+    if admin:
+        target_admin_ok = False
+        target_admin_message = "--admin-preflight requires --target-repo or --target-repo-full-name."
+        if normalized_target_repo:
+            view_result = run_command_result(
+                [
+                    "gh",
+                    "repo",
+                    "view",
+                    normalized_target_repo,
+                    "--json",
+                    "nameWithOwner,visibility,isPrivate,viewerPermission",
+                ]
+            )
+            repo_info = parse_json_object(view_result.stdout)
+            if view_result.returncode != 0 or not repo_info:
+                target_admin_message = (
+                    f"{normalized_target_repo}: cannot confirm admin permission: "
+                    f"{command_message(view_result)}"
+                )
+            else:
+                permission = repo_info.get("viewerPermission")
+                is_public = repo_info.get("visibility") == "PUBLIC" and not repo_info.get("isPrivate")
+                target_admin_ok = permission == "ADMIN" and is_public
+                target_admin_message = (
+                    f"{normalized_target_repo}: ADMIN permission and PUBLIC visibility confirmed."
+                    if target_admin_ok
+                    else (
+                        f"{normalized_target_repo}: expected PUBLIC repo with ADMIN permission, "
+                        f"got visibility={repo_info.get('visibility')} permission={permission}."
+                    )
+                )
+        add_preflight_check(
+            checks,
+            name="target-repo-admin",
+            passed=target_admin_ok,
+            message=target_admin_message,
+            details={"target_repo": normalized_target_repo},
+        )
+
+    ready = all(check["status"] == "pass" for check in checks)
+    return {
+        "mode": mode,
+        "ready": ready,
+        "expected_github_login": expected_github_login,
+        "github_login": github_login,
+        "github_owner": github_owner,
+        "target_repo": normalized_target_repo,
+        "workspace_check": workspace_check,
+        "checks": checks,
     }
 
 
@@ -701,6 +1095,30 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cwd", default=os.getcwd(), help="Working directory to inspect")
     parser.add_argument("--user-session", default=os.environ.get("USER", "unknown-session"))
     parser.add_argument(
+        "--preflight",
+        action="store_true",
+        help="Run the strict startup preflight gate before project-start work.",
+    )
+    parser.add_argument(
+        "--admin-preflight",
+        action="store_true",
+        help="Run startup preflight plus target repo admin checks before repo/ruleset changes.",
+    )
+    parser.add_argument(
+        "--expected-github-login",
+        default=os.environ.get("CLEVER_EXPECTED_GITHUB_LOGIN", DEFAULT_EXPECTED_GITHUB_LOGIN),
+        help="Expected GitHub login for gh authenticated operations.",
+    )
+    parser.add_argument(
+        "--github-owner",
+        default=os.environ.get("CLEVER_GITHUB_OWNER", DEFAULT_GITHUB_OWNER),
+        help="GitHub owner or organization expected for CLEVER repositories.",
+    )
+    parser.add_argument(
+        "--target-repo-full-name",
+        help="Target repo full name for admin preflight, for example EVNSolution/example.",
+    )
+    parser.add_argument(
         "--workspace-check",
         action="store_true",
         help="Inspect the local three-repository workspace and report startup readiness.",
@@ -777,6 +1195,21 @@ def print_workspace_check(workspace_check: dict[str, Any]) -> None:
             print(f"- {item}")
     print(f"recommended-start-repo: {workspace_check['recommended_start_repo']}")
     print("WORKSPACE_CHECK_END")
+
+
+def print_preflight_check(preflight_check: dict[str, Any]) -> None:
+    print("PREFLIGHT_CHECK_BEGIN")
+    print(f"mode: {preflight_check['mode']}")
+    print(f"ready: {'yes' if preflight_check['ready'] else 'no'}")
+    print(f"github-owner: {preflight_check['github_owner']}")
+    print(f"expected-github-login: {preflight_check['expected_github_login']}")
+    print(f"github-login: {preflight_check['github_login'] or 'unknown'}")
+    if preflight_check.get("target_repo"):
+        print(f"target-repo: {preflight_check['target_repo']}")
+    print("checks:")
+    for check in preflight_check["checks"]:
+        print(f"- {check['name']}: {check['status']} - {check['message']}")
+    print("PREFLIGHT_CHECK_END")
 
 
 def print_text_packet(packet: dict[str, Any]) -> None:
@@ -863,6 +1296,22 @@ def main() -> int:
         cwd,
         current_repo_maintenance=args.current_repo_maintenance,
     )
+
+    if args.preflight or args.admin_preflight:
+        target_repo_for_admin = args.target_repo_full_name or args.target_repo
+        preflight_check = build_preflight_check(
+            cwd=cwd,
+            expected_github_login=args.expected_github_login,
+            github_owner=args.github_owner,
+            admin=args.admin_preflight,
+            target_repo_full_name=target_repo_for_admin,
+            current_repo_maintenance=args.current_repo_maintenance,
+        )
+        if args.json:
+            print(json.dumps({"preflight_check": preflight_check}, ensure_ascii=False, indent=2))
+        else:
+            print_preflight_check(preflight_check)
+        return 0 if preflight_check["ready"] else 3
 
     if args.workspace_check:
         if args.json:

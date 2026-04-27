@@ -84,6 +84,8 @@ gh auth status
 ```
 
 헤드리스 환경에서는 `GH_TOKEN` 환경 변수 또는 `gh auth login --with-token` 방식을 사용할 수 있다.
+CLEVER 기본 계정은 `OziinG`으로 검증한다. 다른 계정을 쓸 때는 `CLEVER_EXPECTED_GITHUB_LOGIN` 또는 `--expected-github-login`을 명시한다.
+preflight는 `EVNSolution` org active membership도 확인한다.
 
 ## Superpowers 설치
 
@@ -155,7 +157,7 @@ generic CLEVER startup 세션은 `<CLEVER_ROOT>/clever-agent-project`에서 시�
 - `clever-context-monorepo` 정본 문서 수정
 - `clever-change-control` issue template 또는 traceability 규칙 수정
 
-이 경우에는 해당 레포에서 세션을 열 수 있지만, 먼저 `workspace-check`로 generic startup이 아니라 repo-local maintenance인지 확인해야 한다.
+이 경우에는 해당 레포에서 세션을 열 수 있지만, 먼저 `preflight`로 generic startup이 아니라 repo-local maintenance인지 확인해야 한다.
 
 즉 `superpowers`는 사용자 에이전트 환경에 설치되고, 새 프로젝트 repo는 그 환경 위에서 실행되는 작업 대상 repo가 된다.
 
@@ -173,7 +175,7 @@ generic CLEVER startup 세션은 `<CLEVER_ROOT>/clever-agent-project`에서 시�
 - `main` 삭제 금지
 - force push 금지
 - `main` 변경은 PR 필수
-- PR 승인 1명 이상 필수
+- PR 승인 수는 0명
 - admin bypass는 `pull_request` 모드만 허용한다.
 
 control-plane repo 자체를 수정할 때도 `main`에 직접 push하지 않는다.
@@ -186,7 +188,7 @@ target repo를 처음 remote에 올릴 때는 아래 순서를 기본으로 한�
 1. 새 target repo는 public으로 생성한다.
 2. brand-new remote bootstrap이면 초기 commit은 `main`에 올릴 수 있다.
 3. 초기 remote publish가 끝나면 바로 `dev` branch를 만든다.
-4. `dev`가 push된 뒤 GitHub ruleset을 적용한다.
+4. `dev`가 push된 뒤 admin preflight를 통과하고 GitHub ruleset을 적용한다.
 5. 이후 일상 작업은 `dev` 또는 `dev`에서 파생된 task branch에서 한다.
 6. `dev`가 생긴 뒤에는 로컬에서 `main` direct push를 막는다.
 
@@ -214,10 +216,41 @@ private repo ruleset enforce가 필요하면 GitHub Team, GitHub Pro, 또는 Git
 
 즉 `dev`는 통합 작업선이고, task branch는 역할별 작업선이다.
 
+### PR 완료 후 branch 정리
+
+PR이 merge됐거나 source branch를 버리기로 하고 closed 처리된 뒤에는 task
+branch를 정리한다. 단, 해당 branch가 아직 open PR, 후속 issue, child branch,
+active release/hotfix에 쓰이면 삭제하지 않는다.
+
+기본 명령은 아래 순서다.
+
+```bash
+git switch dev
+git pull --ff-only origin dev
+git branch -d <source-branch>
+git push origin --delete <source-branch>
+git fetch --prune origin
+```
+
+- `main`과 `dev`는 삭제 대상이 아니다.
+- 기본은 `git branch -d <source-branch>`를 쓴다.
+- merge 없이 닫은 branch를 폐기해야 할 때만 사용자 확인 후 `git branch -D <source-branch>`를 쓴다.
+- remote branch가 GitHub에서 이미 삭제됐더라도 `git fetch --prune origin`으로 로컬 추적 branch를 정리한다.
+
 ### GitHub ruleset 적용
 
 새 target repo에는 seed file로 `scripts/apply-github-rulesets.sh`를 복사한다.
-초기 `main` commit과 `dev` push가 끝난 뒤 아래처럼 실행한다.
+초기 `main` commit과 `dev` push가 끝난 뒤 먼저 admin preflight를 실행한다.
+
+```bash
+python3 scripts/bootstrap_clever_work.py \
+  --cwd "$PWD" \
+  --admin-preflight \
+  --target-repo-full-name <owner>/<repo> \
+  --json
+```
+
+통과하면 아래처럼 ruleset을 적용한다.
 
 ```bash
 chmod +x scripts/apply-github-rulesets.sh
@@ -230,7 +263,18 @@ scripts/apply-github-rulesets.sh <owner>/<repo>
 - `dev`: PR 경유만 허용하고 direct push를 막는다. 승인 수는 0명이다.
 - 그 외 branch: GitHub ruleset을 적용하지 않는다.
 
-이 작업에는 `gh` 인증과 target repo의 GitHub Administration write 권한이 필요하다.
+이 작업에는 `gh auth status` 통과, GitHub login `OziinG`, `EVNSolution` org membership, target repo의 GitHub Administration write 권한이 필요하다.
+새 repo 생성 권한은 destructive create 없이 완전히 증명할 수 없으므로, preflight는 membership과 API 접근을 먼저 확인하고 실제 생성 성공은 `gh repo create` 결과로 확정한다.
+
+### PR 완료 후 branch 정리
+
+PR merge가 끝나고 source branch에 open PR이 더 없으면 remote/local task branch를 정리한다.
+`main`과 `dev`는 삭제 대상이 아니다.
+
+```bash
+git push origin --delete <source-branch>
+git branch -d <source-branch>
+```
 
 ### 로컬 `main` push 금지 가드
 
@@ -306,19 +350,20 @@ bootstrap packet의 `target_repo_seed_files` 항목은 위 두 파일을 target 
 
 ## 첫 대화 하드 게이트
 
-첫 질문을 던지기 전에 에이전트는 먼저 로컬 workspace 상태를 자동 감지한다.
+첫 질문을 던지기 전에 에이전트는 먼저 로컬 workspace, `gh auth status`, GitHub 계정, 원격 접근, issue/PR/ruleset 조회 가능 여부를 자동 감지한다.
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 현재 control-plane 저장소 자체를 직접 수정하는 세션이면 아래처럼 유지보수 모드로 확인한다.
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --current-repo-maintenance --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
 ```
 
-이 명령은 아래 중 하나를 돌려준다.
+`preflight_check.ready=false`이면 시작 질문으로 내려가지 않고 실패한 check를 먼저 해결한다.
+`true`이면 내부 `workspace_check.agent_action`이 아래 중 하나를 돌려준다.
 
 - `proceed-with-hard-gate`: 현재 위치에서 시작 템플릿으로 진행
 - `current-repo-maintenance`: 현재 control-plane 저장소 자체를 수정하는 세션으로 보고 여기서 계속

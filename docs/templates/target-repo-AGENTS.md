@@ -18,6 +18,30 @@
 
 값이 아직 확정되지 않은 항목은 `pending`으로 남기고, 추측해서 채우지 않는다.
 
+## Preflight Gate
+
+새 target repo에서 팀 작업 자동화, issue/PR 동시작업 판정, ruleset 적용, CODEOWNERS/CI 보강 같은 team-work automation을 시작하기 전에는 control-plane preflight가 먼저 통과되어야 한다.
+
+control-plane workspace의 `clever-agent-project`에서 실행한다.
+
+```bash
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+```
+
+repo 생성, ruleset 적용, branch protection 변경처럼 GitHub admin 권한이 필요한 단계는 대상 repo를 지정해 admin preflight를 다시 통과한다.
+
+```bash
+python3 scripts/bootstrap_clever_work.py \
+  --cwd "$PWD" \
+  --admin-preflight \
+  --target-repo-full-name <target_repo_full_name> \
+  --json
+```
+
+preflight는 최소한 `gh auth status`, GitHub login `OziinG`, `EVNSolution` org membership, `EVNSolution/*` origin, public repo, issue/PR/ruleset 조회 권한, clean worktree, remote fetch 접근을 확인한다.
+새 repo 생성 권한은 destructive create 없이 완전히 증명할 수 없으므로, preflight 통과 후 `gh repo create` 성공 결과를 생성 proof로 본다.
+실패하면 구현 계획, repo bootstrap, 동시작업 gate 판정으로 내려가지 않는다.
+
 ## 저장소 역할
 
 이 저장소는 구현 대상 repo다.
@@ -54,6 +78,27 @@
 
 초기 remote bootstrap 후에는 `dev`를 만들고, 이후 일반 작업은 `dev` 또는 task branch에서 진행한다.
 `dev`가 생긴 뒤에는 `main`에 직접 push하지 않는다.
+
+### PR 완료 후 branch 정리
+
+PR이 merge됐거나 source branch를 버리기로 하고 closed 처리된 뒤에는 task
+branch를 정리한다. 단, 해당 branch가 아직 open PR, 후속 issue, child branch,
+active release/hotfix에 쓰이면 삭제하지 않는다.
+
+기본 명령은 아래 순서다.
+
+```bash
+git switch dev
+git pull --ff-only origin dev
+git branch -d <source-branch>
+git push origin --delete <source-branch>
+git fetch --prune origin
+```
+
+- `main`과 `dev`는 삭제 대상이 아니다.
+- 기본은 `git branch -d <source-branch>`를 쓴다.
+- merge 없이 닫은 branch를 폐기해야 할 때만 사용자 확인 후 `git branch -D <source-branch>`를 쓴다.
+- remote branch가 GitHub에서 이미 삭제됐더라도 `git fetch --prune origin`으로 로컬 추적 branch를 정리한다.
 
 ## GitHub Ruleset 운영
 
@@ -149,6 +194,16 @@ chmod +x .git/hooks/pre-push
 
 `pre-commit`은 잘못된 branch 이름에서 commit 생성을 막는다.
 `pre-push`는 `main` direct push와 잘못된 branch 이름 push를 막는다.
+
+## PR 완료 후 branch 정리
+
+PR merge가 끝나고 source branch에 open PR이 더 없으면 remote/local task branch를 정리한다.
+`main`과 `dev`는 삭제 대상이 아니다.
+
+```bash
+git push origin --delete <source-branch>
+git branch -d <source-branch>
+```
 
 ## Issue 연결 규칙
 

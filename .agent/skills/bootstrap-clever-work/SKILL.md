@@ -11,13 +11,14 @@ Use this skill as the single entry point for new CLEVER work.
 
 It forces the same start sequence for every user and every repo:
 
-1. Read the two SSOT repos first.
-2. Collect the startup branch.
-3. If it is MSA-oriented and service-specific, determine the target service by conversation and read the relevant root/service docs.
-4. Infer the work context from the current repo.
-5. Convert the request into a `project-start` draft packet.
-6. Ask for one final approval.
-7. Only then create the root issue, propose repo bootstrap, seed the target repo, clone the repo, and hand off.
+1. Run the preflight gate.
+2. Read the two SSOT repos first.
+3. Collect the startup branch.
+4. If it is MSA-oriented and service-specific, determine the target service by conversation and read the relevant root/service docs.
+5. Infer the work context from the current repo.
+6. Convert the request into a `project-start` draft packet.
+7. Ask for one final approval.
+8. Only then create the root issue, propose repo bootstrap, seed the target repo, clone the repo, and hand off.
 
 **Core principle:** do not start CLEVER work from a freeform prompt when the SSOT repos are available.
 
@@ -32,24 +33,43 @@ Do not put the project planning draft into `AGENTS.md`.
 
 ## First-Response Hard Gate
 
-Before showing the first-response template, automatically inspect the local workspace:
+Before showing the first-response template, automatically inspect the local workspace,
+`gh auth status`, GitHub account, remotes, repo visibility, and issue/PR/ruleset read access:
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 If the session is explicitly about editing the current control-plane repo itself, run:
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --current-repo-maintenance --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
 ```
 
 Interpret the result like this:
 
-- `agent_action=proceed-with-hard-gate`: continue in the current session
-- `agent_action=current-repo-maintenance`: stay in the current control-plane repo and treat it as the target
-- `agent_action=switch-to-clever-agent-project`: move startup to `clever-agent-project` first
-- `agent_action=stop-and-fix-workspace`: stop and clearly state that the local three-repository workspace is incomplete
+- `preflight_check.ready=false`: stop and show the failed checks before asking startup questions.
+- `preflight_check.ready=true`: continue by reading `workspace_check.agent_action`.
+- `workspace_check.agent_action=proceed-with-hard-gate`: continue in the current session
+- `workspace_check.agent_action=current-repo-maintenance`: stay in the current control-plane repo and treat it as the target
+- `workspace_check.agent_action=switch-to-clever-agent-project`: move startup to `clever-agent-project` first
+- `workspace_check.agent_action=stop-and-fix-workspace`: stop and clearly state that the local three-repository workspace is incomplete
+
+The expected GitHub login defaults to `OziinG`.
+Use `CLEVER_EXPECTED_GITHUB_LOGIN` or `--expected-github-login` only when the user explicitly authorizes another account.
+Preflight also checks active `EVNSolution` org membership. Repository creation
+permission cannot be proven without the actual `gh repo create` write attempt,
+so treat that command's success as the creation proof after preflight passes.
+
+## PR 완료 후 branch 정리
+
+After a PR is merged, delete the source task branch only when there is no other
+open PR using that branch. `main`과 `dev`는 삭제 대상이 아니다.
+
+```bash
+git push origin --delete <source-branch>
+git branch -d <source-branch>
+```
 
 Before planning, implementation, `project-start` creation, or repo bootstrap, the agent must first normalize the session into the same opening structure.
 
@@ -303,6 +323,8 @@ Once the user approves:
 7. Apply or confirm the branch operating contract in the target repo:
    - initial remote bootstrap commit may land on `main`
    - immediately after that, create and push `dev`
+   - before applying rulesets or repository protection settings, run:
+     `python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --admin-preflight --target-repo-full-name <owner>/<repo> --json`
    - after `dev` exists, run `scripts/apply-github-rulesets.sh <owner>/<repo>` when GitHub Administration write permission is available
    - GitHub rulesets should target only `main` and `dev`: both require PR-only updates with `required_approving_review_count=0`, and other branches stay unrestricted by ruleset
    - after `dev` exists, block direct local pushes to `main`
@@ -423,6 +445,32 @@ Rules:
 - a PR into `dev` or `main` must finish review-agent work with wiki/service context updates, or a documented not-needed decision
 - do not upload PR information to the wiki; update only service, operational, contract, or navigation context
 - issue close should refer to the PR review completion result instead of duplicating the context/wiki decision
+
+## PR Branch Cleanup
+
+PR 완료 후 branch 정리:
+
+After a PR is merged, or closed with the source branch intentionally abandoned,
+clean up the task branch unless it still has an open PR, linked follow-up issue,
+child branch, or active release/hotfix use.
+
+Default command sequence:
+
+```bash
+git switch dev
+git pull --ff-only origin dev
+git branch -d <source-branch>
+git push origin --delete <source-branch>
+git fetch --prune origin
+```
+
+- `main`과 `dev`는 삭제 대상이 아니다.
+- Use `git branch -d <source-branch>` by default.
+- Use `git branch -D <source-branch>` only when the PR was closed without merge
+  and the user explicitly confirms the branch can be discarded.
+- Do not delete a remote branch if it still backs an open PR, follow-up issue,
+  child branch, or active release/hotfix.
+- If GitHub already deleted the remote branch, still run `git fetch --prune origin`.
 
 ## Common Mistakes
 
