@@ -395,8 +395,9 @@ Rules:
 - once `dev` exists, do not use direct push to `main`
 - direct work on `dev` is allowed, but task branches are the preferred default
 - child branches from task branches are allowed when the work is explicitly nested
-- a PR into `dev` or `main` must carry PR metadata for context/wiki upload status
-- issue close should refer to the PR metadata instead of duplicating the context/wiki decision
+- a PR into `dev` or `main` must finish review-agent work with wiki/service context updates, or a documented not-needed decision
+- do not upload PR information to the wiki; update only service, operational, contract, or navigation context
+- issue close should refer to the PR review completion result instead of duplicating the context/wiki decision
 
 ## Common Mistakes
 

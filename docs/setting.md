@@ -234,26 +234,27 @@ chmod +x .git/hooks/pre-push
 
 이 가드는 local repo 단위로만 적용된다. 다른 저장소까지 자동으로 막지는 않는다.
 
-### dev/main PR context metadata
+### dev/main PR review completion
 
-`dev` 또는 `main`으로 들어가는 PR merge 단위는 context/wiki 반영 여부를 묶는 단위다.
-issue close는 PR metadata를 참조한다.
+`dev` 또는 `main`으로 들어가는 PR merge 단위에서 검토 에이전트 작업은 wiki/service context 업데이트로 끝난다.
+이슈 종료는 PR 검토 완료 결과를 참조한다.
+PR 정보를 wiki에 올리는 것이 아니다. wiki에는 필요한 서비스/운영 context만 반영한다.
 
 따라서 에이전트는 `dev`/`main` PR 준비 시 아래도 함께 본다.
 
 - `clever-context-monorepo/docs/services/<service>/index.md` 갱신 필요 여부
 - `clever-context-monorepo/docs/wiki/` 탐색 문서 또는 요약 문서 갱신 필요 여부
 - template lineage, deploy profile, env/secret category, public contract 변화가 service 문서에 반영됐는지
-- PR metadata의 `context wiki upload status`, `service doc update`, `wiki update`, `clever-context-monorepo commit/PR`
+- 검토 에이전트의 wiki/service context update result, service doc update, wiki update, clever-context-monorepo update
 
 복사해 쓰는 프롬프트는 아래 문서에 둔다.
 
-- [PR context wiki metadata prompt](templates/main-pr-global-context-wiki-prompt.md)
+- [PR review context/wiki completion prompt](templates/main-pr-global-context-wiki-prompt.md)
 
 ### 이슈 해결 단위의 컨텍스트 wiki 정리
 
 각 이슈를 해결 완료로 표시하기 전에도 `clever-context-monorepo` 반영 필요 여부를 확인한다.
-단, 연결된 `dev` 또는 `main` PR이 있으면 context/wiki 판단과 업로드 상태는 PR metadata에 먼저 묶는다.
+단, 연결된 `dev` 또는 `main` PR이 있으면 context/wiki 판단과 업데이트는 PR 검토 에이전트 작업의 마지막 단계로 처리한다.
 
 에이전트는 이슈 종료 코멘트, PR 정리, merge 준비를 작성하기 전에 아래를 점검한다.
 
@@ -266,7 +267,7 @@ issue close는 PR metadata를 참조한다.
 - [issue resolution context wiki prompt](templates/issue-resolution-context-wiki-prompt.md)
 
 이 점검은 모든 이슈에서 수행하지만, 모든 이슈가 wiki 수정으로 이어지는 것은 아니다. 서비스 정본은 service 문서에 우선 반영하고, `docs/wiki/`는 빠른 탐색이나 요약이 필요할 때만 수정한다.
-이슈 종료 코멘트는 PR metadata의 context/wiki 결과를 복사하거나 링크한다.
+이슈 종료 코멘트는 PR 검토 완료 결과의 context/wiki 결과를 복사하거나 링크한다.
 
 ### 새 target repo 초기 seed 파일
 

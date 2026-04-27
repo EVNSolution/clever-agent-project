@@ -114,10 +114,10 @@ TARGET_REPO_SEED_FILES = [
     {
         "source_template": "clever-agent-project/docs/templates/target-repo-PULL_REQUEST_TEMPLATE.md",
         "destination": ".github/PULL_REQUEST_TEMPLATE.md",
-        "role": "PR metadata and context wiki upload checklist",
+        "role": "PR review context/wiki completion checklist",
         "purpose": (
-            "Require dev and main PRs to carry CLEVER metadata, context document "
-            "checks, wiki upload status, and linked issue close evidence."
+            "Require dev and main PR review work to finish with service, context, "
+            "or wiki updates, or a documented not-needed decision."
         ),
         "required_placeholders": [
             "target_repo",
