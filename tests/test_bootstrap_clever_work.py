@@ -941,6 +941,21 @@ def test_agent_files_startup_behavior_uses_preflight_gate():
         assert "preflight_check.ready=true" in text
 
 
+def test_startup_guides_use_preflight_command_not_legacy_workspace_cli():
+    startup_docs = [
+        REPO_ROOT / "docs/guides/session-start-smoke-test.md",
+        REPO_ROOT / "docs/guides/three-repo-startup-alignment.md",
+        REPO_ROOT / "docs/templates/startup-branch-state-template.md",
+    ]
+
+    for doc_path in startup_docs:
+        text = doc_path.read_text(encoding="utf-8")
+        assert "--workspace-check" not in text
+        assert "`workspace-check`" not in text
+        assert "workspace check 자동화" not in text
+        assert "preflight" in text
+
+
 def test_cli_workspace_check_allows_current_repo_maintenance_when_flagged():
     change_repo = REPO_ROOT.parent / "clever-change-control"
 

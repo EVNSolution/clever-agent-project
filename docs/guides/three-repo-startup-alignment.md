@@ -32,7 +32,7 @@
 
 아래는 현재 모델에 맞춰 이미 정리된 영역이다.
 
-- `workspace-check` 자동 감지 추가
+- `preflight` 자동 감지 추가
 - `agent_action` 기준 분기
   - `proceed-with-hard-gate`
   - `current-repo-maintenance`
@@ -82,7 +82,7 @@
 `clever-context-monorepo/README.md`와 `clever-change-control/README.md`는 각 레포의 역할은 설명하지만, 아직 아래를 전면에 두지는 않는다.
 
 - generic startup vs repo-local maintenance 분기
-- `workspace-check` 우선 실행
+- `preflight` 우선 실행
 - `switch-to-clever-agent-project`와 `stop-and-fix-workspace`의 차이
 
 현재는 이 역할을 각 레포의 `AGENTS.md`가 대신한다.
@@ -100,7 +100,7 @@
 
 ### 3. 시작 모델의 end-to-end 검증은 아직 수동 시나리오 중심이다
 
-현재 자동 검증은 `bootstrap_clever_work.py --workspace-check`와 helper 테스트 수준이다.
+현재 자동 검증은 `bootstrap_clever_work.py --preflight`와 helper 테스트 수준이다.
 
 아직 없는 것은 아래다.
 
@@ -117,12 +117,12 @@
 - 어떤 요청을 repo-local maintenance로 볼지
 - ambiguous case에서 에이전트가 어떤 추가 질문을 해야 하는지
 
-### 5. sibling repo에서의 `workspace-check` 경로는 sibling layout을 전제로 한다
+### 5. sibling repo에서의 `preflight` 경로는 sibling layout을 전제로 한다
 
 현재 경량 `AGENTS.md`는 아래 명령을 사용한다.
 
 ```bash
-python3 ../clever-agent-project/scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+python3 ../clever-agent-project/scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 이건 3레포가 같은 workspace root 아래 sibling으로 있는 구조를 전제로 한다.
@@ -139,7 +139,7 @@ python3 ../clever-agent-project/scripts/bootstrap_clever_work.py --cwd "$PWD" --
 
 - generic startup이면 `clever-agent-project`로 이동
 - repo-local maintenance면 현재 레포 유지
-- `workspace-check` 우선 실행
+- `preflight` 우선 실행
 
 ### 2. repo-local maintenance 예시 문서
 
