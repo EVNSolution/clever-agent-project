@@ -159,6 +159,26 @@ generic CLEVER startup 세션은 `<CLEVER_ROOT>/clever-agent-project`에서 시�
 
 즉 `superpowers`는 사용자 에이전트 환경에 설치되고, 새 프로젝트 repo는 그 환경 위에서 실행되는 작업 대상 repo가 된다.
 
+## Control-plane Repo 보호 기준
+
+아래 3개 control-plane repo는 public으로 운영한다.
+
+- `clever-agent-project`
+- `clever-context-monorepo`
+- `clever-change-control`
+
+각 repo의 `main`은 GitHub ruleset `CLEVER protect main`으로 보호한다.
+
+- `main` direct push 금지
+- `main` 삭제 금지
+- force push 금지
+- `main` 변경은 PR 필수
+- PR 승인 1명 이상 필수
+- admin bypass는 `pull_request` 모드만 허용한다.
+
+control-plane repo 자체를 수정할 때도 `main`에 직접 push하지 않는다.
+역할 접두사 branch에서 작업하고 PR로 올린다.
+
 ## Target Repo 브랜치 운영 기준
 
 target repo를 처음 remote에 올릴 때는 아래 순서를 기본으로 한다.

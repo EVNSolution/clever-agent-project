@@ -356,6 +356,19 @@ Use `fixes`, `closes`, or similar GitHub keywords only when the PR merge is
 intended to close the referenced issue. For context linking without automatic
 closure, use plain issue mentions.
 
+## Control-plane Main Branch Contract
+
+The three CLEVER control-plane repositories are public and their `main`
+branches are protected by the GitHub ruleset `CLEVER protect main`:
+
+- `clever-agent-project`
+- `clever-context-monorepo`
+- `clever-change-control`
+
+Do not push directly to `main` for control-plane changes. Use a role-prefixed
+branch and open a PR into `main`. `main` PRs require at least one approval.
+Admin bypass is allowed only in `pull_request` mode.
+
 ## Branch Operating Contract
 
 Treat git branch roles like this:
