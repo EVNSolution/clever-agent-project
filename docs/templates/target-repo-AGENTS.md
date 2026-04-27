@@ -242,6 +242,32 @@ clever-change-control issue를 동시에 확인한다.
 `user-forced-proceed`는 에이전트의 안전 판단이 아니다.
 사용자 강제 진행 기록이며, 실제 git conflict, 테스트 실패, merge 실패가 발생하면 그 시점에 해결하거나 중단 보고한다.
 
+## PR Scope Grouping Gate
+
+PR을 열기 전에 현재 변경을 한 PR로 묶을지, 분리 PR로 나눌지 판단한다.
+
+같은 issue 안에서 same document/operating-rule cleanup 축이고 same validation command로
+충분하면 한 PR로 묶는다. 여러 정책 문서나 템플릿 파일을 같이
+건드렸다는 이유만으로 작은 운영 문서 정리를 쪼개지 않는다.
+
+한 PR로 묶는 기준:
+
+- 같은 issue와 같은 document/operating-rule cleanup 축이다.
+- 같은 validation command가 전체 변경을 검증한다.
+- `AGENTS.md`, PR template, startup state template, project brief template,
+  design source policy, merge title template sync처럼 같은 운영 규칙을 맞추는
+  sync 대상이다.
+
+분리 PR로 나누는 기준:
+
+- different app/service/contract surface를 건드린다.
+- 테스트 범위와 실패 지점이 다르다.
+- merge order dependency가 있다.
+- 실패 시 rollback unit이 다르다.
+
+예: OpenAPI schema 변경, Admin Web smoke 화면, Rider App smoke 화면, Spring
+service mock endpoint 구현은 보통 분리 PR로 다룬다.
+
 ## 구현 규칙
 
 - 기존 코드 스타일과 도구를 우선한다.

@@ -216,6 +216,27 @@ private repo ruleset enforce가 필요하면 GitHub Team, GitHub Pro, 또는 Git
 
 즉 `dev`는 통합 작업선이고, task branch는 역할별 작업선이다.
 
+### PR Scope Grouping Gate
+
+PR은 파일 수가 아니라 변경 축과 검증 단위로 나눈다.
+
+같은 issue 안에서 same document/operating-rule cleanup 축이고 same validation command로
+충분하면 한 PR로 묶는다. `AGENTS.md`, PR template, startup state
+template, project brief template, design source policy, merge title template
+sync처럼 같은 운영 규칙을 맞추는 작은 문서 정리는 여러 PR로 나누지 않는다.
+나누면 리뷰 단위보다 추적 단위가 커지고, issue 연결과 context completion
+기록만 반복된다.
+
+분리 PR은 아래 경우에만 기본값으로 둔다.
+
+- different app/service/contract surface를 건드린다.
+- 테스트 범위와 실패 지점이 다르다.
+- merge order dependency가 있다.
+- 실패 시 rollback unit이 다르다.
+
+예: OpenAPI schema 변경, Admin Web smoke 화면 구현, Rider App smoke 화면 구현,
+Spring service mock endpoint 구현은 검증과 실패 지점이 달라 보통 분리한다.
+
 ### PR 완료 후 branch 정리
 
 PR이 merge됐거나 source branch를 버리기로 하고 closed 처리된 뒤에는 task

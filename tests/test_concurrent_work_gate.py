@@ -53,3 +53,27 @@ def test_pr_templates_require_parallel_work_decision():
         assert "parallel work decision" in text
         assert "conflict candidates" in text
         assert "user-forced-proceed" in text
+
+
+def test_pr_scope_grouping_guidance_is_documented_and_in_templates():
+    policy_surfaces = [
+        read(REPO_ROOT / "AGENTS.md"),
+        read(REPO_ROOT / "docs/setting.md"),
+        read(REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md"),
+        read(REPO_ROOT / "docs/templates/target-repo-AGENTS.md"),
+        read(CONTEXT_ROOT / "docs/root/pipeline-governance.md"),
+    ]
+    pr_templates = [
+        read(REPO_ROOT / ".github/PULL_REQUEST_TEMPLATE.md"),
+        read(REPO_ROOT / "docs/templates/target-repo-PULL_REQUEST_TEMPLATE.md"),
+        read(CONTEXT_ROOT / ".github/PULL_REQUEST_TEMPLATE.md"),
+        read(CHANGE_CONTROL_ROOT / ".github/PULL_REQUEST_TEMPLATE.md"),
+    ]
+
+    for text in policy_surfaces + pr_templates:
+        assert "PR Scope Grouping Gate" in text
+        assert "same document/operating-rule cleanup" in text
+        assert "same validation command" in text
+        assert "different app/service/contract surface" in text
+        assert "merge order dependency" in text
+        assert "rollback unit" in text
