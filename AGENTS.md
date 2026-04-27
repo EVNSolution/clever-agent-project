@@ -403,6 +403,36 @@ The decision and evidence must be written to both the target repo issue and the
 clever-change-control issue. The PR body must repeat the final parallel work
 decision.
 
+## PR Scope Grouping Gate
+
+Before opening a PR, decide whether the current changes belong in one PR or
+must be split.
+
+Prefer one PR when the work is the same document/operating-rule cleanup and the
+same validation command is enough to review it. Do not split small operational
+documentation cleanup only because it touches several policy or template files;
+that creates repeated issue linkage and context-completion records without a
+clearer review unit.
+
+Keep one PR when:
+
+- the changes are under the same issue and the same document/operating-rule
+  cleanup axis
+- the same validation command covers the full change
+- the touched files are sync targets for the same policy, such as `AGENTS.md`,
+  PR templates, startup state templates, project brief templates, design source
+  policy, or merge title template sync
+
+Split into separate PRs when:
+
+- the work touches a different app/service/contract surface
+- the test scope and likely failure point are different
+- there is a merge order dependency between parts
+- a failure would require a different rollback unit
+
+Examples that should usually be split: OpenAPI schema changes, Admin Web smoke
+screen work, Rider App smoke screen work, and Spring service mock endpoint work.
+
 During and after the work, update the `clever-change-control` issue with:
 
 - current session phase: documentation, implementation, verification, or release

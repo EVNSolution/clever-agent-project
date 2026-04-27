@@ -350,6 +350,25 @@ Record exactly one decision:
   body, then continue until a real git conflict, test failure, or merge failure
   must be resolved.
 
+## PR Scope Grouping Gate
+
+Before opening a PR, decide whether the changes should stay together or be
+split.
+
+Keep one PR when the changes share the same document/operating-rule cleanup and
+the same validation command covers them. This includes small sync work across
+`AGENTS.md`, PR templates, startup state templates, project brief templates,
+design source policy, and merge title template sync when they all express the
+same operating rule.
+
+Split PRs when the work crosses a different app/service/contract surface, has a
+different test scope or likely failure point, has a merge order dependency, or
+would need a different rollback unit.
+
+OpenAPI schema changes, Admin Web smoke screen work, Rider App smoke screen
+work, and Spring service mock endpoint work are examples that usually deserve
+separate PRs.
+
 ## Standard Packet
 
 Before the helper script, every run should normalize the startup branch state into this shape:

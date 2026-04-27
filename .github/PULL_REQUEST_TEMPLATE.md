@@ -14,6 +14,18 @@
 
 -
 
+## PR Scope Grouping Gate
+
+- grouping decision: `single-pr` / `split-required`
+- same document/operating-rule cleanup:
+- same validation command:
+- different app/service/contract surface:
+- merge order dependency:
+- rollback unit:
+
+같은 issue 안의 같은 운영 문서/절차 정리이고 같은 검증으로 충분하면 `single-pr`로 둔다.
+앱, 서비스, 계약 표면, merge 순서, 롤백 단위가 다르면 `split-required`로 둔다.
+
 ## 테스트 여부
 
 -
