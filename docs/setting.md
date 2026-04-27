@@ -163,11 +163,21 @@ generic CLEVER startup 세션은 `<CLEVER_ROOT>/clever-agent-project`에서 시�
 
 target repo를 처음 remote에 올릴 때는 아래 순서를 기본으로 한다.
 
-1. brand-new remote bootstrap이면 초기 commit은 `main`에 올릴 수 있다.
-2. 초기 remote publish가 끝나면 바로 `dev` branch를 만든다.
-3. `dev`가 push된 뒤 GitHub ruleset을 적용한다.
-4. 이후 일상 작업은 `dev` 또는 `dev`에서 파생된 task branch에서 한다.
-5. `dev`가 생긴 뒤에는 로컬에서 `main` direct push를 막는다.
+1. 새 target repo는 public으로 생성한다.
+2. brand-new remote bootstrap이면 초기 commit은 `main`에 올릴 수 있다.
+3. 초기 remote publish가 끝나면 바로 `dev` branch를 만든다.
+4. `dev`가 push된 뒤 GitHub ruleset을 적용한다.
+5. 이후 일상 작업은 `dev` 또는 `dev`에서 파생된 task branch에서 한다.
+6. `dev`가 생긴 뒤에는 로컬에서 `main` direct push를 막는다.
+
+새 repo 생성 명령은 아래 형태를 기본으로 한다.
+
+```bash
+gh repo create <owner>/<repo> --public
+```
+
+GitHub Free 조직에서 private repo ruleset이 enforce되지 않는다.
+private repo ruleset enforce가 필요하면 GitHub Team, GitHub Pro, 또는 GitHub Enterprise Cloud로 업그레이드가 필요하다.
 
 브랜치 의미는 아래처럼 고정한다.
 

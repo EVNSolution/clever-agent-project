@@ -104,7 +104,8 @@ TARGET_REPO_SEED_FILES = [
         "role": "GitHub repository ruleset bootstrap",
         "purpose": (
             "Apply the standard target repo branch rulesets: protect main, "
-            "require one approval for dev PRs, and leave other branches unrestricted."
+            "require one approval for dev PRs, and leave other branches unrestricted. "
+            "The target repo must be public when the organization uses GitHub Free."
         ),
         "required_placeholders": [
             "target_repo_full_name",
@@ -567,12 +568,18 @@ def build_packet(
         "before proposing repo creation or cloning."
         if target_repo_status == "needs-confirmation"
         else (
-            "After the project-start issue is approved and created, propose target repo "
-            "creation or confirmation before cloning locally."
+            "After the project-start issue is approved and created, propose public target "
+            "repo creation or confirmation before cloning locally."
             if requires_new_repo
             else "After the project-start issue is approved and created, confirm the current "
             "repo is the target execution repo and refresh the local checkout."
         )
+    )
+    target_repo_visibility = "public-when-created"
+    visibility_reason = (
+        "GitHub Free organization rulesets are enforced on public repositories. "
+        "Private repository ruleset enforcement requires GitHub Team, GitHub Pro, "
+        "or GitHub Enterprise Cloud."
     )
     canonical_linkage_expectations = "\n".join(
         [
@@ -645,10 +652,12 @@ def build_packet(
             "target_repo": target_repo,
             "target_repo_status": target_repo_status,
             "requires_new_repo": requires_new_repo,
+            "target_repo_visibility": target_repo_visibility,
+            "visibility_reason": visibility_reason,
             "status": "proposed-after-approval",
             "proposal": repo_bootstrap_proposal,
             "post_create_clone": [
-                "create-or-confirm target repo after project-start approval",
+                "create-or-confirm public target repo after project-start approval",
                 "clone-or-pull the target repo locally",
                 "copy target repo seed files before handoff",
                 "apply GitHub rulesets after dev exists",

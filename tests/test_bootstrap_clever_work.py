@@ -346,6 +346,9 @@ def test_build_packet_distinguishes_start_repo_from_target_repo_bootstrap():
     assert repo_bootstrap["target_repo"] == "clever-analytics-api"
     assert repo_bootstrap["requires_new_repo"] is True
     assert repo_bootstrap["status"] == "proposed-after-approval"
+    assert repo_bootstrap["target_repo_visibility"] == "public-when-created"
+    assert "GitHub Free organization rulesets" in repo_bootstrap["visibility_reason"]
+    assert "public" in repo_bootstrap["visibility_reason"]
 
 
 def test_build_packet_includes_target_repo_seed_files():
@@ -400,7 +403,8 @@ def test_build_packet_includes_target_repo_seed_files():
             "role": "GitHub repository ruleset bootstrap",
             "purpose": (
                 "Apply the standard target repo branch rulesets: protect main, "
-                "require one approval for dev PRs, and leave other branches unrestricted."
+                "require one approval for dev PRs, and leave other branches unrestricted. "
+                "The target repo must be public when the organization uses GitHub Free."
             ),
             "required_placeholders": [
                 "target_repo_full_name",
@@ -471,6 +475,9 @@ def test_target_repo_ruleset_template_applies_main_and_dev_only():
     assert "gh api" in ruleset_script
     assert "CLEVER protect main" in ruleset_script
     assert "CLEVER review dev" in ruleset_script
+    assert "visibility" in ruleset_script
+    assert "PUBLIC" in ruleset_script
+    assert "GitHub Free organization rulesets require a public repository" in ruleset_script
     assert '"include":["refs/heads/main"]' in ruleset_script
     assert '"include":["refs/heads/dev"]' in ruleset_script
     assert '"required_approving_review_count":0' in ruleset_script
@@ -480,6 +487,7 @@ def test_target_repo_ruleset_template_applies_main_and_dev_only():
     assert "main: PR 경유만 허용" in agents
     assert "dev: PR 1명 이상 승인 필요" in agents
     assert "그 외 branch: GitHub ruleset 미적용" in agents
+    assert "새 프로젝트 repo는 public으로 만든다" in agents
 
 
 def test_agent_project_agents_file_is_clone_ready_for_startup_questions():
@@ -523,7 +531,7 @@ def test_build_packet_includes_post_create_clone_and_handoff_plan():
     handoff = packet["repo_session_handoff"]
 
     assert repo_bootstrap["post_create_clone"] == [
-        "create-or-confirm target repo after project-start approval",
+        "create-or-confirm public target repo after project-start approval",
         "clone-or-pull the target repo locally",
         "copy target repo seed files before handoff",
         "apply GitHub rulesets after dev exists",
@@ -560,6 +568,19 @@ def test_build_ssot_docs_uses_project_start_aligned_surface():
     assert str(clever_root / "clever-context-monorepo/docs/templates/index.md") in docs
     for path in docs:
         assert Path(path).exists(), f"Expected SSOT path to exist: {path}"
+
+
+def test_readme_and_setting_document_public_target_repo_visibility_rule():
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    setting = (REPO_ROOT / "docs/setting.md").read_text(encoding="utf-8")
+    skill = (REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "새 프로젝트 repo는 public으로 만든다" in readme
+    assert "GitHub Free 조직에서 private repo ruleset이 enforce되지 않는다" in readme
+    assert "gh repo create <owner>/<repo> --public" in setting
+    assert "새 target repo는 public으로 생성한다" in skill
 
 
 def test_cli_without_target_repo_keeps_target_repo_as_needs_confirmation():

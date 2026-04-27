@@ -9,6 +9,7 @@ Usage:
 Applies the standard CLEVER GitHub branch rulesets to a target repo.
 
 Policy:
+  repository visibility: public required for GitHub Free organizations.
   main: PR-only updates, no required approving reviewers.
   dev: PR-only updates with at least one approving reviewer.
   all other branches: no GitHub ruleset from this script.
@@ -48,6 +49,14 @@ repo="${repo_full_name#*/}"
 repo_api="repos/${owner}/${repo}"
 
 gh auth status >/dev/null
+
+visibility="$(gh repo view "$repo_full_name" --json visibility --jq .visibility)"
+if [ "$visibility" != "PUBLIC" ]; then
+  echo "GitHub Free organization rulesets require a public repository." >&2
+  echo "Current visibility for ${repo_full_name}: ${visibility}" >&2
+  echo "Make the repository public or upgrade the organization account before applying CLEVER rulesets." >&2
+  exit 3
+fi
 
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT

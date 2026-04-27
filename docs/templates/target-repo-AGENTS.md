@@ -57,6 +57,9 @@
 
 ## GitHub Ruleset 운영
 
+새 프로젝트 repo는 public으로 만든다.
+GitHub Free 조직에서 private repo ruleset은 enforce되지 않는다.
+
 새 repo bootstrap 후 초기 `main` commit과 `dev` branch push가 끝나면 아래 명령으로 GitHub ruleset을 적용한다.
 
 ```bash
@@ -72,6 +75,7 @@ scripts/apply-github-rulesets.sh <target_repo_full_name>
 
 적용 스크립트는 `gh api`를 사용한다.
 실행 계정에는 target repo의 GitHub Administration write 권한이 필요하다.
+private repo로 만들어야 하는 예외가 생기면 ruleset enforce가 되지 않는 리스크를 먼저 이슈에 남긴다.
 
 ## 브랜치 역할별 접두사
 

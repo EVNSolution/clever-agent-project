@@ -155,6 +155,12 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --curren
 
 반환된 `agent_action`이 `proceed-with-hard-gate`면 그대로 시작 템플릿으로 진행하고, `current-repo-maintenance`면 현재 control-plane 저장소를 직접 수정하는 세션으로 보고 여기서 계속하며, `switch-to-clever-agent-project`면 시작 위치를 옮기고, `stop-and-fix-workspace`면 누락된 레포를 먼저 보완한다.
 
+### 새 프로젝트 repo visibility
+
+새 프로젝트 repo는 public으로 만든다.
+GitHub Free 조직에서 private repo ruleset이 enforce되지 않는다.
+ruleset 기반으로 `main` direct push와 `dev` review 정책을 쓰려면 새 target repo를 public으로 생성한다.
+
 ### 2. 세션 시작
 
 generic CLEVER startup은 `clever-agent-project`에서 시작한다.

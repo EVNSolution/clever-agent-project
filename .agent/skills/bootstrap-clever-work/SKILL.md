@@ -291,6 +291,9 @@ Once the user approves:
 2. Create the `project-start` issue in `clever-change-control` using the root intake template.
 3. Use the created issue number as the canonical identifier.
 4. Propose creation or confirmation of the target repo after the issue exists.
+   - 새 target repo는 public으로 생성한다.
+   - Use `gh repo create <owner>/<repo> --public` for a newly created target repo.
+   - GitHub Free organization rulesets are enforced on public repositories; private repository enforcement requires GitHub Team, GitHub Pro, or GitHub Enterprise Cloud.
 5. Clone or pull the target repo locally.
 6. Copy the target repo seed files before handoff:
    - `docs/templates/target-repo-AGENTS.md` -> target repo `AGENTS.md`
