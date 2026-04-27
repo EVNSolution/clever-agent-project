@@ -49,6 +49,20 @@
 - 이슈 종료는 PR 검토 완료 결과를 근거로 처리한다.
 - 이슈 종료 코멘트에는 wiki/service context 반영 결과 또는 불필요 사유를 이 PR에서 복사해 남긴다.
 
+## PR 완료 후 branch 정리
+
+- PR merge 후 source branch에 open PR, 후속 issue, child branch, active release/hotfix가 없으면 정리한다.
+- `main`과 `dev`는 삭제 대상이 아니다.
+- cleanup commands:
+
+```bash
+git switch dev
+git pull --ff-only origin dev
+git branch -d <source-branch>
+git push origin --delete <source-branch>
+git fetch --prune origin
+```
+
 ## PR 기준
 
 - `dev` PR과 `main` PR은 검토 에이전트 종료 조건을 채운다.

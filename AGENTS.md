@@ -69,16 +69,6 @@ Repository creation permission cannot be proven without the actual write attempt
 Treat org membership and token/API access as the pre-create gate, then treat
 `gh repo create` success as the creation proof.
 
-## PR 완료 후 branch 정리
-
-PR merge가 끝나고 source branch에 open PR이 더 없으면 remote/local task branch를 정리한다.
-`main`과 `dev`는 삭제 대상이 아니다.
-
-```bash
-git push origin --delete <source-branch>
-git branch -d <source-branch>
-```
-
 ## Clone-Ready Startup Contract
 
 This section exists for a fresh clone of `clever-agent-project`.

@@ -266,16 +266,6 @@ scripts/apply-github-rulesets.sh <owner>/<repo>
 이 작업에는 `gh auth status` 통과, GitHub login `OziinG`, `EVNSolution` org membership, target repo의 GitHub Administration write 권한이 필요하다.
 새 repo 생성 권한은 destructive create 없이 완전히 증명할 수 없으므로, preflight는 membership과 API 접근을 먼저 확인하고 실제 생성 성공은 `gh repo create` 결과로 확정한다.
 
-### PR 완료 후 branch 정리
-
-PR merge가 끝나고 source branch에 open PR이 더 없으면 remote/local task branch를 정리한다.
-`main`과 `dev`는 삭제 대상이 아니다.
-
-```bash
-git push origin --delete <source-branch>
-git branch -d <source-branch>
-```
-
 ### 로컬 `main` push 금지 가드
 
 `dev`를 만든 뒤에는 target repo 로컬에서 `main` direct push를 막는 것을 권장한다.

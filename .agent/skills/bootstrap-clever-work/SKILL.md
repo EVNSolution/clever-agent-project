@@ -61,16 +61,6 @@ Preflight also checks active `EVNSolution` org membership. Repository creation
 permission cannot be proven without the actual `gh repo create` write attempt,
 so treat that command's success as the creation proof after preflight passes.
 
-## PR 완료 후 branch 정리
-
-After a PR is merged, delete the source task branch only when there is no other
-open PR using that branch. `main`과 `dev`는 삭제 대상이 아니다.
-
-```bash
-git push origin --delete <source-branch>
-git branch -d <source-branch>
-```
-
 Before planning, implementation, `project-start` creation, or repo bootstrap, the agent must first normalize the session into the same opening structure.
 
 Use this exact first-response template:
