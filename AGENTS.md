@@ -64,6 +64,11 @@ Then apply the result:
 
 ### 작업 시작 질문
 
+The user may either fill the block or describe the work naturally.
+양식을 채워도 되고, 자연어로 편하게 설명해도 된다.
+In both cases, the agent must normalize the input into the startup branch fields
+before drafting `project-start`.
+
 If the user has not already provided the startup branch, leave this exact block:
 
 ```text
@@ -94,6 +99,34 @@ If the user has not already provided the startup branch, leave this exact block:
 
 If the user starts with free-form text, do not discard it. Restate it into the
 same block and mark missing values as `needs-input`.
+
+### 자연어 입력 처리 규칙
+
+When the user writes naturally instead of filling the form:
+
+1. Extract known answers into the startup branch fields.
+2. Preserve the user's intent in `하려는 일`.
+3. Infer `작업 종류`, `구조`, and `이번 세션 목표` only when the wording is clear.
+4. Mark ambiguous or missing fields as `needs-input`.
+5. Ask only for the missing fields.
+
+Example:
+
+```text
+사용자 입력:
+회원가입, 로그인, 사용자 확인 기능이 있는 단순한 인증 시스템을 새 프로젝트로 만들고 싶다.
+처음에는 MONO 구조로 가고, 새 repo를 만들면서 AGENTS.md와 docs/project-brief.md도 같이 준비해줘.
+권한 관리나 소셜 로그인은 나중에 하고, 지금은 기본 인증 흐름만 동작하면 된다.
+
+정규화:
+- 작업 종류: 새 작업 시작
+- 구조: MONO
+- 이번 세션 목표: 구현 repo 작업
+- 하려는 일: 회원가입, 로그인, 사용자 확인 기능이 있는 단순한 인증 시스템 개발
+- 제약: 권한 관리와 소셜 로그인은 초기 범위 제외
+- 기대 결과: 새 repo와 seed 파일, 기본 인증 흐름 작업 기반 준비
+- needs-input: 왜 필요한지, 알고 있는 repo/service가 있으면
+```
 
 ### 질문 원장
 

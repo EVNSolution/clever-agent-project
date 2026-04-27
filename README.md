@@ -19,7 +19,9 @@ cd clever-agent-project
 python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
 ```
 
-그다음 `clever-agent-project`에서 에이전트 세션을 열고 아래 첫 메시지 박스를 붙여 넣는다.
+그다음 `clever-agent-project`에서 에이전트 세션을 연다.
+아래 양식을 채워도 되고, 자연어로 편하게 설명해도 된다.
+에이전트가 내용을 시작 분기로 다시 정리하고, 부족한 값만 추가로 묻는다.
 
 ## How to Start
 
@@ -31,7 +33,9 @@ git clone https://github.com/EVNSolution/clever-context-monorepo.git
 git clone https://github.com/EVNSolution/clever-change-control.git
 ```
 
-그다음 `clever-agent-project`에서 세션을 열고, 아래 블록을 첫 메시지로 그대로 붙여 넣는다.
+그다음 `clever-agent-project`에서 세션을 연다.
+아래 양식을 채워도 되고, 자연어로 편하게 설명해도 된다.
+에이전트가 내용을 시작 분기로 다시 정리하고, 부족한 값만 추가로 묻는다.
 
 ```text
 작업 시작
@@ -57,6 +61,14 @@ git clone https://github.com/EVNSolution/clever-change-control.git
 - 제약:
 - 기대 결과:
 - 알고 있는 repo/service가 있으면:
+```
+
+자연어 예시:
+
+```text
+회원가입, 로그인, 사용자 확인 기능이 있는 단순한 인증 시스템을 새 프로젝트로 만들고 싶다.
+처음에는 MONO 구조로 가고, 새 repo를 만들면서 AGENTS.md와 docs/project-brief.md도 같이 준비해줘.
+권한 관리나 소셜 로그인은 나중에 하고, 지금은 기본 인증 흐름만 동작하면 된다.
 ```
 
 에이전트는 이 입력을 시작 분기로 해석하고, 먼저 startup branch state를 채운 뒤에만 `project-start` 초안, repo bootstrap, 구현 계획으로 내려간다.

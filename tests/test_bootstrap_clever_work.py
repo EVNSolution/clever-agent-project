@@ -456,6 +456,8 @@ def test_agent_project_agents_file_is_clone_ready_for_startup_questions():
     assert "작업 종류" in agents
     assert "구조" in agents
     assert "이번 세션 목표" in agents
+    assert "양식을 채워도 되고, 자연어로 편하게 설명해도 된다" in agents
+    assert "자연어 입력 처리 규칙" in agents
 
 
 def test_readme_exposes_copyable_first_clone_command_box():
@@ -470,6 +472,8 @@ def test_readme_exposes_copyable_first_clone_command_box():
     assert "cd clever-agent-project" in readme
     assert "python3 scripts/bootstrap_clever_work.py --cwd \"$PWD\" --workspace-check --json" in readme
     assert "```text\n작업 시작" in readme
+    assert "아래 양식을 채워도 되고, 자연어로 편하게 설명해도 된다" in readme
+    assert "자연어 예시" in readme
 
 
 def test_build_packet_includes_post_create_clone_and_handoff_plan():
