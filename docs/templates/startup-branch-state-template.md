@@ -129,7 +129,7 @@ repo와 service가 둘 다 확정되지 않았으면 빈 값으로 둔다.
 초기 후보는 아래처럼 둔다.
 
 - MSA 새 작업 또는 MSA 기존 변경:
-  - `deploy_template_candidate: Clever-ODIC-deploy@v1`
+  - `deploy_template_candidate: Clever-OIDC-deploy@v1`
   - `deploy_profile_candidate: image-build-once-central-release`
 - MONO는 같은 값을 자동 확정하지 않고, 현재 템플릿/서비스 lineage를 읽은 뒤 채운다.
 - `repo_maintenance`는 deploy template 후보를 비워도 된다.

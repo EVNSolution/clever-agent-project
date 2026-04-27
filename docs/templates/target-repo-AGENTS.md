@@ -269,6 +269,7 @@ clever-change-control issue를 동시에 확인한다.
 - 의도한 파일만 변경됐다.
 - 필요한 테스트를 실행했다.
 - context 문서 반영 필요 여부를 확인했다.
+- 완료 commit에는 source branch 정리 여부를 남긴다.
 - 완료 보고에 변경 내용, 검증 결과, 다음 action을 남겼다.
 
 ## 금지 사항

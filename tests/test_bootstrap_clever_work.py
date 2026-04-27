@@ -512,7 +512,6 @@ def test_docs_require_remote_task_branch_cleanup_after_pr_completion():
         REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md",
         REPO_ROOT / "docs/setting.md",
         REPO_ROOT / "docs/templates/target-repo-AGENTS.md",
-        REPO_ROOT / "docs/templates/target-repo-PULL_REQUEST_TEMPLATE.md",
     ]
 
     for doc_path in docs:
@@ -548,15 +547,17 @@ def test_target_repo_pr_template_makes_review_finish_with_wiki_update():
     assert "clever-context-monorepo update" in pr_template
     assert "linked issue close evidence" in pr_template
     assert "이슈 종료는 PR 검토 완료 결과를 근거로 처리한다" in pr_template
-    assert "PR 완료 후 branch 정리" in pr_template
-    assert "git push origin --delete <source-branch>" in pr_template
-    assert "git branch -d <source-branch>" in pr_template
-    assert "main`과 `dev`는 삭제 대상이 아니다" in pr_template
+    assert "PR 완료 후 branch 정리" not in pr_template
+    assert "git push origin --delete <source-branch>" not in pr_template
+    assert "git branch -d <source-branch>" not in pr_template
 
     assert "PR 검토 에이전트 종료 조건" in agents
     assert "wiki/service context 업데이트로 마친다" in agents
     assert "PR 정보를 wiki에 올리지 않는다" in agents
     assert "이슈 종료는 PR 검토 완료 결과를 근거로 처리한다" in agents
+    assert "완료 commit" in agents
+    assert "git push origin --delete <source-branch>" in agents
+    assert "git branch -d <source-branch>" in agents
 
     assert "dev/main PR review completion" in setting
     assert "검토 에이전트 작업은 wiki/service context 업데이트로 끝난다" in setting
