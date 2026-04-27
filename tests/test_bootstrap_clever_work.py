@@ -926,6 +926,21 @@ def test_docs_require_preflight_before_startup_and_admin_repo_bootstrap():
     assert "team-work automation" in target_agents
 
 
+def test_agent_files_startup_behavior_uses_preflight_gate():
+    agent_files = [
+        REPO_ROOT / "AGENTS.md",
+        REPO_ROOT.parent / "clever-context-monorepo/AGENTS.md",
+        REPO_ROOT.parent / "clever-change-control/AGENTS.md",
+        REPO_ROOT / "docs/templates/target-repo-AGENTS.md",
+    ]
+
+    for doc_path in agent_files:
+        text = doc_path.read_text(encoding="utf-8")
+        assert "Run the workspace check" not in text
+        assert "automatic workspace check" not in text
+        assert "preflight_check.ready=true" in text
+
+
 def test_cli_workspace_check_allows_current_repo_maintenance_when_flagged():
     change_repo = REPO_ROOT.parent / "clever-change-control"
 

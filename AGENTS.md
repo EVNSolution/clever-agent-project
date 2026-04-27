@@ -273,7 +273,7 @@ If the task is template-specific, also read:
 
 Do not jump straight into implementation.
 
-If the automatic workspace check returns `stop-and-fix-workspace`, do not continue as if the environment were complete.
+If the automatic preflight report returns `workspace_check.agent_action=stop-and-fix-workspace`, do not continue as if the environment were complete.
 
 For a new session, begin by collecting the startup branch first.
 
