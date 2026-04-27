@@ -98,6 +98,18 @@ TARGET_REPO_SEED_FILES = [
             "constraints",
         ],
     },
+    {
+        "source_template": "clever-agent-project/docs/templates/apply-target-repo-rulesets.sh",
+        "destination": "scripts/apply-github-rulesets.sh",
+        "role": "GitHub repository ruleset bootstrap",
+        "purpose": (
+            "Apply the standard target repo branch rulesets: protect main, "
+            "require one approval for dev PRs, and leave other branches unrestricted."
+        ),
+        "required_placeholders": [
+            "target_repo_full_name",
+        ],
+    },
 ]
 
 
@@ -639,6 +651,7 @@ def build_packet(
                 "create-or-confirm target repo after project-start approval",
                 "clone-or-pull the target repo locally",
                 "copy target repo seed files before handoff",
+                "apply GitHub rulesets after dev exists",
                 "verify local checkout is ready for follow-on work",
             ],
         },

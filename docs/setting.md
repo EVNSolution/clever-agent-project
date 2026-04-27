@@ -165,8 +165,9 @@ target repo를 처음 remote에 올릴 때는 아래 순서를 기본으로 한�
 
 1. brand-new remote bootstrap이면 초기 commit은 `main`에 올릴 수 있다.
 2. 초기 remote publish가 끝나면 바로 `dev` branch를 만든다.
-3. 이후 일상 작업은 `dev` 또는 `dev`에서 파생된 task branch에서 한다.
-4. `dev`가 생긴 뒤에는 로컬에서 `main` direct push를 막는다.
+3. `dev`가 push된 뒤 GitHub ruleset을 적용한다.
+4. 이후 일상 작업은 `dev` 또는 `dev`에서 파생된 task branch에서 한다.
+5. `dev`가 생긴 뒤에는 로컬에서 `main` direct push를 막는다.
 
 브랜치 의미는 아래처럼 고정한다.
 
@@ -182,6 +183,24 @@ target repo를 처음 remote에 올릴 때는 아래 순서를 기본으로 한�
 - 이미 진행 중인 task branch 아래에서 세부 역할을 더 쪼개야 하면 child branch를 만들어도 된다.
 
 즉 `dev`는 통합 작업선이고, task branch는 역할별 작업선이다.
+
+### GitHub ruleset 적용
+
+새 target repo에는 seed file로 `scripts/apply-github-rulesets.sh`를 복사한다.
+초기 `main` commit과 `dev` push가 끝난 뒤 아래처럼 실행한다.
+
+```bash
+chmod +x scripts/apply-github-rulesets.sh
+scripts/apply-github-rulesets.sh <owner>/<repo>
+```
+
+표준 ruleset은 GitHub repository rulesets API를 사용해 아래 두 branch에만 적용한다.
+
+- `main`: PR 경유만 허용하고 direct push를 막는다. 승인 수는 0명이다.
+- `dev`: PR 경유만 허용하고 1명 이상의 approving review를 요구한다.
+- 그 외 branch: GitHub ruleset을 적용하지 않는다.
+
+이 작업에는 `gh` 인증과 target repo의 GitHub Administration write 권한이 필요하다.
 
 ### 로컬 `main` push 금지 가드
 

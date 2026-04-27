@@ -35,6 +35,7 @@
 !/docs/templates/issue-resolution-context-wiki-prompt.md
 !/docs/templates/main-pr-global-context-wiki-prompt.md
 !/docs/templates/startup-branch-state-template.md
+!/docs/templates/apply-target-repo-rulesets.sh
 !/docs/templates/target-repo-AGENTS.md
 !/docs/templates/target-repo-project-brief.md
 

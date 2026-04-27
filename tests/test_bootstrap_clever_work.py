@@ -392,9 +392,27 @@ def test_build_packet_includes_target_repo_seed_files():
                 "constraints",
             ],
         },
+        {
+            "source_template": (
+                "clever-agent-project/docs/templates/apply-target-repo-rulesets.sh"
+            ),
+            "destination": "scripts/apply-github-rulesets.sh",
+            "role": "GitHub repository ruleset bootstrap",
+            "purpose": (
+                "Apply the standard target repo branch rulesets: protect main, "
+                "require one approval for dev PRs, and leave other branches unrestricted."
+            ),
+            "required_placeholders": [
+                "target_repo_full_name",
+            ],
+        },
     ]
     assert (
         "copy target repo seed files before handoff"
+        in packet["repo_bootstrap"]["post_create_clone"]
+    )
+    assert (
+        "apply GitHub rulesets after dev exists"
         in packet["repo_bootstrap"]["post_create_clone"]
     )
 
@@ -443,6 +461,27 @@ def test_target_repo_agents_template_enforces_role_based_branch_prefixes():
     assert "clever-" in agents
 
 
+def test_target_repo_ruleset_template_applies_main_and_dev_only():
+    ruleset_template = REPO_ROOT / "docs/templates/apply-target-repo-rulesets.sh"
+    agents_template = REPO_ROOT / "docs/templates/target-repo-AGENTS.md"
+
+    ruleset_script = ruleset_template.read_text(encoding="utf-8")
+    agents = agents_template.read_text(encoding="utf-8")
+
+    assert "gh api" in ruleset_script
+    assert "CLEVER protect main" in ruleset_script
+    assert "CLEVER review dev" in ruleset_script
+    assert '"include":["refs/heads/main"]' in ruleset_script
+    assert '"include":["refs/heads/dev"]' in ruleset_script
+    assert '"required_approving_review_count":0' in ruleset_script
+    assert '"required_approving_review_count":1' in ruleset_script
+    assert "refs/heads/*" not in ruleset_script
+    assert "~ALL" not in ruleset_script
+    assert "main: PR 경유만 허용" in agents
+    assert "dev: PR 1명 이상 승인 필요" in agents
+    assert "그 외 branch: GitHub ruleset 미적용" in agents
+
+
 def test_agent_project_agents_file_is_clone_ready_for_startup_questions():
     agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
 
@@ -487,6 +526,7 @@ def test_build_packet_includes_post_create_clone_and_handoff_plan():
         "create-or-confirm target repo after project-start approval",
         "clone-or-pull the target repo locally",
         "copy target repo seed files before handoff",
+        "apply GitHub rulesets after dev exists",
         "verify local checkout is ready for follow-on work",
     ]
     assert handoff["recommended_session"] == "new-target-repo-session"

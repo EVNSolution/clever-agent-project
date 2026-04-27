@@ -55,6 +55,24 @@
 초기 remote bootstrap 후에는 `dev`를 만들고, 이후 일반 작업은 `dev` 또는 task branch에서 진행한다.
 `dev`가 생긴 뒤에는 `main`에 직접 push하지 않는다.
 
+## GitHub Ruleset 운영
+
+새 repo bootstrap 후 초기 `main` commit과 `dev` branch push가 끝나면 아래 명령으로 GitHub ruleset을 적용한다.
+
+```bash
+chmod +x scripts/apply-github-rulesets.sh
+scripts/apply-github-rulesets.sh <target_repo_full_name>
+```
+
+표준 ruleset:
+
+- main: PR 경유만 허용. direct push는 GitHub ruleset에서 막는다. 승인 수는 0명으로 둔다.
+- dev: PR 1명 이상 승인 필요.
+- 그 외 branch: GitHub ruleset 미적용. 자유롭게 push할 수 있다.
+
+적용 스크립트는 `gh api`를 사용한다.
+실행 계정에는 target repo의 GitHub Administration write 권한이 필요하다.
+
 ## 브랜치 역할별 접두사
 
 task branch는 프로젝트명이나 repo명으로 시작하지 않는다.

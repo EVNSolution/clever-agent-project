@@ -295,9 +295,12 @@ Once the user approves:
 6. Copy the target repo seed files before handoff:
    - `docs/templates/target-repo-AGENTS.md` -> target repo `AGENTS.md`
    - `docs/templates/target-repo-project-brief.md` -> target repo `docs/project-brief.md`
+   - `docs/templates/apply-target-repo-rulesets.sh` -> target repo `scripts/apply-github-rulesets.sh`
 7. Apply or confirm the branch operating contract in the target repo:
    - initial remote bootstrap commit may land on `main`
    - immediately after that, create and push `dev`
+   - after `dev` exists, run `scripts/apply-github-rulesets.sh <owner>/<repo>` when GitHub Administration write permission is available
+   - GitHub rulesets should target only `main` and `dev`: `main` requires PR-only updates, `dev` requires PR plus one approving review, and other branches stay unrestricted by ruleset
    - after `dev` exists, block direct local pushes to `main`
    - default new work to task branches from `dev` unless the work is intentionally direct-on-`dev`
 8. Recommend a new session in the cloned target repo for planning or implementation.
