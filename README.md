@@ -3,15 +3,32 @@
 > CLEVER는 단일 레포지토리 에이전트가 아니다.  
 > 로컬에 함께 내려받은 3개 레포지토리를 함께 읽고, 이후 실제 구현 대상 레포지토리로 실행을 넘기는 워크스페이스 우선 제어 평면 런타임이다.
 
+## 1분 설치
+
+아래 박스를 그대로 복사해서 실행한다.
+
+```bash
+mkdir -p clever-agent-workspace
+cd clever-agent-workspace
+
+git clone https://github.com/EVNSolution/clever-agent-project.git
+git clone https://github.com/EVNSolution/clever-context-monorepo.git
+git clone https://github.com/EVNSolution/clever-change-control.git
+
+cd clever-agent-project
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+```
+
+그다음 `clever-agent-project`에서 에이전트 세션을 열고 아래 첫 메시지 박스를 붙여 넣는다.
+
 ## How to Start
 
 먼저 같은 로컬 워크스페이스 루트에 아래 블록을 그대로 실행한다.
 
-```text
+```bash
 git clone https://github.com/EVNSolution/clever-agent-project.git
 git clone https://github.com/EVNSolution/clever-context-monorepo.git
 git clone https://github.com/EVNSolution/clever-change-control.git
-작업을 시작하세요.
 ```
 
 그다음 `clever-agent-project`에서 세션을 열고, 아래 블록을 첫 메시지로 그대로 붙여 넣는다.

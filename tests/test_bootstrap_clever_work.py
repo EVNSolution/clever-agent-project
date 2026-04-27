@@ -458,6 +458,20 @@ def test_agent_project_agents_file_is_clone_ready_for_startup_questions():
     assert "이번 세션 목표" in agents
 
 
+def test_readme_exposes_copyable_first_clone_command_box():
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "## 1분 설치" in readme
+    assert "아래 박스를 그대로 복사해서 실행한다" in readme
+    assert "```bash\nmkdir -p clever-agent-workspace" in readme
+    assert "git clone https://github.com/EVNSolution/clever-agent-project.git" in readme
+    assert "git clone https://github.com/EVNSolution/clever-context-monorepo.git" in readme
+    assert "git clone https://github.com/EVNSolution/clever-change-control.git" in readme
+    assert "cd clever-agent-project" in readme
+    assert "python3 scripts/bootstrap_clever_work.py --cwd \"$PWD\" --workspace-check --json" in readme
+    assert "```text\n작업 시작" in readme
+
+
 def test_build_packet_includes_post_create_clone_and_handoff_plan():
     packet = build_packet()
 
