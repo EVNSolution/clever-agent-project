@@ -56,16 +56,21 @@
 7. 첫 target repo를 결정한다.
 8. 필요하면 GitHub repo를 만든다.
 9. 로컬에 clone 또는 pull 한다.
-10. 초기 remote bootstrap이면 `main`에 첫 commit을 올린다.
-11. 곧바로 `dev` branch를 만들고 push 한다.
-12. `dev`가 생기면 로컬에서 `main` direct push를 막는다.
-13. 그 target repo에서 새 세션으로 이동한다.
+10. target repo에 초기 seed 파일을 만든다.
+    - `AGENTS.md`: agent 실행 절차서
+    - `docs/project-brief.md`: 프로젝트 기획 초안
+11. 초기 remote bootstrap이면 `main`에 첫 commit을 올린다.
+12. 곧바로 `dev` branch를 만들고 push 한다.
+13. `dev`가 생기면 로컬에서 `main` direct push를 막는다.
+14. 그 target repo에서 새 세션으로 이동한다.
 
 결과는 아래와 같다.
 
 - 하나의 root `project-start`
 - 그 root 아래에 0개 이상 repo가 연결될 수 있음
 - 이후 child issue들이 같은 root에 매달림
+- 각 target repo의 `AGENTS.md`는 기획서가 아니라 작업 순서와 방식의 실행 절차서임
+- 프로젝트 기획 초안은 target repo의 `docs/project-brief.md`에서 시작함
 
 ## 흐름 2: 기존 repo 개선
 

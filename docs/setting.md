@@ -235,6 +235,19 @@ chmod +x .git/hooks/pre-push
 
 이 점검은 모든 이슈에서 수행하지만, 모든 이슈가 wiki 수정으로 이어지는 것은 아니다. 서비스 정본은 service 문서에 우선 반영하고, `docs/wiki/`는 빠른 탐색이나 요약이 필요할 때만 수정한다.
 
+### 새 target repo 초기 seed 파일
+
+새 프로젝트 repo를 만들거나 첫 target repo를 bootstrap할 때는 프로젝트 기획 초안과 agent 실행 절차서를 분리해서 넣는다.
+
+- [target repo AGENTS template](templates/target-repo-AGENTS.md) -> target repo `AGENTS.md`
+- [target repo project brief template](templates/target-repo-project-brief.md) -> target repo `docs/project-brief.md`
+
+`AGENTS.md`는 프로젝트 설명서가 아니다. agent가 따라야 할 작업 순서, branch/issue 연결 방식, 테스트와 검증 순서, context 문서 반영 기준, 완료 조건을 담는다.
+
+`docs/project-brief.md`는 프로젝트 기획 초안이다. 목적, 기대 결과, 제약, 초기 범위, 미정 사항, 다음 작업 목록을 담는다.
+
+bootstrap packet의 `target_repo_seed_files` 항목은 위 두 파일을 target repo에 복사하라는 handoff 지시다. 확정되지 않은 placeholder는 추측해서 채우지 말고 `pending` 또는 빈 값으로 남긴다.
+
 ## 첫 대화 하드 게이트
 
 첫 질문을 던지기 전에 에이전트는 먼저 로컬 workspace 상태를 자동 감지한다.

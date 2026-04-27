@@ -63,6 +63,43 @@ CHANGE_DOCS = [
     "releases",
 ]
 
+TARGET_REPO_SEED_FILES = [
+    {
+        "source_template": "clever-agent-project/docs/templates/target-repo-AGENTS.md",
+        "destination": "AGENTS.md",
+        "role": "agent execution procedure",
+        "purpose": (
+            "Define the order, method, checklists, and completion rules agents "
+            "must follow in the target repo."
+        ),
+        "required_placeholders": [
+            "project_start_issue",
+            "change_control_issue",
+            "target_repo",
+            "target_service",
+            "template_lineage",
+            "default_work_branch",
+        ],
+    },
+    {
+        "source_template": "clever-agent-project/docs/templates/target-repo-project-brief.md",
+        "destination": "docs/project-brief.md",
+        "role": "project planning draft",
+        "purpose": (
+            "Capture the initial project intent, constraints, scope, and "
+            "unresolved planning questions."
+        ),
+        "required_placeholders": [
+            "project_start_issue",
+            "target_repo",
+            "target_service",
+            "problem_statement",
+            "expected_result",
+            "constraints",
+        ],
+    },
+]
+
 
 def run_command(cmd: list[str], cwd: Path | None = None) -> str | None:
     try:
@@ -433,6 +470,10 @@ def build_project_start_body(
     ).strip()
 
 
+def build_target_repo_seed_files() -> list[dict[str, Any]]:
+    return [dict(seed_file) for seed_file in TARGET_REPO_SEED_FILES]
+
+
 def build_packet(
     *,
     user_session: str,
@@ -533,15 +574,17 @@ def build_packet(
         ]
     )
     handoff_summary = (
-        "Confirm the target repo, prepare the local clone or pull step, and then continue "
-        "in a fresh target-repo session."
+        "Confirm the target repo, prepare the local clone or pull step, seed AGENTS.md "
+        "and docs/project-brief.md, and then continue in a fresh target-repo session."
         if target_repo_status == "needs-confirmation"
         else (
-            f"Switch to the cloned target repo ({target_repo}) and continue in a new session "
-            "for planning and implementation."
+            f"Switch to the cloned target repo ({target_repo}), seed AGENTS.md and "
+            "docs/project-brief.md, and continue in a new session for planning and "
+            "implementation."
             if requires_new_repo
             else f"Continue in a fresh session scoped to the confirmed target repo "
-            f"({target_repo}) after verifying the local checkout."
+            f"({target_repo}) after seeding AGENTS.md and docs/project-brief.md and "
+            "verifying the local checkout."
         )
     )
 
@@ -595,9 +638,11 @@ def build_packet(
             "post_create_clone": [
                 "create-or-confirm target repo after project-start approval",
                 "clone-or-pull the target repo locally",
+                "copy target repo seed files before handoff",
                 "verify local checkout is ready for follow-on work",
             ],
         },
+        "target_repo_seed_files": build_target_repo_seed_files(),
         "repo_session_handoff": {
             "status": "recommended-after-clone",
             "recommended_session": "new-target-repo-session",
@@ -605,8 +650,8 @@ def build_packet(
         },
         "next_step": (
             "Present the project-start draft for approval. After approval, create the issue, "
-            "propose repo bootstrap, clone or pull the target repo, and recommend a new "
-            "target-repo session."
+            "propose repo bootstrap, clone or pull the target repo, seed the target repo, "
+            "and recommend a new target-repo session."
         ),
     }
     if workspace_check is not None:
@@ -754,6 +799,18 @@ def print_text_packet(packet: dict[str, Any]) -> None:
     for item in repo_bootstrap["post_create_clone"]:
         print(f"- {item}")
     print("REPO_BOOTSTRAP_END")
+    print()
+
+    print("TARGET_REPO_SEED_FILES_BEGIN")
+    for item in packet["target_repo_seed_files"]:
+        print(f"- source-template: {item['source_template']}")
+        print(f"  destination: {item['destination']}")
+        print(f"  role: {item['role']}")
+        print(f"  purpose: {item['purpose']}")
+        print("  required-placeholders:")
+        for placeholder in item["required_placeholders"]:
+            print(f"  - {placeholder}")
+    print("TARGET_REPO_SEED_FILES_END")
     print()
 
     handoff = packet["repo_session_handoff"]

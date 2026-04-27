@@ -348,6 +348,77 @@ def test_build_packet_distinguishes_start_repo_from_target_repo_bootstrap():
     assert repo_bootstrap["status"] == "proposed-after-approval"
 
 
+def test_build_packet_includes_target_repo_seed_files():
+    packet = build_packet(target_repo="clever-analytics-api")
+
+    seed_files = packet["target_repo_seed_files"]
+
+    assert seed_files == [
+        {
+            "source_template": (
+                "clever-agent-project/docs/templates/target-repo-AGENTS.md"
+            ),
+            "destination": "AGENTS.md",
+            "role": "agent execution procedure",
+            "purpose": (
+                "Define the order, method, checklists, and completion rules "
+                "agents must follow in the target repo."
+            ),
+            "required_placeholders": [
+                "project_start_issue",
+                "change_control_issue",
+                "target_repo",
+                "target_service",
+                "template_lineage",
+                "default_work_branch",
+            ],
+        },
+        {
+            "source_template": (
+                "clever-agent-project/docs/templates/target-repo-project-brief.md"
+            ),
+            "destination": "docs/project-brief.md",
+            "role": "project planning draft",
+            "purpose": (
+                "Capture the initial project intent, constraints, scope, and "
+                "unresolved planning questions."
+            ),
+            "required_placeholders": [
+                "project_start_issue",
+                "target_repo",
+                "target_service",
+                "problem_statement",
+                "expected_result",
+                "constraints",
+            ],
+        },
+    ]
+    assert (
+        "copy target repo seed files before handoff"
+        in packet["repo_bootstrap"]["post_create_clone"]
+    )
+
+
+def test_target_repo_seed_templates_separate_execution_rules_from_project_brief():
+    agents_template = REPO_ROOT / "docs/templates/target-repo-AGENTS.md"
+    project_brief_template = REPO_ROOT / "docs/templates/target-repo-project-brief.md"
+
+    agents = agents_template.read_text(encoding="utf-8")
+    project_brief = project_brief_template.read_text(encoding="utf-8")
+
+    assert "이 파일은 프로젝트 기획서가 아니다" in agents
+    assert "작업 시작 순서" in agents
+    assert "Branch 운영" in agents
+    assert "완료 조건" in agents
+    assert "문제 정의" not in agents
+
+    assert "이 파일은 target repo의 초기 기획 초안이다" in project_brief
+    assert "문제 정의" in project_brief
+    assert "초기 범위" in project_brief
+    assert "다음 작업 목록" in project_brief
+    assert "agent 작업 절차" in project_brief
+
+
 def test_build_packet_includes_post_create_clone_and_handoff_plan():
     packet = build_packet()
 
@@ -357,11 +428,14 @@ def test_build_packet_includes_post_create_clone_and_handoff_plan():
     assert repo_bootstrap["post_create_clone"] == [
         "create-or-confirm target repo after project-start approval",
         "clone-or-pull the target repo locally",
+        "copy target repo seed files before handoff",
         "verify local checkout is ready for follow-on work",
     ]
     assert handoff["recommended_session"] == "new-target-repo-session"
     assert handoff["status"] == "recommended-after-clone"
     assert "Switch to the cloned target repo" in handoff["summary"]
+    assert "seed AGENTS.md and docs/project-brief.md" in handoff["summary"]
+    assert "seed the target repo" in packet["next_step"]
 
 
 def test_build_ssot_docs_uses_project_start_aligned_surface():

@@ -17,11 +17,18 @@ It forces the same start sequence for every user and every repo:
 4. Infer the work context from the current repo.
 5. Convert the request into a `project-start` draft packet.
 6. Ask for one final approval.
-7. Only then create the root issue, propose repo bootstrap, clone the repo, and hand off.
+7. Only then create the root issue, propose repo bootstrap, seed the target repo, clone the repo, and hand off.
 
 **Core principle:** do not start CLEVER work from a freeform prompt when the SSOT repos are available.
 
 The canonical identifier is the created `project-start` issue number in `clever-change-control`. Before issue creation, the workflow uses a `project-start` draft only.
+
+When a new target repo is created or bootstrapped, keep execution rules and planning content separate:
+
+- `AGENTS.md`: agent execution procedure, working order, issue/branch rules, verification, context update checks, and completion conditions
+- `docs/project-brief.md`: project planning draft, purpose, constraints, scope, open questions, and next work list
+
+Do not put the project planning draft into `AGENTS.md`.
 
 ## First-Response Hard Gate
 
@@ -264,6 +271,7 @@ The script emits:
 - the SSOT docs it used
 - a `project_start_issue` draft
 - a `repo_bootstrap` proposal
+- `target_repo_seed_files` for `AGENTS.md` and `docs/project-brief.md`
 - a `repo_session_handoff` recommendation
 - the selected or pending template/deploy metadata
 
@@ -284,12 +292,15 @@ Once the user approves:
 3. Use the created issue number as the canonical identifier.
 4. Propose creation or confirmation of the target repo after the issue exists.
 5. Clone or pull the target repo locally.
-6. Apply or confirm the branch operating contract in the target repo:
+6. Copy the target repo seed files before handoff:
+   - `docs/templates/target-repo-AGENTS.md` -> target repo `AGENTS.md`
+   - `docs/templates/target-repo-project-brief.md` -> target repo `docs/project-brief.md`
+7. Apply or confirm the branch operating contract in the target repo:
    - initial remote bootstrap commit may land on `main`
    - immediately after that, create and push `dev`
    - after `dev` exists, block direct local pushes to `main`
    - default new work to task branches from `dev` unless the work is intentionally direct-on-`dev`
-7. Recommend a new session in the cloned target repo for planning or implementation.
+8. Recommend a new session in the cloned target repo for planning or implementation.
 
 Only after the root issue is approved and the execution scope is fixed should a scoped change request introduce a `change-id`.
 
