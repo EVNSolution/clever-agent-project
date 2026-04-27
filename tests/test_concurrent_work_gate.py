@@ -56,13 +56,15 @@ def test_pr_templates_require_parallel_work_decision():
 
 
 def test_pr_scope_grouping_guidance_is_documented_and_in_templates():
-    policy_surfaces = [
+    shared_policy_surfaces = [
         read(REPO_ROOT / "AGENTS.md"),
         read(REPO_ROOT / "docs/setting.md"),
         read(REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md"),
         read(REPO_ROOT / "docs/templates/target-repo-AGENTS.md"),
-        read(CONTEXT_ROOT / "docs/root/pipeline-governance.md"),
     ]
+    context_pipeline_governance = read(
+        CONTEXT_ROOT / "docs/root/pipeline-governance.md"
+    )
     pr_templates = [
         read(REPO_ROOT / ".github/PULL_REQUEST_TEMPLATE.md"),
         read(REPO_ROOT / "docs/templates/target-repo-PULL_REQUEST_TEMPLATE.md"),
@@ -70,10 +72,17 @@ def test_pr_scope_grouping_guidance_is_documented_and_in_templates():
         read(CHANGE_CONTROL_ROOT / ".github/PULL_REQUEST_TEMPLATE.md"),
     ]
 
-    for text in policy_surfaces + pr_templates:
+    for text in shared_policy_surfaces + pr_templates:
         assert "PR Scope Grouping Gate" in text
         assert "same document/operating-rule cleanup" in text
         assert "same validation command" in text
         assert "different app/service/contract surface" in text
         assert "merge order dependency" in text
         assert "rollback unit" in text
+
+    assert "PR Scope Grouping Gate" in context_pipeline_governance
+    assert "same document/operating-rule cleanup" in context_pipeline_governance
+    assert "same validation command" in context_pipeline_governance
+    assert "different app/runtime-slice/contract surface" in context_pipeline_governance
+    assert "merge order dependency" in context_pipeline_governance
+    assert "rollback unit" in context_pipeline_governance
