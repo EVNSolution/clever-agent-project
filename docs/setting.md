@@ -219,6 +219,22 @@ chmod +x .git/hooks/pre-push
 
 - [main PR global context wiki prompt](templates/main-pr-global-context-wiki-prompt.md)
 
+### 이슈 해결 단위의 컨텍스트 wiki 정리
+
+각 이슈를 해결 완료로 표시하기 전에도 `clever-context-monorepo` 반영 필요 여부를 확인한다.
+
+에이전트는 이슈 종료 코멘트, PR 정리, merge 준비를 작성하기 전에 아래를 점검한다.
+
+- `clever-context-monorepo/docs/services/<service>/index.md` 갱신 필요 여부
+- `clever-context-monorepo/docs/wiki/` 탐색 문서 또는 요약 문서 갱신 필요 여부
+- public contract, deploy/runtime 기준, env/secret category, 운영 caveat가 정본 문서에 반영됐는지
+
+복사해 쓰는 프롬프트는 아래 문서에 둔다.
+
+- [issue resolution context wiki prompt](templates/issue-resolution-context-wiki-prompt.md)
+
+이 점검은 모든 이슈에서 수행하지만, 모든 이슈가 wiki 수정으로 이어지는 것은 아니다. 서비스 정본은 service 문서에 우선 반영하고, `docs/wiki/`는 빠른 탐색이나 요약이 필요할 때만 수정한다.
+
 ## 첫 대화 하드 게이트
 
 첫 질문을 던지기 전에 에이전트는 먼저 로컬 workspace 상태를 자동 감지한다.

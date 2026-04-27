@@ -32,6 +32,7 @@
 !/docs/superpowers/specs/*.md
 !/docs/templates/
 !/docs/templates/issue-edit-template.md
+!/docs/templates/issue-resolution-context-wiki-prompt.md
 !/docs/templates/main-pr-global-context-wiki-prompt.md
 !/docs/templates/startup-branch-state-template.md
 
@@ -41,6 +42,7 @@
 
 !/tests/
 !/tests/test_bootstrap_clever_work.py
+!/tests/test_issue_resolution_context_wiki_prompt.py
 !/tests/test_sync_issue_from_md.py
 
 # Defense in depth for common local artifacts.
