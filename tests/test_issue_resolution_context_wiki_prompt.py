@@ -35,6 +35,9 @@ class IssueResolutionContextWikiPromptTest(unittest.TestCase):
         self.assertIn("이슈 해결 시 context 정리 기준", context_doc)
         self.assertIn("docs/services/<service>/index.md", context_doc)
         self.assertIn("docs/wiki", context_doc)
+        self.assertIn("dev/main PR context metadata 기준", context_doc)
+        self.assertIn("context wiki upload status", context_doc)
+        self.assertIn("issue close는 PR metadata를 참조한다", context_doc)
 
 
 if __name__ == "__main__":

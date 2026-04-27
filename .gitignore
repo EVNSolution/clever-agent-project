@@ -37,6 +37,7 @@
 !/docs/templates/startup-branch-state-template.md
 !/docs/templates/apply-target-repo-rulesets.sh
 !/docs/templates/target-repo-AGENTS.md
+!/docs/templates/target-repo-PULL_REQUEST_TEMPLATE.md
 !/docs/templates/target-repo-project-brief.md
 
 !/scripts/

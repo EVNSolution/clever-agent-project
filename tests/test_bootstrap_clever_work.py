@@ -410,6 +410,21 @@ def test_build_packet_includes_target_repo_seed_files():
                 "target_repo_full_name",
             ],
         },
+        {
+            "source_template": (
+                "clever-agent-project/docs/templates/target-repo-PULL_REQUEST_TEMPLATE.md"
+            ),
+            "destination": ".github/PULL_REQUEST_TEMPLATE.md",
+            "role": "PR metadata and context wiki upload checklist",
+            "purpose": (
+                "Require dev and main PRs to carry CLEVER metadata, context document "
+                "checks, wiki upload status, and linked issue close evidence."
+            ),
+            "required_placeholders": [
+                "target_repo",
+                "target_service",
+            ],
+        },
     ]
     assert (
         "copy target repo seed files before handoff"
@@ -489,6 +504,39 @@ def test_target_repo_ruleset_template_applies_main_and_dev_only():
     assert "승인 수는 둘 다 0명" in agents
     assert "그 외 branch: GitHub ruleset 미적용" in agents
     assert "새 프로젝트 repo는 public으로 만든다" in agents
+
+
+def test_target_repo_pr_template_bundles_context_wiki_metadata_with_prs():
+    pr_template = (
+        REPO_ROOT / "docs/templates/target-repo-PULL_REQUEST_TEMPLATE.md"
+    ).read_text(encoding="utf-8")
+    agents = (REPO_ROOT / "docs/templates/target-repo-AGENTS.md").read_text(
+        encoding="utf-8"
+    )
+    setting = (REPO_ROOT / "docs/setting.md").read_text(encoding="utf-8")
+    issue_prompt = (
+        REPO_ROOT / "docs/templates/issue-resolution-context-wiki-prompt.md"
+    ).read_text(encoding="utf-8")
+    main_prompt = (
+        REPO_ROOT / "docs/templates/main-pr-global-context-wiki-prompt.md"
+    ).read_text(encoding="utf-8")
+
+    assert "CLEVER PR metadata" in pr_template
+    assert "target branch: `dev` / `main`" in pr_template
+    assert "context wiki upload status" in pr_template
+    assert "clever-context-monorepo commit/PR" in pr_template
+    assert "linked issue close evidence" in pr_template
+    assert "이슈 종료는 이 PR metadata를 근거로 처리한다" in pr_template
+
+    assert "dev/main PR metadata" in agents
+    assert "PR metadata에 context wiki upload status를 남긴다" in agents
+    assert "이슈 종료는 PR metadata를 근거로 처리한다" in agents
+
+    assert "dev/main PR context metadata" in setting
+    assert "issue close는 PR metadata를 참조한다" in setting
+    assert "dev/main PR metadata" in issue_prompt
+    assert "이번 작업은 PR merge 단위다" in main_prompt
+    assert "`dev` 또는 `main`" in main_prompt
 
 
 def test_agent_project_agents_file_is_clone_ready_for_startup_questions():

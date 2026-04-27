@@ -7,6 +7,7 @@
 이 프롬프트는 이슈 해결 완료 표시가 코드 변경 종료만으로 끝나지 않는다는 전제를 따른다.
 
 즉 이슈 해결은 local 구현 결과가 global context에 남아야 하는지 확인하는 단위다.
+`dev` 또는 `main` PR이 있으면 dev/main PR metadata를 우선 작성하고, 이슈 종료는 그 metadata를 근거로 처리한다.
 
 ## 사용 시점
 
@@ -14,6 +15,7 @@
 
 - target repo의 이슈를 해결 완료로 표시하기 전
 - 이슈 종료 코멘트, PR 정리, merge 준비를 작성하기 전
+- `dev` 또는 `main` PR metadata에 context/wiki 반영 상태를 남기기 전
 - 변경 결과가 서비스 책임, public contract, deploy/runtime 기준, 운영 caveat에 영향을 줬는지 점검해야 할 때
 
 ## 프롬프트
@@ -21,12 +23,13 @@
 ```text
 이번 작업은 이슈 해결 단위다.
 
-해결 완료로 표시하기 전, 아래 기준으로 `clever-context-monorepo`의 context 문서 반영 필요 여부를 확인해줘.
+해결 완료로 표시하기 전, 아래 기준으로 `clever-context-monorepo`의 context 문서 반영 필요 여부를 확인하고, 연결된 `dev` 또는 `main` PR metadata에 결과를 먼저 묶어줘.
 
 1. 대상 이슈:
 - issue:
 - target repo:
 - branch / commit / PR:
+- target branch가 `dev` 또는 `main`이면:
 - 관련 service name이 있으면:
 
 2. 반드시 확인할 것:
@@ -47,10 +50,12 @@
 - 필요하면 수정 대상 파일을 `clever-context-monorepo` 경로로 제시
 - service 문서가 정본이면 `docs/services/<service>/index.md`를 우선 수정
 - docs/wiki는 정본이 아니다. 빠른 탐색이나 요약이 필요할 때만 수정
-- 반영이 불필요하면 왜 불필요한지 이슈 종료 코멘트에 남길 문장으로 정리
+- 반영 결과를 PR metadata의 `context wiki upload status`, `service doc update`, `wiki update`, `clever-context-monorepo commit/PR`에 남긴다.
+- 반영이 불필요하면 왜 불필요한지 PR metadata와 이슈 종료 코멘트에 남길 문장으로 정리
 
 기준:
 - 이슈 해결은 context 반영 필요 여부를 확인하는 단위다.
+- issue close는 PR metadata를 참조한다.
 - 서비스 정본은 service 문서에 둔다.
 - wiki는 탐색 입구이며 최종 판단은 root, contracts, service 문서로 되돌아간다.
 ```
@@ -61,4 +66,5 @@
 - 하지만 에이전트는 매번 `업데이트 필요 여부`를 먼저 확인해야 한다.
 - 서비스 범위 변경은 `clever-context-monorepo/docs/services/<service>/index.md`를 우선 수정한다.
 - `docs/wiki/`는 탐색성이나 요약성이 필요한 경우에만 같이 수정한다.
-- 이슈 종료 코멘트에는 context 문서 반영 여부 또는 불필요 사유를 남긴다.
+- `dev` 또는 `main` PR이 있으면 context/wiki 판단은 PR metadata에 먼저 묶는다.
+- 이슈 종료 코멘트에는 PR metadata 링크와 context 문서 반영 여부 또는 불필요 사유를 남긴다.

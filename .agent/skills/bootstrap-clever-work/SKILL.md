@@ -299,6 +299,7 @@ Once the user approves:
    - `docs/templates/target-repo-AGENTS.md` -> target repo `AGENTS.md`
    - `docs/templates/target-repo-project-brief.md` -> target repo `docs/project-brief.md`
    - `docs/templates/apply-target-repo-rulesets.sh` -> target repo `scripts/apply-github-rulesets.sh`
+   - `docs/templates/target-repo-PULL_REQUEST_TEMPLATE.md` -> target repo `.github/PULL_REQUEST_TEMPLATE.md`
 7. Apply or confirm the branch operating contract in the target repo:
    - initial remote bootstrap commit may land on `main`
    - immediately after that, create and push `dev`
@@ -394,7 +395,8 @@ Rules:
 - once `dev` exists, do not use direct push to `main`
 - direct work on `dev` is allowed, but task branches are the preferred default
 - child branches from task branches are allowed when the work is explicitly nested
-- a reviewed merge unit into `main` is the point where the agent should also prepare the global context wiki update prompt
+- a PR into `dev` or `main` must carry PR metadata for context/wiki upload status
+- issue close should refer to the PR metadata instead of duplicating the context/wiki decision
 
 ## Common Mistakes
 

@@ -184,11 +184,14 @@ GitHub 자동 링크만으로 충분하다고 보지 않는다.
 ## Context 문서 반영 기준
 
 이슈 해결 또는 PR 정리 전에는 `clever-context-monorepo` 반영 필요 여부를 확인한다.
+`dev` 또는 `main`으로 올리는 PR은 `.github/PULL_REQUEST_TEMPLATE.md`의 dev/main PR metadata를 반드시 채운다.
 
 - 서비스 책임, API, 데이터 흐름, public contract가 바뀌면 service 문서 반영을 검토한다.
 - deploy profile, runtime, env/secret category가 바뀌면 service 문서와 deploy 기준 반영을 검토한다.
 - 빠른 탐색 링크나 요약이 필요할 때만 `docs/wiki`를 수정한다.
-- 문서 반영이 필요 없으면 이슈 또는 PR 정리에 불필요 사유를 남긴다.
+- PR metadata에 context wiki upload status를 남긴다.
+- 문서 반영이 필요 없으면 PR metadata와 이슈 종료 코멘트에 불필요 사유를 남긴다.
+- 이슈 종료는 PR metadata를 근거로 처리한다. 이슈 종료 시 같은 판단을 중복 작성하지 말고 PR metadata의 context/wiki 결과를 복사하거나 링크한다.
 
 ## 완료 조건
 
