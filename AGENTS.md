@@ -366,7 +366,8 @@ branches are protected by the GitHub ruleset `CLEVER protect main`:
 - `clever-change-control`
 
 Do not push directly to `main` for control-plane changes. Use a role-prefixed
-branch and open a PR into `main`. `main` PRs require at least one approval.
+branch and open a PR into `main`. `main` requires a PR but does not require
+approving reviews. Merge/write access is limited to repository admins.
 Admin bypass is allowed only in `pull_request` mode.
 
 ## Branch Operating Contract
