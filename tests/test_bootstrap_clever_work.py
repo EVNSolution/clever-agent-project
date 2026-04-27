@@ -443,6 +443,21 @@ def test_target_repo_agents_template_enforces_role_based_branch_prefixes():
     assert "clever-" in agents
 
 
+def test_agent_project_agents_file_is_clone_ready_for_startup_questions():
+    agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+
+    assert "Clone-Ready Startup Contract" in agents
+    assert "fresh clone" in agents
+    assert "작업 시작 질문을 남긴다" in agents
+    assert "질문 원장" in agents
+    assert "known answer" in agents
+    assert "needs-input" in agents
+    assert "python3 scripts/bootstrap_clever_work.py --cwd \"$PWD\" --workspace-check --json" in agents
+    assert "작업 종류" in agents
+    assert "구조" in agents
+    assert "이번 세션 목표" in agents
+
+
 def test_build_packet_includes_post_create_clone_and_handoff_plan():
     packet = build_packet()
 

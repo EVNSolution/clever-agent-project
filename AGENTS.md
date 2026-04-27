@@ -38,6 +38,87 @@ Use the returned `agent_action` field as the startup branch:
 - `switch-to-clever-agent-project`
 - `stop-and-fix-workspace`
 
+## Clone-Ready Startup Contract
+
+This section exists for a fresh clone of `clever-agent-project`.
+
+When a new agent session opens in this repository after clone, the agent must be
+ready to receive the startup answers and must leave the startup questions in the
+conversation if the answers are not already present.
+
+First action:
+
+```bash
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+```
+
+Then apply the result:
+
+- `proceed-with-hard-gate`: 작업 시작 질문을 남긴다.
+- `switch-to-clever-agent-project`: tell the user to reopen or continue from
+  `clever-agent-project`, then 작업 시작 질문을 남긴다.
+- `current-repo-maintenance`: ask only for the control-plane maintenance target
+  and expected result.
+- `stop-and-fix-workspace`: show the missing repository list and stop before
+  asking project-start questions.
+
+### 작업 시작 질문
+
+If the user has not already provided the startup branch, leave this exact block:
+
+```text
+작업 시작
+
+1. 작업 종류:
+- 새 작업 시작
+- 기존 서비스 변경
+- 현재 저장소 자체 수정
+
+2. 구조:
+- MONO
+- MSA
+
+3. 이번 세션 목표:
+- 요구사항/문서 정의
+- 서비스 온보딩 정의
+- 구현 repo 작업
+- 배포 준비
+
+추가 설명
+- 하려는 일:
+- 왜 필요한지:
+- 제약:
+- 기대 결과:
+- 알고 있는 repo/service가 있으면:
+```
+
+If the user starts with free-form text, do not discard it. Restate it into the
+same block and mark missing values as `needs-input`.
+
+### 질문 원장
+
+When information is partial, leave a short question ledger before continuing:
+
+```text
+질문 원장
+- known answer:
+  - 작업 종류:
+  - 구조:
+  - 이번 세션 목표:
+  - 하려는 일:
+  - 왜 필요한지:
+  - 제약:
+  - 기대 결과:
+  - 알고 있는 repo/service:
+- needs-input:
+  - <missing field 1>
+  - <missing field 2>
+```
+
+Ask only for fields listed under `needs-input`.
+Do not ask for `change_id`, fixed `target_service`, or rollout scope at clone
+startup.
+
 ## What Each Repository Owns
 
 - `clever-agent-project`
