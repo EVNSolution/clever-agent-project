@@ -179,7 +179,7 @@ ruleset 기반으로 `main`/`dev` direct push를 막고 PR 필수 정책을 쓰�
 `main` merge commit 제목은 PR merge임이 드러나게 아래 형식을 쓴다.
 
 ```text
-PR-MERGE <owner>/<repo>#<pr-number>: <pr-title>
+Merge pull request #<pr-number> from <owner>/<source-branch>
 ```
 
 ### 세션 시작
