@@ -403,6 +403,25 @@ When the agent bootstraps or confirms a target repo, it should preserve this mea
 
 If local branch protection is requested or available, prefer a repo-local `pre-push` guard for `main`.
 
+## PR Merge Commit Title Contract
+
+When merging a PR into `main`, make the resulting main commit visibly PR-based.
+Use squash merge and set the merge subject explicitly:
+
+```bash
+gh pr merge <pr-number> --squash \
+  --subject "PR-MERGE <owner>/<repo>#<pr-number>: <pr-title>" \
+  --body-file <merge-body-file>
+```
+
+Merge body should include:
+
+- merge summary
+- validation evidence
+- wiki/service context update result
+
+Do not use a plain feature/doc commit title as the main merge commit subject.
+
 ## What Not To Do
 
 Do not:
