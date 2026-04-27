@@ -40,7 +40,8 @@ python3 scripts/bootstrap_clever_work.py \
 
 preflight는 최소한 `gh auth status`, GitHub login `OziinG`, `EVNSolution` org membership, `EVNSolution/*` origin, public repo, issue/PR/ruleset 조회 권한, clean worktree, remote fetch 접근을 확인한다.
 새 repo 생성 권한은 destructive create 없이 완전히 증명할 수 없으므로, preflight 통과 후 `gh repo create` 성공 결과를 생성 proof로 본다.
-실패하면 구현 계획, repo bootstrap, 동시작업 gate 판정으로 내려가지 않는다.
+출력의 `preflight_check.ready=true`를 확인한 뒤에만 구현 계획, repo bootstrap, 동시작업 gate 판정으로 내려간다.
+실패하면 해당 단계로 내려가지 않는다.
 
 ## 저장소 역할
 
