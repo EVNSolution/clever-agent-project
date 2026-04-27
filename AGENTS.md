@@ -19,24 +19,55 @@ If any of these repositories are missing, the workspace is incomplete.
 Do not pretend web links are a substitute for local context.
 Stop and state that the three-repository local workspace is required.
 
-At startup, run this automatic check first:
+At startup, run this automatic preflight first:
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 If the session is explicitly about editing the current control-plane repo itself, run:
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --current-repo-maintenance --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
 ```
 
-Use the returned `agent_action` field as the startup branch:
+The preflight must verify at least:
+
+- local `git` and `gh` CLIs
+- `gh auth status`
+- authenticated GitHub login, defaulting to `OziinG`
+- active membership in the `EVNSolution` GitHub org
+- local three-repository workspace readiness
+- control-plane origin remotes under `EVNSolution/*`
+- clean control-plane worktrees
+- remote fetch access
+- GitHub repo visibility and issue/PR/ruleset read access
+
+If `preflight_check.ready` is false, stop before startup questions and report the
+failed checks.
+
+If it is true, use the returned `workspace_check.agent_action` field as the
+startup branch:
 
 - `proceed-with-hard-gate`
 - `current-repo-maintenance`
 - `switch-to-clever-agent-project`
 - `stop-and-fix-workspace`
+
+Before creating a target repo, applying rulesets, or changing GitHub protection
+settings, run admin preflight with the target repo:
+
+```bash
+python3 scripts/bootstrap_clever_work.py \
+  --cwd "$PWD" \
+  --admin-preflight \
+  --target-repo-full-name EVNSolution/<target-repo> \
+  --json
+```
+
+Repository creation permission cannot be proven without the actual write attempt.
+Treat org membership and token/API access as the pre-create gate, then treat
+`gh repo create` success as the creation proof.
 
 ## Clone-Ready Startup Contract
 
@@ -49,11 +80,14 @@ conversation if the answers are not already present.
 First action:
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --workspace-check --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 Then apply the result:
 
+- `preflight_check.ready=false`: show failed checks and stop before asking
+  project-start questions.
+- `preflight_check.ready=true`: read `workspace_check.agent_action` and continue.
 - `proceed-with-hard-gate`: 작업 시작 질문을 남긴다.
 - `switch-to-clever-agent-project`: tell the user to reopen or continue from
   `clever-agent-project`, then 작업 시작 질문을 남긴다.
@@ -466,7 +500,7 @@ Do not:
 
 The expected operating flow is:
 
-1. Verify the three-repository local workspace
+1. Run preflight for the three-repository local workspace and GitHub account
 2. Gather the startup frame
    - collect `work_kind`, `architecture_kind`, `session_goal`
    - fill the startup branch state template
