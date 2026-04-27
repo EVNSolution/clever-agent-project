@@ -21,6 +21,7 @@ def test_merge_title_standard_uses_github_default_prefix():
         read(CONTEXT_ROOT / "docs/root/pipeline-governance.md"),
         read(CHANGE_CONTROL_ROOT / "AGENTS.md"),
         read(CHANGE_CONTROL_ROOT / "README.md"),
+        read(REPO_ROOT / "docs/templates/target-repo-AGENTS.md"),
     ]
 
     for text in docs:
