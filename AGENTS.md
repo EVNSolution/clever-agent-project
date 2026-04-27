@@ -69,6 +69,16 @@ Repository creation permission cannot be proven without the actual write attempt
 Treat org membership and token/API access as the pre-create gate, then treat
 `gh repo create` success as the creation proof.
 
+## PR 완료 후 branch 정리
+
+PR merge가 끝나고 source branch에 open PR이 더 없으면 remote/local task branch를 정리한다.
+`main`과 `dev`는 삭제 대상이 아니다.
+
+```bash
+git push origin --delete <source-branch>
+git branch -d <source-branch>
+```
+
 ## Clone-Ready Startup Contract
 
 This section exists for a fresh clone of `clever-agent-project`.
@@ -484,6 +494,32 @@ Merge body should start with the PR title, then include:
 - wiki/service context update result
 
 Do not use a plain feature/doc commit title as the main merge commit subject.
+
+## PR Branch Cleanup Contract
+
+PR 완료 후 branch 정리:
+
+After a PR is merged, or closed with the source branch intentionally abandoned,
+clean up the task branch unless it still has an open PR, linked follow-up issue,
+child branch, or active release/hotfix use.
+
+Default command sequence:
+
+```bash
+git switch dev
+git pull --ff-only origin dev
+git branch -d <source-branch>
+git push origin --delete <source-branch>
+git fetch --prune origin
+```
+
+- `main`과 `dev`는 삭제 대상이 아니다.
+- Use `git branch -d <source-branch>` by default.
+- Use `git branch -D <source-branch>` only when the PR was closed without merge
+  and the user explicitly confirms the branch can be discarded.
+- Do not delete a remote branch if it still backs an open PR, follow-up issue,
+  child branch, or active release/hotfix.
+- If GitHub already deleted the remote branch, still run `git fetch --prune origin`.
 
 ## What Not To Do
 

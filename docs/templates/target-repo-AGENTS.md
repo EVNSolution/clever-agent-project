@@ -79,6 +79,27 @@ preflight는 최소한 `gh auth status`, GitHub login `OziinG`, `EVNSolution` or
 초기 remote bootstrap 후에는 `dev`를 만들고, 이후 일반 작업은 `dev` 또는 task branch에서 진행한다.
 `dev`가 생긴 뒤에는 `main`에 직접 push하지 않는다.
 
+### PR 완료 후 branch 정리
+
+PR이 merge됐거나 source branch를 버리기로 하고 closed 처리된 뒤에는 task
+branch를 정리한다. 단, 해당 branch가 아직 open PR, 후속 issue, child branch,
+active release/hotfix에 쓰이면 삭제하지 않는다.
+
+기본 명령은 아래 순서다.
+
+```bash
+git switch dev
+git pull --ff-only origin dev
+git branch -d <source-branch>
+git push origin --delete <source-branch>
+git fetch --prune origin
+```
+
+- `main`과 `dev`는 삭제 대상이 아니다.
+- 기본은 `git branch -d <source-branch>`를 쓴다.
+- merge 없이 닫은 branch를 폐기해야 할 때만 사용자 확인 후 `git branch -D <source-branch>`를 쓴다.
+- remote branch가 GitHub에서 이미 삭제됐더라도 `git fetch --prune origin`으로 로컬 추적 branch를 정리한다.
+
 ## GitHub Ruleset 운영
 
 새 프로젝트 repo는 public으로 만든다.
@@ -173,6 +194,16 @@ chmod +x .git/hooks/pre-push
 
 `pre-commit`은 잘못된 branch 이름에서 commit 생성을 막는다.
 `pre-push`는 `main` direct push와 잘못된 branch 이름 push를 막는다.
+
+## PR 완료 후 branch 정리
+
+PR merge가 끝나고 source branch에 open PR이 더 없으면 remote/local task branch를 정리한다.
+`main`과 `dev`는 삭제 대상이 아니다.
+
+```bash
+git push origin --delete <source-branch>
+git branch -d <source-branch>
+```
 
 ## Issue 연결 규칙
 

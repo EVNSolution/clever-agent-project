@@ -61,6 +61,16 @@ Preflight also checks active `EVNSolution` org membership. Repository creation
 permission cannot be proven without the actual `gh repo create` write attempt,
 so treat that command's success as the creation proof after preflight passes.
 
+## PR 완료 후 branch 정리
+
+After a PR is merged, delete the source task branch only when there is no other
+open PR using that branch. `main`과 `dev`는 삭제 대상이 아니다.
+
+```bash
+git push origin --delete <source-branch>
+git branch -d <source-branch>
+```
+
 Before planning, implementation, `project-start` creation, or repo bootstrap, the agent must first normalize the session into the same opening structure.
 
 Use this exact first-response template:
@@ -435,6 +445,32 @@ Rules:
 - a PR into `dev` or `main` must finish review-agent work with wiki/service context updates, or a documented not-needed decision
 - do not upload PR information to the wiki; update only service, operational, contract, or navigation context
 - issue close should refer to the PR review completion result instead of duplicating the context/wiki decision
+
+## PR Branch Cleanup
+
+PR 완료 후 branch 정리:
+
+After a PR is merged, or closed with the source branch intentionally abandoned,
+clean up the task branch unless it still has an open PR, linked follow-up issue,
+child branch, or active release/hotfix use.
+
+Default command sequence:
+
+```bash
+git switch dev
+git pull --ff-only origin dev
+git branch -d <source-branch>
+git push origin --delete <source-branch>
+git fetch --prune origin
+```
+
+- `main`과 `dev`는 삭제 대상이 아니다.
+- Use `git branch -d <source-branch>` by default.
+- Use `git branch -D <source-branch>` only when the PR was closed without merge
+  and the user explicitly confirms the branch can be discarded.
+- Do not delete a remote branch if it still backs an open PR, follow-up issue,
+  child branch, or active release/hotfix.
+- If GitHub already deleted the remote branch, still run `git fetch --prune origin`.
 
 ## Common Mistakes
 

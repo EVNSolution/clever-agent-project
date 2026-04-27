@@ -506,6 +506,23 @@ def test_target_repo_ruleset_template_applies_main_and_dev_only():
     assert "새 프로젝트 repo는 public으로 만든다" in agents
 
 
+def test_docs_require_remote_task_branch_cleanup_after_pr_completion():
+    docs = [
+        REPO_ROOT / "AGENTS.md",
+        REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md",
+        REPO_ROOT / "docs/setting.md",
+        REPO_ROOT / "docs/templates/target-repo-AGENTS.md",
+    ]
+
+    for doc_path in docs:
+        text = doc_path.read_text(encoding="utf-8")
+        assert "PR 완료 후 branch 정리" in text
+        assert "git push origin --delete <source-branch>" in text
+        assert "git branch -d <source-branch>" in text
+        assert "main`과 `dev`는 삭제 대상이 아니다" in text
+        assert "open PR" in text
+
+
 def test_target_repo_pr_template_makes_review_finish_with_wiki_update():
     pr_template = (
         REPO_ROOT / "docs/templates/target-repo-PULL_REQUEST_TEMPLATE.md"
