@@ -161,6 +161,28 @@ chmod +x .git/hooks/pre-push
 GitHub 자동 링크만으로 충분하다고 보지 않는다.
 이슈 코멘트 또는 PR 설명에 현재 상태, branch, commit, 다음 action을 명시한다.
 
+## Concurrent Work Gate
+
+구현을 시작하기 전, 그리고 PR을 열기 전에 target repo issue와
+clever-change-control issue를 동시에 확인한다.
+
+확인 대상:
+
+- 같은 target repo issue 또는 같은 service issue
+- 같은 clever-change-control issue 또는 연결된 project-start/change-request issue
+- 같은 파일, API, 데이터 모델, 배포 경로를 건드리는 active branch
+- 아직 merge되지 않은 open PR
+
+판정은 아래 중 하나로 기록한다.
+
+- `done`: 관련 이슈가 이미 merged/closed PR로 완료되어 현재 작업의 차단 대상이 아니다.
+- `blocked`: 진행 중인 이슈, branch, open PR과 변경 범위가 겹쳐 진행하지 않는다.
+- `allowed-with-non-overlap`: 진행 중인 이슈, branch, open PR이 있지만 service, API, data, deploy, file 범위가 겹치지 않는다고 에이전트가 판단했다.
+- `user-forced-proceed`: 사용자가 `완전 무시모드`, `강제 진행`, `user-forced-proceed`를 명시했다. 이 모드에서는 동시 작업 충돌 게이트를 차단 조건으로 쓰지 않는다. 대신 conflict candidates, 예상 merge risk, 사용자 강제 진행 사실을 target repo issue, clever-change-control issue, PR 본문에 남기고 계속한다.
+
+`user-forced-proceed`는 에이전트의 안전 판단이 아니다.
+사용자 강제 진행 기록이며, 실제 git conflict, 테스트 실패, merge 실패가 발생하면 그 시점에 해결하거나 중단 보고한다.
+
 ## 구현 규칙
 
 - 기존 코드 스타일과 도구를 우선한다.

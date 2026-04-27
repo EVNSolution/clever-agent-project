@@ -341,6 +341,34 @@ The agent must not begin implementation if the trace chain is missing. First
 create or identify the required issue records, add the bidirectional mentions,
 and state the branch that will carry the work.
 
+## Concurrent Work Gate
+
+Before target-repository implementation, and again before opening a PR, verify
+the target repo issue and the matching clever-change-control issue together.
+The check must include active issues, active branches, and every open PR that
+can affect the same target repo, service, API, data model, deployment surface,
+or file path.
+
+Record one decision:
+
+- `done`: the related issue already has a merged or closed PR and no active
+  follow-up branch, so the agent may ignore it as a blocker.
+- `blocked`: another issue or open PR is still in progress and the work overlaps,
+  so the agent must not proceed.
+- `allowed-with-non-overlap`: another issue or open PR is in progress, but the
+  agent judges at issue level that the service, API, data, deploy, and file
+  scope do not overlap. Record the non-overlap reason before proceeding.
+- `user-forced-proceed`: the user explicitly says `완전 무시모드`, `강제 진행`,
+  or `user-forced-proceed`. In this mode the agent does not use concurrent
+  issue, branch, or open PR overlap as a blocking condition. The agent records
+  conflict candidates, known merge risk, and that this is 사용자 강제 진행, then
+  continues until a real git conflict, test failure, or merge failure must be
+  resolved.
+
+The decision and evidence must be written to both the target repo issue and the
+clever-change-control issue. The PR body must repeat the final parallel work
+decision.
+
 During and after the work, update the `clever-change-control` issue with:
 
 - current session phase: documentation, implementation, verification, or release

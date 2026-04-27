@@ -16,6 +16,15 @@
 
 -
 
+## Concurrent Work Gate
+
+- parallel work decision: `done` / `blocked` / `allowed-with-non-overlap` / `user-forced-proceed`
+- target repo issue:
+- clever-change-control issue:
+- open PR checked:
+- conflict candidates:
+- user-forced-proceed reason:
+
 ## PR 검토 에이전트 종료 조건
 
 - 검토 에이전트 작업은 wiki/service context 업데이트로 마친다.

@@ -49,6 +49,7 @@
 
 !/tests/
 !/tests/test_bootstrap_clever_work.py
+!/tests/test_concurrent_work_gate.py
 !/tests/test_gitignore_whitelist.py
 !/tests/test_issue_resolution_context_wiki_prompt.py
 !/tests/test_sync_issue_from_md.py
