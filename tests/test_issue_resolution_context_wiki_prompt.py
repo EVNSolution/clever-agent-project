@@ -32,12 +32,19 @@ class IssueResolutionContextWikiPromptTest(unittest.TestCase):
             REPO_ROOT.parent
             / "clever-context-monorepo/docs/root/doc-governance.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("이슈 해결 시 context 정리 기준", context_doc)
-        self.assertIn("docs/services/<service>/index.md", context_doc)
-        self.assertIn("docs/wiki", context_doc)
-        self.assertIn("dev/main PR review completion 기준", context_doc)
-        self.assertIn("검토 에이전트 작업은 wiki/service context 업데이트로 마친다", context_doc)
-        self.assertIn("PR 정보를 wiki에 올리지 않는다", context_doc)
+        self.assertIn("PR 완료 시 context 판단", context_doc)
+        self.assertIn("clever-context-monorepo update: <commit-or-PR>", context_doc)
+        self.assertIn("`not-needed`", context_doc)
+        self.assertIn("PR 정보와 운영 증거를 wiki에 올리지 않는다", context_doc)
+        self.assertIn("외부 정본의 사실을 이 repo가 다시 설명하면 실패다", context_doc)
+        self.assertIn("docs/services/<slice>/index.md", context_doc)
+
+        self.assertNotIn("이슈 해결 시 context 정리 기준", context_doc)
+        self.assertNotIn("dev/main PR review completion 기준", context_doc)
+        self.assertNotIn(
+            "검토 에이전트 작업은 wiki/service context 업데이트로 마친다",
+            context_doc,
+        )
 
 
 if __name__ == "__main__":
