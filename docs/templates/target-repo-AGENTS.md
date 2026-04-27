@@ -195,16 +195,6 @@ chmod +x .git/hooks/pre-push
 `pre-commit`은 잘못된 branch 이름에서 commit 생성을 막는다.
 `pre-push`는 `main` direct push와 잘못된 branch 이름 push를 막는다.
 
-## PR 완료 후 branch 정리
-
-PR merge가 끝나고 source branch에 open PR이 더 없으면 remote/local task branch를 정리한다.
-`main`과 `dev`는 삭제 대상이 아니다.
-
-```bash
-git push origin --delete <source-branch>
-git branch -d <source-branch>
-```
-
 ## Issue 연결 규칙
 
 작업을 시작하기 전에 아래 연결을 확인한다.
