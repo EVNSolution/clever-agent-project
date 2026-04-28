@@ -448,6 +448,19 @@ Use `fixes`, `closes`, or similar GitHub keywords only when the PR merge is
 intended to close the referenced issue. For context linking without automatic
 closure, use plain issue mentions.
 
+Retroactive trace repair:
+
+- If a completed target repository issue is found without an explicit
+  `clever-change-control` scoped issue, do not stop at a comment-only repair.
+- Open a retro scoped issue in `clever-change-control` and record the root
+  project-start issue, target repository issue, original branch, original PR, and
+  `parallel work decision: done`.
+- Add a backlink comment to the completed target repository issue.
+- Close the retro scoped issue as completed immediately after the backlink is
+  recorded.
+- This open/close trail is audit evidence only; it must not reopen completed
+  implementation scope.
+
 ## Control-plane Main Branch Contract
 
 The three CLEVER control-plane repositories are public and their `main`
