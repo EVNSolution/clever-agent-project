@@ -9,6 +9,8 @@ CLEVER는 한 가지 앱 전용 흐름이 아니다. 사용자가 익숙한 도�
 첫 화면에서는 직접 shell 명령보다 **어떤 환경에서 시작하는지**를 먼저 고른다.
 공통 원칙은 **3개 레포를 같은 로컬 workspace에 두고, 일반 시작은 `clever-agent-project`에서 진행한다**는 점이다.
 
+브라우저에서 버튼과 텍스트 입력으로 한 번에 정리하려면 [GitHub Pages 시작 도우미](https://evnsolution.github.io/clever-agent-project/start/)를 사용한다. 버튼과 텍스트 입력으로 답한 뒤 최종 copy text를 만들고, 에이전트에 붙여 넣을 위치까지 안내한다.
+
 <details>
 <summary><strong>앱형 에이전트 / Application</strong> — 채팅에 프롬프트를 붙여 넣고 기본 세팅을 맡긴다.</summary>
 
