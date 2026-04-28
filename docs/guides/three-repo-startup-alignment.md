@@ -122,8 +122,7 @@
 현재 경량 `AGENTS.md`는 아래 명령을 사용한다.
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 ../clever-agent-project/scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+python3 ../clever-agent-project/scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 이건 3레포가 같은 workspace root 아래 sibling으로 있는 구조를 전제로 한다.

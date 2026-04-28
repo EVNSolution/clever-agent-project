@@ -17,7 +17,9 @@ CLEVER는 한 가지 앱 전용 흐름이 아니다. 사용자가 익숙한 도�
 ```text
 CLEVER 작업을 시작하고 싶어.
 
-내 GitHub login 또는 profile URL을 먼저 물어봐줘.
+먼저 `gh auth status`와 `gh api user --jq .login`으로 현재 GitHub 계정을 확인해줘.
+gh CLI에서 계정을 확인할 수 있으면 별도로 묻지 말고 그 계정으로 preflight를 진행해줘.
+GitHub 계정을 확인할 수 없거나 다른 계정을 써야 할 때만 물어봐줘.
 그 다음 내 로컬 환경에서 가능한지 확인하고, 가능하면 기본 세팅을 네가 진행해줘.
 
 해야 할 일:
@@ -27,10 +29,11 @@ CLEVER 작업을 시작하고 싶어.
    - clever-context-monorepo
    - clever-change-control
 3. 일반 작업 시작 위치는 `clever-agent-project`로 맞춰줘.
-4. `CLEVER_EXPECTED_GITHUB_LOGIN`에는 내가 알려준 GitHub login/profile URL을 사용해줘.
-5. 필요한 shell 명령은 네가 실행하고 결과를 확인해줘.
-6. preflight 결과가 실패하면 바로 작업 질문으로 넘어가지 말고, 무엇이 부족한지 먼저 설명해줘.
-7. preflight가 통과하면 README의 "작업 시작" 양식으로 내 요구사항을 정리해줘.
+4. preflight는 우선 `CLEVER_EXPECTED_GITHUB_LOGIN` 없이 실행해줘.
+5. GitHub 계정 확인이 실패하거나 내가 다른 계정을 지정한 경우에만 `CLEVER_EXPECTED_GITHUB_LOGIN`을 사용해줘.
+6. 필요한 shell 명령은 네가 실행하고 결과를 확인해줘.
+7. preflight 결과가 실패하면 바로 작업 질문으로 넘어가지 말고, 무엇이 부족한지 먼저 설명해줘.
+8. preflight가 통과하면 README의 "작업 시작" 양식으로 내 요구사항을 정리해줘.
 ```
 
 앱이 로컬 파일이나 shell 실행을 지원하지 않으면, 에이전트가 직접 세팅할 수 없다. 그 경우에는 터미널 가능한 환경에서 3개 repo clone과 preflight를 먼저 끝낸 뒤, 결과를 앱에 붙여 넣는다.
@@ -45,7 +48,9 @@ VS Code Extension도 확장 채팅에 세팅을 맡긴다. 사용자는 VS Code�
 ```text
 CLEVER 작업을 VS Code Extension에서 시작하고 싶어.
 
-내 GitHub login 또는 profile URL을 먼저 물어봐줘.
+먼저 `gh auth status`와 `gh api user --jq .login`으로 현재 GitHub 계정을 확인해줘.
+gh CLI에서 계정을 확인할 수 있으면 별도로 묻지 말고 그 계정으로 preflight를 진행해줘.
+GitHub 계정을 확인할 수 없거나 다른 계정을 써야 할 때만 물어봐줘.
 그 다음 VS Code의 Integrated Terminal을 사용해서 기본 세팅을 네가 진행해줘.
 
 해야 할 일:
@@ -56,10 +61,11 @@ CLEVER 작업을 VS Code Extension에서 시작하고 싶어.
    - clever-change-control
 3. 없으면 workspace root 아래에 필요한 repo를 clone해줘.
 4. 일반 작업 시작 위치는 `clever-agent-project`로 맞춰줘.
-5. `CLEVER_EXPECTED_GITHUB_LOGIN`에는 내가 알려준 GitHub login/profile URL을 사용해줘.
-6. Integrated Terminal에서 preflight를 실행하고 결과를 읽어줘.
-7. preflight가 실패하면 부족한 설정을 먼저 고쳐줘.
-8. preflight가 통과하면 README의 "작업 시작" 양식으로 내 요구사항을 정리해줘.
+5. preflight는 우선 `CLEVER_EXPECTED_GITHUB_LOGIN` 없이 실행해줘.
+6. GitHub 계정 확인이 실패하거나 내가 다른 계정을 지정한 경우에만 `CLEVER_EXPECTED_GITHUB_LOGIN`을 사용해줘.
+7. Integrated Terminal에서 preflight를 실행하고 결과를 읽어줘.
+8. preflight가 실패하면 부족한 설정을 먼저 고쳐줘.
+9. preflight가 통과하면 README의 "작업 시작" 양식으로 내 요구사항을 정리해줘.
 ```
 
 확장이 shell 명령을 직접 실행하지 못하면, Integrated Terminal에 실행할 명령을 제시하게 하고 사용자가 결과를 다시 붙여 넣는다.
@@ -84,8 +90,7 @@ git clone https://github.com/EVNSolution/clever-context-monorepo.git
 git clone https://github.com/EVNSolution/clever-change-control.git
 
 cd clever-agent-project
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 에이전트 종류별 실행 예시:
@@ -99,6 +104,13 @@ claude --dangerously-skip-permissions
 
 # Gemini CLI
 gemini --yolo
+```
+
+gh CLI에서 GitHub 계정이 확인되면 별도로 묻지 않는다. 다른 계정으로 고정 검증해야 할 때만 아래처럼 `CLEVER_EXPECTED_GITHUB_LOGIN`을 붙인다.
+
+```bash
+CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
+  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 `preflight_check.ready=true`이면 CLI 에이전트를 열고 [시작 입력](#시작-입력)을 붙여 넣거나 자연어로 설명한다.

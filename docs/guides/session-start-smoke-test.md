@@ -48,11 +48,10 @@
    - `.agent/skills/bootstrap-clever-work/SKILL.md`
 4. 로컬 파일 접근이 가능해야 한다. 웹 링크만 있는 상태는 통과 조건이 아니다.
 
-운영 환경에서는 첫 질문 전에 아래 자동 감지 명령을 먼저 돌린다.
+운영 환경에서는 첫 질문 전에 아래 자동 감지 명령을 먼저 돌린다. gh CLI에서 GitHub 계정이 확인되면 별도로 묻지 않고, 확인할 수 없거나 다른 계정으로 고정해야 할 때만 GitHub login/profile URL을 묻는다.
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 이 문서의 시나리오는 그 결과가 `preflight_check.ready=true`이고
@@ -61,8 +60,7 @@ CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
 현재 control-plane 저장소 자체를 직접 수정하는 세션은 아래처럼 유지보수 모드로 따로 확인한다.
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
 ```
 
 ## 시작 템플릿 기준

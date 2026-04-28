@@ -84,7 +84,7 @@ gh auth status
 ```
 
 헤드리스 환경에서는 `GH_TOKEN` 환경 변수 또는 `gh auth login --with-token` 방식을 사용할 수 있다.
-공용 CLEVER 기본 계정은 없다. 첫 실행 때 사용자에게 GitHub login 또는 profile URL을 물어보고 `CLEVER_EXPECTED_GITHUB_LOGIN` 또는 `--expected-github-login`으로 명시한다.
+공용 CLEVER 기본 계정은 없다. 첫 실행 때는 gh CLI에서 GitHub 계정이 확인되면 별도로 묻지 않는다. 계정을 확인할 수 없거나 다른 계정으로 고정해야 할 때만 사용자에게 GitHub login 또는 profile URL을 물어보고 `CLEVER_EXPECTED_GITHUB_LOGIN` 또는 `--expected-github-login`으로 명시한다.
 preflight는 `EVNSolution` org active membership도 확인한다.
 
 ## Superpowers 설치
@@ -264,8 +264,7 @@ git fetch --prune origin
 초기 `main` commit과 `dev` push가 끝난 뒤 먼저 admin preflight를 실행한다.
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py \
+python3 scripts/bootstrap_clever_work.py \
   --cwd "$PWD" \
   --admin-preflight \
   --target-repo-full-name <owner>/<repo> \
@@ -362,18 +361,16 @@ bootstrap packet의 `target_repo_seed_files` 항목은 위 두 파일을 target 
 
 ## 첫 대화 하드 게이트
 
-첫 질문을 던지기 전에 에이전트는 먼저 사용자에게 GitHub login 또는 profile URL을 물어보고 로컬 workspace, `gh auth status`, GitHub login, 원격 접근, issue/PR/ruleset 조회 가능 여부를 자동 감지한다.
+첫 질문을 던지기 전에 에이전트는 먼저 gh CLI에서 GitHub 계정을 확인하고 로컬 workspace, `gh auth status`, GitHub login, 원격 접근, issue/PR/ruleset 조회 가능 여부를 자동 감지한다. gh CLI에서 GitHub 계정이 확인되면 별도로 묻지 않는다. 계정을 확인할 수 없거나 다른 계정으로 고정해야 할 때만 사용자에게 GitHub login 또는 profile URL을 물어본다.
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 현재 control-plane 저장소 자체를 직접 수정하는 세션이면 아래처럼 유지보수 모드로 확인한다.
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
 ```
 
 `preflight_check.ready=false`이면 시작 질문으로 내려가지 않고 실패한 check를 먼저 해결한다.

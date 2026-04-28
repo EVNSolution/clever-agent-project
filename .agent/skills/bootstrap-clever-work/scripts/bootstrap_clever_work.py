@@ -47,8 +47,9 @@ ALLOWED_UI_IMPACTS = {
 DEFAULT_GITHUB_OWNER = "EVNSolution"
 DEFAULT_EXPECTED_GITHUB_LOGIN: str | None = None
 GITHUB_LOGIN_REQUEST_MESSAGE = (
-    "Ask the user for their GitHub login or profile URL, then set "
-    "CLEVER_EXPECTED_GITHUB_LOGIN or pass --expected-github-login."
+    "Ask the user for their GitHub login or profile URL only when the "
+    "authenticated account cannot be inferred from gh CLI or must be overridden, "
+    "then set CLEVER_EXPECTED_GITHUB_LOGIN or pass --expected-github-login."
 )
 
 CONTEXT_DOCS = [
@@ -503,21 +504,27 @@ def build_preflight_check(
 
         user_result = run_command_result(["gh", "api", "user", "--jq", ".login"])
         github_login = user_result.stdout.strip() if user_result.returncode == 0 else None
-        login_ok = (
-            normalized_expected_github_login is not None
-            and github_login is not None
-            and github_login.lower() == normalized_expected_github_login.lower()
-        )
-        if normalized_expected_github_login is None:
+        if normalized_expected_github_login is None and github_login:
+            login_ok = True
+            account_message = f"GitHub account inferred from gh CLI: {github_login}."
+        elif normalized_expected_github_login is None:
+            login_ok = False
             account_message = (
-                f"No expected GitHub account is configured. {GITHUB_LOGIN_REQUEST_MESSAGE}"
+                "Cannot infer GitHub account from gh CLI. "
+                f"{GITHUB_LOGIN_REQUEST_MESSAGE}"
             )
-        elif login_ok:
-            account_message = f"GitHub account is {github_login}."
         else:
+            login_ok = (
+                github_login is not None
+                and github_login.lower() == normalized_expected_github_login.lower()
+            )
             account_message = (
-                "Expected GitHub account "
-                f"{normalized_expected_github_login}, got {github_login or command_message(user_result)}."
+                f"GitHub account is {github_login}."
+                if login_ok
+                else (
+                    "Expected GitHub account "
+                    f"{normalized_expected_github_login}, got {github_login or command_message(user_result)}."
+                )
             )
         add_preflight_check(
             checks,

@@ -19,26 +19,27 @@ If any of these repositories are missing, the workspace is incomplete.
 Do not pretend web links are a substitute for local context.
 Stop and state that the three-repository local workspace is required.
 
-At startup, ask the current user for their GitHub login or profile URL, then run this automatic preflight first:
+At startup, infer the GitHub account from gh CLI first, then run this automatic preflight:
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
+
+Ask the current user for their GitHub login or profile URL only if gh CLI cannot infer the authenticated account or the user needs to override it. In that case, pass it with `CLEVER_EXPECTED_GITHUB_LOGIN` or `--expected-github-login`.
 
 If the session is explicitly about editing the current control-plane repo itself, run:
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
 ```
 
 The preflight must verify at least:
 
 - local `git` and `gh` CLIs
 - `gh auth status`
-- authenticated GitHub login explicitly provided by the current user via
-  `CLEVER_EXPECTED_GITHUB_LOGIN` or `--expected-github-login`
+- GitHub login inferred from `gh api user --jq .login`
+- optional user-provided GitHub login via `CLEVER_EXPECTED_GITHUB_LOGIN` or
+  `--expected-github-login` when inference fails or an account override is needed
 - active membership in the `EVNSolution` GitHub org
 - local three-repository workspace readiness
 - control-plane origin remotes under `EVNSolution/*`
@@ -61,8 +62,7 @@ Before creating a target repo, applying rulesets, or changing GitHub protection
 settings, run admin preflight with the target repo:
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py \
+python3 scripts/bootstrap_clever_work.py \
   --cwd "$PWD" \
   --admin-preflight \
   --target-repo-full-name EVNSolution/<target-repo> \
@@ -84,8 +84,7 @@ conversation if the answers are not already present.
 First action:
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 Then apply the result:
@@ -649,7 +648,7 @@ Do not:
 
 The expected operating flow is:
 
-1. Ask for the current user's GitHub login or profile URL, then run preflight for the three-repository local workspace and GitHub account
+1. Infer the current GitHub account from gh CLI first, ask for GitHub login/profile URL only when inference fails or needs override, then run preflight for the three-repository local workspace and GitHub account
 2. Gather the startup frame
    - collect `work_nature`, `target_scope`, `goal_level`, then derive `project_scope`, `service_scope`, `architecture_kind`, `session_goal`
    - fill the startup branch state template

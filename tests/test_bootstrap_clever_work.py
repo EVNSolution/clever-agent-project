@@ -835,7 +835,7 @@ def test_preflight_check_passes_when_github_account_workspace_and_remotes_are_re
     assert ("gh", "api", "user", "--jq", ".login") in command_log
 
 
-def test_preflight_check_requires_user_provided_github_login_when_missing(monkeypatch):
+def test_preflight_check_infers_github_login_from_gh_cli_when_expected_missing(monkeypatch):
     module = load_module()
 
     monkeypatch.setattr(module.shutil, "which", lambda name: f"/usr/bin/{name}")
@@ -848,15 +848,15 @@ def test_preflight_check_requires_user_provided_github_login_when_missing(monkey
             "repos": {},
         },
     )
-    monkeypatch.setattr(
-        module,
-        "run_command_result",
-        lambda cmd, cwd=None: module.CommandResult(
-            0,
-            "jiinlim\n" if cmd[:3] == ["gh", "api", "user"] else "",
-            "",
-        ),
-    )
+
+    def fake_run(cmd, cwd=None):
+        if cmd[:3] == ["gh", "api", "user"]:
+            return module.CommandResult(0, "jiinlim\n", "")
+        if cmd == ["gh", "api", "user/memberships/orgs/EVNSolution"]:
+            return module.CommandResult(0, json.dumps({"state": "active"}), "")
+        return module.CommandResult(0, "", "")
+
+    monkeypatch.setattr(module, "run_command_result", fake_run)
 
     report = module.build_preflight_check(
         cwd=REPO_ROOT,
@@ -868,10 +868,53 @@ def test_preflight_check_requires_user_provided_github_login_when_missing(monkey
     assert report["expected_github_login"] is None
     assert report["github_login"] == "jiinlim"
     checks = {check["name"]: check for check in report["checks"]}
-    assert checks["github-account"]["status"] == "fail"
-    assert "Ask the user for their GitHub login or profile URL" in checks["github-account"][
+    assert checks["github-account"]["status"] == "pass"
+    assert checks["github-account"]["message"] == "GitHub account inferred from gh CLI: jiinlim."
+    assert "Ask the user for their GitHub login or profile URL" not in checks["github-account"][
         "message"
     ]
+    assert "OziinG" not in checks["github-account"]["message"]
+
+
+def test_preflight_check_asks_for_github_login_only_when_gh_cli_cannot_infer_account(
+    monkeypatch,
+):
+    module = load_module()
+
+    monkeypatch.setattr(module.shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(
+        module,
+        "build_workspace_check",
+        lambda cwd, *, current_repo_maintenance=False: {
+            "startup_ready": True,
+            "agent_action": "proceed-with-hard-gate",
+            "repos": {},
+        },
+    )
+
+    def fake_run(cmd, cwd=None):
+        if cmd[:3] == ["gh", "api", "user"]:
+            return module.CommandResult(1, "", "not logged in")
+        return module.CommandResult(0, "", "")
+
+    monkeypatch.setattr(module, "run_command_result", fake_run)
+
+    report = module.build_preflight_check(
+        cwd=REPO_ROOT,
+        expected_github_login=None,
+        github_owner="EVNSolution",
+    )
+
+    assert report["ready"] is False
+    assert report["github_login"] is None
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["github-account"]["status"] == "fail"
+    assert "Cannot infer GitHub account from gh CLI" in checks["github-account"][
+        "message"
+    ]
+    assert "Ask the user for their GitHub login or profile URL" in checks[
+        "github-account"
+    ]["message"]
     assert "OziinG" not in checks["github-account"]["message"]
 
 
@@ -1015,8 +1058,10 @@ def test_docs_require_preflight_before_startup_and_admin_repo_bootstrap():
     )
 
     assert "--preflight" in readme
-    assert "GitHub login" in readme
+    assert "GitHub 계정" in readme
     assert "CLEVER_EXPECTED_GITHUB_LOGIN" in readme
+    assert "gh CLI에서 GitHub 계정이 확인되면 별도로 묻지 않는다" in readme
+    assert "내 GitHub login 또는 profile URL을 먼저 물어봐줘" not in readme
     assert "OziinG" not in readme
     assert "--admin-preflight" not in readme
 
@@ -1025,6 +1070,8 @@ def test_docs_require_preflight_before_startup_and_admin_repo_bootstrap():
         assert "gh auth status" in text
         assert "GitHub login" in text
         assert "CLEVER_EXPECTED_GITHUB_LOGIN" in text
+        assert "infer the GitHub account from gh CLI first" in text
+        assert "ask the current user for their GitHub login or profile URL, then run" not in text
         assert "OziinG" not in text
         assert "--admin-preflight" in text
     assert "OziinG" not in target_agents
@@ -1053,7 +1100,8 @@ def test_readme_guides_non_expert_users_by_entry_surface():
     assert "앱형 에이전트는 LLM과 대화하듯이 세팅을 맡긴다" in readme
     assert "VS Code Extension도 확장 채팅에 세팅을 맡긴다" in readme
     assert "아래 프롬프트를 그대로 붙여 넣는다" in readme
-    assert "내 GitHub login 또는 profile URL을 먼저 물어봐줘" in readme
+    assert "gh CLI에서 계정을 확인할 수 있으면 별도로 묻지 말고" in readme
+    assert "GitHub 계정을 확인할 수 없거나 다른 계정을 써야 할 때만 물어봐줘" in readme
     assert "3개 repo clone부터 preflight까지 진행해줘" in readme
     assert "필요한 shell 명령은 네가 실행하고 결과를 확인해줘" in readme
     assert "Integrated Terminal" in readme
