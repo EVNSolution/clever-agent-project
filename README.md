@@ -23,13 +23,17 @@ GitHub 계정을 확인할 수 없거나 다른 계정을 써야 할 때만 물�
 그 다음 내 로컬 환경에서 가능한지 확인하고, 가능하면 기본 세팅을 네가 진행해줘.
 
 해야 할 일:
-1. 현재 로컬 workspace 위치를 확인해줘.
-2. 없으면 `clever-agent-workspace`를 만들고, 아래 3개 repo clone부터 preflight까지 진행해줘.
-   - clever-agent-project
-   - clever-context-monorepo
-   - clever-change-control
+1. 현재 로컬 workspace 위치를 확인해줘. 정해진 위치가 없으면 `clever-agent-workspace`를 만들어줘.
+2. workspace 안에 3개 repo가 있는지 확인하고, 없는 repo만 아래 주소로 clone해줘.
+   mkdir -p clever-agent-workspace
+   cd clever-agent-workspace
+   test -d clever-agent-project || git clone https://github.com/EVNSolution/clever-agent-project.git
+   test -d clever-context-monorepo || git clone https://github.com/EVNSolution/clever-context-monorepo.git
+   test -d clever-change-control || git clone https://github.com/EVNSolution/clever-change-control.git
+   cd clever-agent-project
 3. 일반 작업 시작 위치는 `clever-agent-project`로 맞춰줘.
-4. preflight는 우선 `CLEVER_EXPECTED_GITHUB_LOGIN` 없이 실행해줘.
+4. preflight는 우선 `CLEVER_EXPECTED_GITHUB_LOGIN` 없이 아래 명령으로 실행해줘.
+   python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 5. GitHub 계정 확인이 실패하거나 내가 다른 계정을 지정한 경우에만 `CLEVER_EXPECTED_GITHUB_LOGIN`을 사용해줘.
 6. 필요한 shell 명령은 네가 실행하고 결과를 확인해줘.
 7. preflight 결과가 실패하면 바로 작업 질문으로 넘어가지 말고, 무엇이 부족한지 먼저 설명해줘.
@@ -55,17 +59,20 @@ GitHub 계정을 확인할 수 없거나 다른 계정을 써야 할 때만 물�
 
 해야 할 일:
 1. 현재 VS Code workspace가 어디인지 확인해줘.
-2. 3개 repo가 같은 workspace root 아래 있는지 확인해줘.
-   - clever-agent-project
-   - clever-context-monorepo
-   - clever-change-control
-3. 없으면 workspace root 아래에 필요한 repo를 clone해줘.
-4. 일반 작업 시작 위치는 `clever-agent-project`로 맞춰줘.
-5. preflight는 우선 `CLEVER_EXPECTED_GITHUB_LOGIN` 없이 실행해줘.
-6. GitHub 계정 확인이 실패하거나 내가 다른 계정을 지정한 경우에만 `CLEVER_EXPECTED_GITHUB_LOGIN`을 사용해줘.
-7. Integrated Terminal에서 preflight를 실행하고 결과를 읽어줘.
-8. preflight가 실패하면 부족한 설정을 먼저 고쳐줘.
-9. preflight가 통과하면 README의 "작업 시작" 양식으로 내 요구사항을 정리해줘.
+2. workspace 안에 3개 repo가 있는지 확인하고, 없는 repo만 Integrated Terminal에서 아래 주소로 clone해줘.
+   mkdir -p clever-agent-workspace
+   cd clever-agent-workspace
+   test -d clever-agent-project || git clone https://github.com/EVNSolution/clever-agent-project.git
+   test -d clever-context-monorepo || git clone https://github.com/EVNSolution/clever-context-monorepo.git
+   test -d clever-change-control || git clone https://github.com/EVNSolution/clever-change-control.git
+   cd clever-agent-project
+3. 일반 작업 시작 위치는 `clever-agent-project`로 맞춰줘.
+4. preflight는 우선 `CLEVER_EXPECTED_GITHUB_LOGIN` 없이 아래 명령으로 실행해줘.
+   python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+5. GitHub 계정 확인이 실패하거나 내가 다른 계정을 지정한 경우에만 `CLEVER_EXPECTED_GITHUB_LOGIN`을 사용해줘.
+6. Integrated Terminal에서 preflight를 실행하고 결과를 읽어줘.
+7. preflight가 실패하면 부족한 설정을 먼저 고쳐줘.
+8. preflight가 통과하면 README의 "작업 시작" 양식으로 내 요구사항을 정리해줘.
 ```
 
 확장이 shell 명령을 직접 실행하지 못하면, Integrated Terminal에 실행할 명령을 제시하게 하고 사용자가 결과를 다시 붙여 넣는다.
