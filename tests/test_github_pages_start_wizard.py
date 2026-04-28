@@ -62,9 +62,20 @@ def test_start_wizard_uses_minimal_target_and_state_textareas():
     assert 'id="targetInfo" data-field="targetInfo"' in html
     assert 'id="serviceAlias" data-field="serviceAlias"' in html
     assert 'id="currentState" data-field="currentState"' in html
-    assert "기획문서는 있어서 repo만 만들면 바로 시작 가능" in html
-    assert "바이브코딩이라 대화로 진행" in html
-    assert "다른 MSA 서비스에 있는 기능을 가져와서 새 서비스를 만들거야" in html
+    for target_example in [
+        "신규 정산 서비스. 기존 billing-service의 정산 계산 로직을 참고하되 독립 서비스로 만들고 싶음",
+        "관리자 화면의 고객 상세 &gt; 결제 내역 탭",
+        "모바일 앱 로그인 후 온보딩 화면",
+    ]:
+        assert target_example in html
+
+    target_placeholder = html.split('id="targetInfo" data-field="targetInfo"', 1)[1].split('</textarea>', 1)[0]
+    for state_example in [
+        "기획문서는 있어서 repo만 만들면 바로 시작 가능",
+        "바이브코딩이라 대화로 진행",
+        "다른 MSA 서비스에 있는 기능을 가져와서 새 서비스를 만들거야",
+    ]:
+        assert state_example not in target_placeholder
     assert "에이전트가 이 내용을 읽고 새 개발인지 기존 서비스 작업인지 판단하세요" in html
     assert "대상 정보 입력" in html
     assert "현재 상태 입력" in html
@@ -85,6 +96,18 @@ def test_start_wizard_uses_minimal_target_and_state_textareas():
     ]
     for removed in removed_detailed_fields:
         assert removed not in html
+
+
+def test_start_wizard_current_state_placeholder_uses_status_examples():
+    html = read("docs/start/index.html")
+
+    current_state_placeholder = html.split('id="currentState" data-field="currentState"', 1)[1].split('</textarea>', 1)[0]
+    for state_example in [
+        "기획문서는 있음. repo 생성과 기본 세팅부터 필요",
+        "아직 정해진 건 거의 없고 대화로 만들면서 결정",
+        "기존 MSA 서비스 구현을 참고해서 새 서비스로 분리하고 싶음",
+    ]:
+        assert state_example in current_state_placeholder
 
 
 def test_start_wizard_output_is_clone_ready_and_copyable():

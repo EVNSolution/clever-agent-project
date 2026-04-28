@@ -142,9 +142,9 @@
       <label for="serviceAlias">서비스 이름(가칭)</label>
       <input id="serviceAlias" data-field="serviceAlias" placeholder="신규 서비스면 예: 파트너 포털, 결제 정산 서비스. 아니면 비워도 됩니다.">
       <label for="targetInfo">대상 정보</label>
-      <textarea id="targetInfo" data-field="targetInfo" placeholder="예시 1: 기획문서는 있어서 repo만 만들면 바로 시작 가능.
-예시 2: 바이브코딩이라 대화로 진행.
-예시 3: 다른 MSA 서비스에 있는 기능을 가져와서 새 서비스를 만들거야."></textarea>
+      <textarea id="targetInfo" data-field="targetInfo" placeholder="예시 1: 신규 정산 서비스. 기존 billing-service의 정산 계산 로직을 참고하되 독립 서비스로 만들고 싶음.
+예시 2: 관리자 화면의 고객 상세 &gt; 결제 내역 탭. API는 GET /admin/customers/{id}/payments 쪽으로 보임.
+예시 3: 모바일 앱 로그인 후 온보딩 화면. Figma 링크와 회의 메모는 이 칸에 같이 붙임."></textarea>
       <p class="hint">repo, 화면, API, DB/model, Figma, 회의 메모, 에러 로그가 있으면 이 칸에 같이 붙여 넣으세요.</p>
     </section>
 
