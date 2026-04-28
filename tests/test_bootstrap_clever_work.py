@@ -835,6 +835,118 @@ def test_preflight_check_passes_when_github_account_workspace_and_remotes_are_re
     assert ("gh", "api", "user", "--jq", ".login") in command_log
 
 
+def test_preflight_check_reports_auto_skips_and_next_startup_question(monkeypatch):
+    module = load_module()
+
+    def fake_workspace_check(cwd: Path, *, current_repo_maintenance: bool = False):
+        return {
+            "startup_ready": True,
+            "agent_action": "proceed-with-hard-gate",
+            "current_repo": "clever-agent-project",
+            "current_repo_is_start": True,
+            "control_plane_complete": True,
+            "repos": {
+                "clever-agent-project": {"checkout_path": "/workspace/clever-agent-project"},
+                "clever-context-monorepo": {
+                    "checkout_path": "/workspace/clever-context-monorepo"
+                },
+                "clever-change-control": {"checkout_path": "/workspace/clever-change-control"},
+            },
+        }
+
+    def fake_run(cmd: list[str], cwd: Path | None = None):
+        if cmd[:3] == ["gh", "api", "user"]:
+            return module.CommandResult(0, "jiinlim\n", "")
+        if cmd[:3] == ["gh", "api", "user/memberships/orgs/EVNSolution"]:
+            return module.CommandResult(0, json.dumps({"state": "active", "role": "admin"}), "")
+        if cmd[:2] == ["gh", "auth"]:
+            return module.CommandResult(0, "Logged in to github.com as jiinlim\n", "")
+        if cmd[:3] == ["git", "-C", "/workspace/clever-agent-project"]:
+            if cmd[3:] == ["remote", "get-url", "origin"]:
+                return module.CommandResult(
+                    0, "https://github.com/EVNSolution/clever-agent-project.git\n", ""
+                )
+            if cmd[3:] == ["status", "--short"]:
+                return module.CommandResult(0, "", "")
+            if cmd[3:] == ["fetch", "--dry-run", "origin"]:
+                return module.CommandResult(0, "", "")
+        if cmd[:3] == ["git", "-C", "/workspace/clever-context-monorepo"]:
+            if cmd[3:] == ["remote", "get-url", "origin"]:
+                return module.CommandResult(
+                    0, "https://github.com/EVNSolution/clever-context-monorepo.git\n", ""
+                )
+            if cmd[3:] == ["status", "--short"]:
+                return module.CommandResult(0, "", "")
+            if cmd[3:] == ["fetch", "--dry-run", "origin"]:
+                return module.CommandResult(0, "", "")
+        if cmd[:3] == ["git", "-C", "/workspace/clever-change-control"]:
+            if cmd[3:] == ["remote", "get-url", "origin"]:
+                return module.CommandResult(
+                    0, "https://github.com/EVNSolution/clever-change-control.git\n", ""
+                )
+            if cmd[3:] == ["status", "--short"]:
+                return module.CommandResult(0, "", "")
+            if cmd[3:] == ["fetch", "--dry-run", "origin"]:
+                return module.CommandResult(0, "", "")
+        if cmd[:3] == ["gh", "repo", "view"]:
+            return module.CommandResult(
+                0,
+                json.dumps(
+                    {
+                        "nameWithOwner": cmd[3],
+                        "visibility": "PUBLIC",
+                        "isPrivate": False,
+                        "viewerPermission": "ADMIN",
+                    }
+                ),
+                "",
+            )
+        if cmd[:2] == ["gh", "issue"]:
+            return module.CommandResult(0, "[]\n", "")
+        if cmd[:2] == ["gh", "pr"]:
+            return module.CommandResult(0, "[]\n", "")
+        if cmd[:2] == ["gh", "api"] and cmd[2].endswith("/rulesets"):
+            return module.CommandResult(0, "[]\n", "")
+        raise AssertionError(f"unexpected command: {cmd}")
+
+    monkeypatch.setattr(module.shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(module, "build_workspace_check", fake_workspace_check)
+    monkeypatch.setattr(module, "run_command_result", fake_run)
+
+    report = module.build_preflight_check(
+        cwd=REPO_ROOT,
+        expected_github_login=None,
+        github_owner="EVNSolution",
+    )
+
+    assert report["ready"] is True
+    assert report["recovery_actions"] == []
+    assert report["auto_skipped_questions"] == [
+        {
+            "question": "github_login",
+            "reason": "gh CLI inferred the authenticated GitHub account.",
+            "evidence": "jiinlim",
+        },
+        {
+            "question": "startup_location",
+            "reason": "workspace_check.agent_action already selected the startup path.",
+            "evidence": "proceed-with-hard-gate",
+        },
+        {
+            "question": "dirty_state",
+            "reason": "control-plane worktree cleanliness was checked automatically.",
+            "evidence": "pass",
+        },
+    ]
+    assert report["next_questions"] == [
+        {
+            "id": "startup_branch_input",
+            "prompt": "작업 시작: 먼저 하려는 일을 한 줄로 적어 주세요.",
+            "reason": "preflight passed and the workspace is ready for the startup template.",
+        }
+    ]
+
+
 def test_preflight_check_infers_github_login_from_gh_cli_when_expected_missing(monkeypatch):
     module = load_module()
 
@@ -873,6 +985,11 @@ def test_preflight_check_infers_github_login_from_gh_cli_when_expected_missing(m
     assert "Ask the user for their GitHub login or profile URL" not in checks["github-account"][
         "message"
     ]
+    assert {
+        "question": "github_login",
+        "reason": "gh CLI inferred the authenticated GitHub account.",
+        "evidence": "jiinlim",
+    } in report["auto_skipped_questions"]
     assert "OziinG" not in checks["github-account"]["message"]
 
 
@@ -915,6 +1032,16 @@ def test_preflight_check_asks_for_github_login_only_when_gh_cli_cannot_infer_acc
     assert "Ask the user for their GitHub login or profile URL" in checks[
         "github-account"
     ]["message"]
+    assert {
+        "check": "github-account",
+        "action": "Run gh auth login or provide the GitHub login/profile URL to use as an override.",
+        "command": "gh auth login",
+    } in report["recovery_actions"]
+    assert report["next_questions"][0] == {
+        "id": "github_login",
+        "prompt": "GitHub login 또는 profile URL을 알려 주세요.",
+        "reason": "gh CLI could not infer the authenticated account.",
+    }
     assert "OziinG" not in checks["github-account"]["message"]
 
 
@@ -1077,6 +1204,21 @@ def test_docs_require_preflight_before_startup_and_admin_repo_bootstrap():
     assert "OziinG" not in target_agents
     assert "Preflight Gate" in target_agents
     assert "team-work automation" in target_agents
+
+
+def test_docs_describe_preflight_auto_skips_recovery_actions_and_next_questions():
+    docs = [
+        REPO_ROOT / "AGENTS.md",
+        REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md",
+        REPO_ROOT / "docs/setting.md",
+        REPO_ROOT / "docs/guides/session-start-smoke-test.md",
+    ]
+
+    for doc_path in docs:
+        text = doc_path.read_text(encoding="utf-8")
+        assert "auto_skipped_questions" in text
+        assert "recovery_actions" in text
+        assert "next_questions" in text
 
 
 def test_readme_guides_non_expert_users_by_entry_surface():

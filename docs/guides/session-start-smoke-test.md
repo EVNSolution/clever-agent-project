@@ -56,6 +56,8 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 
 이 문서의 시나리오는 그 결과가 `preflight_check.ready=true`이고
 `workspace_check.agent_action=proceed-with-hard-gate`일 때 시작 하드 게이트가 제대로 적용되는지 보는 테스트다.
+또한 `auto_skipped_questions`에 자동 생략된 질문이 기록되고, 실패 시 `recovery_actions`가 나오며,
+성공 시 `next_questions`가 시작 입력으로 최소화되는지 확인한다.
 
 현재 control-plane 저장소 자체를 직접 수정하는 세션은 아래처럼 유지보수 모드로 따로 확인한다.
 

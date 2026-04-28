@@ -374,6 +374,9 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo
 ```
 
 `preflight_check.ready=false`이면 시작 질문으로 내려가지 않고 실패한 check를 먼저 해결한다.
+이때 `recovery_actions`에 실패 check별 복구 명령이나 처리 지시가 들어간다.
+`auto_skipped_questions`는 도구가 이미 답한 질문이므로 다시 묻지 않는다.
+`next_questions`는 자동 확인 뒤에도 남아 있는 최소 사용자 질문만 담는다.
 `true`이면 내부 `workspace_check.agent_action`이 아래 중 하나를 돌려준다.
 
 - `proceed-with-hard-gate`: 현재 위치에서 시작 템플릿으로 진행

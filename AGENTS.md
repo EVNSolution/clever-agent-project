@@ -50,6 +50,13 @@ The preflight must verify at least:
 If `preflight_check.ready` is false, stop before startup questions and report the
 failed checks.
 
+Read these preflight output fields before asking anything:
+
+- `auto_skipped_questions`: questions already answered by tool evidence, such as
+  GitHub login inference, startup location, or dirty-state inspection.
+- `recovery_actions`: concrete commands or actions for failed checks.
+- `next_questions`: the minimal remaining user questions after automatic checks.
+
 If it is true, use the returned `workspace_check.agent_action` field as the
 startup branch:
 

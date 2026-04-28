@@ -52,6 +52,9 @@ Interpret the result like this:
 
 - `preflight_check.ready=false`: stop and show the failed checks before asking startup questions.
 - `preflight_check.ready=true`: continue by reading `workspace_check.agent_action`.
+- `auto_skipped_questions`: do not ask these questions again; tool evidence already answered them.
+- `recovery_actions`: use these concrete commands/actions to fix failed checks before continuing.
+- `next_questions`: ask only these remaining user questions after automatic checks.
 - `workspace_check.agent_action=proceed-with-hard-gate`: continue in the current session
 - `workspace_check.agent_action=current-repo-maintenance`: stay in the current control-plane repo and treat it as the target
 - `workspace_check.agent_action=switch-to-clever-agent-project`: move startup to `clever-agent-project` first
