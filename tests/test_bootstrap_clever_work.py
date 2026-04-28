@@ -730,11 +730,11 @@ def test_preflight_check_passes_when_github_account_workspace_and_remotes_are_re
     def fake_run(cmd: list[str], cwd: Path | None = None):
         command_log.append(tuple(cmd))
         if cmd[:3] == ["gh", "api", "user"]:
-            return module.CommandResult(0, "OziinG\n", "")
+            return module.CommandResult(0, "jiinlim\n", "")
         if cmd[:3] == ["gh", "api", "user/memberships/orgs/EVNSolution"]:
             return module.CommandResult(0, json.dumps({"state": "active", "role": "admin"}), "")
         if cmd[:2] == ["gh", "auth"]:
-            return module.CommandResult(0, "Logged in to github.com as OziinG\n", "")
+            return module.CommandResult(0, "Logged in to github.com as jiinlim\n", "")
         if cmd[:3] == ["git", "-C", "/workspace/clever-agent-project"]:
             if cmd[3:] == ["remote", "get-url", "origin"]:
                 return module.CommandResult(
@@ -789,13 +789,13 @@ def test_preflight_check_passes_when_github_account_workspace_and_remotes_are_re
 
     report = module.build_preflight_check(
         cwd=REPO_ROOT,
-        expected_github_login="OziinG",
+        expected_github_login="jiinlim",
         github_owner="EVNSolution",
     )
 
     assert report["ready"] is True
     assert report["mode"] == "basic"
-    assert report["github_login"] == "OziinG"
+    assert report["github_login"] == "jiinlim"
     assert {check["name"]: check["status"] for check in report["checks"]} == {
         "git-cli": "pass",
         "gh-cli": "pass",
@@ -813,7 +813,7 @@ def test_preflight_check_passes_when_github_account_workspace_and_remotes_are_re
     assert ("gh", "api", "user", "--jq", ".login") in command_log
 
 
-def test_preflight_check_fails_before_startup_when_github_login_is_wrong(monkeypatch):
+def test_preflight_check_requires_user_provided_github_login_when_missing(monkeypatch):
     module = load_module()
 
     monkeypatch.setattr(module.shutil, "which", lambda name: f"/usr/bin/{name}")
@@ -838,15 +838,90 @@ def test_preflight_check_fails_before_startup_when_github_login_is_wrong(monkeyp
 
     report = module.build_preflight_check(
         cwd=REPO_ROOT,
-        expected_github_login="OziinG",
+        expected_github_login=None,
+        github_owner="EVNSolution",
+    )
+
+    assert report["ready"] is False
+    assert report["expected_github_login"] is None
+    assert report["github_login"] == "jiinlim"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["github-account"]["status"] == "fail"
+    assert "Ask the user for their GitHub login or profile URL" in checks["github-account"][
+        "message"
+    ]
+    assert "OziinG" not in checks["github-account"]["message"]
+
+
+def test_preflight_check_accepts_expected_github_profile_url(monkeypatch):
+    module = load_module()
+
+    monkeypatch.setattr(module.shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(
+        module,
+        "build_workspace_check",
+        lambda cwd, *, current_repo_maintenance=False: {
+            "startup_ready": True,
+            "agent_action": "proceed-with-hard-gate",
+            "repos": {},
+        },
+    )
+    monkeypatch.setattr(
+        module,
+        "run_command_result",
+        lambda cmd, cwd=None: module.CommandResult(
+            0,
+            "jiinlim\n" if cmd[:3] == ["gh", "api", "user"] else "",
+            "",
+        ),
+    )
+
+    report = module.build_preflight_check(
+        cwd=REPO_ROOT,
+        expected_github_login="https://github.com/jiinlim",
+        github_owner="EVNSolution",
+    )
+
+    assert report["github_login"] == "jiinlim"
+    assert report["expected_github_login"] == "jiinlim"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["github-account"]["status"] == "pass"
+
+
+def test_preflight_check_fails_before_startup_when_github_login_is_wrong(monkeypatch):
+    module = load_module()
+
+    monkeypatch.setattr(module.shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(
+        module,
+        "build_workspace_check",
+        lambda cwd, *, current_repo_maintenance=False: {
+            "startup_ready": True,
+            "agent_action": "proceed-with-hard-gate",
+            "repos": {},
+        },
+    )
+    monkeypatch.setattr(
+        module,
+        "run_command_result",
+        lambda cmd, cwd=None: module.CommandResult(
+            0,
+            "other-user\n" if cmd[:3] == ["gh", "api", "user"] else "",
+            "",
+        ),
+    )
+
+    report = module.build_preflight_check(
+        cwd=REPO_ROOT,
+        expected_github_login="jiinlim",
         github_owner="EVNSolution",
     )
 
     assert report["ready"] is False
     checks = {check["name"]: check for check in report["checks"]}
     assert checks["github-account"]["status"] == "fail"
-    assert "OziinG" in checks["github-account"]["message"]
     assert "jiinlim" in checks["github-account"]["message"]
+    assert "other-user" in checks["github-account"]["message"]
 
 
 def test_admin_preflight_requires_admin_permission_for_target_repo(monkeypatch):
@@ -867,7 +942,7 @@ def test_admin_preflight_requires_admin_permission_for_target_repo(monkeypatch):
         if cmd[:2] == ["gh", "auth"]:
             return module.CommandResult(0, "Logged in\n", "")
         if cmd[:3] == ["gh", "api", "user"]:
-            return module.CommandResult(0, "OziinG\n", "")
+            return module.CommandResult(0, "jiinlim\n", "")
         if cmd[:3] == ["gh", "api", "user/memberships/orgs/EVNSolution"]:
             return module.CommandResult(0, json.dumps({"state": "active", "role": "admin"}), "")
         if cmd[:3] == ["gh", "repo", "view"]:
@@ -895,7 +970,7 @@ def test_admin_preflight_requires_admin_permission_for_target_repo(monkeypatch):
 
     report = module.build_preflight_check(
         cwd=REPO_ROOT,
-        expected_github_login="OziinG",
+        expected_github_login="jiinlim",
         github_owner="EVNSolution",
         admin=True,
         target_repo_full_name="EVNSolution/example-target",
@@ -920,8 +995,11 @@ def test_docs_require_preflight_before_startup_and_admin_repo_bootstrap():
     for text in (readme, agents, skill):
         assert "--preflight" in text
         assert "gh auth status" in text
-        assert "OziinG" in text
+        assert "GitHub login" in text
+        assert "CLEVER_EXPECTED_GITHUB_LOGIN" in text
+        assert "OziinG" not in text
         assert "--admin-preflight" in text
+    assert "OziinG" not in target_agents
     assert "Preflight Gate" in target_agents
     assert "team-work automation" in target_agents
 
@@ -929,8 +1007,6 @@ def test_docs_require_preflight_before_startup_and_admin_repo_bootstrap():
 def test_agent_files_startup_behavior_uses_preflight_gate():
     agent_files = [
         REPO_ROOT / "AGENTS.md",
-        REPO_ROOT.parent / "clever-context-monorepo/AGENTS.md",
-        REPO_ROOT.parent / "clever-change-control/AGENTS.md",
         REPO_ROOT / "docs/templates/target-repo-AGENTS.md",
     ]
 
@@ -939,6 +1015,32 @@ def test_agent_files_startup_behavior_uses_preflight_gate():
         assert "Run the workspace check" not in text
         assert "automatic workspace check" not in text
         assert "preflight_check.ready=true" in text
+
+
+def test_sibling_control_plane_agent_files_point_to_agent_project_for_startup():
+    sibling_agent_files = [
+        REPO_ROOT.parent / "clever-context-monorepo/AGENTS.md",
+        REPO_ROOT.parent / "clever-change-control/AGENTS.md",
+    ]
+
+    for doc_path in sibling_agent_files:
+        text = doc_path.read_text(encoding="utf-8")
+        assert "startup/preflight authority lives in `clever-agent-project`" in text
+        assert "python3 ../clever-agent-project/scripts/bootstrap_clever_work.py" not in text
+        assert "CLEVER_EXPECTED_GITHUB_LOGIN" not in text
+        assert "gh auth status" not in text
+        assert "workspace_check.agent_action" not in text
+
+
+def test_context_governance_keeps_startup_details_in_agent_project():
+    text = (REPO_ROOT.parent / "clever-context-monorepo/docs/root/agent-runtime-governance.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "startup/preflight authority lives in `clever-agent-project`" in text
+    assert "python3 ../clever-agent-project/scripts/bootstrap_clever_work.py" not in text
+    assert "CLEVER_EXPECTED_GITHUB_LOGIN" not in text
+    assert "gh auth status" not in text
 
 
 def test_startup_guides_use_preflight_command_not_legacy_workspace_cli():

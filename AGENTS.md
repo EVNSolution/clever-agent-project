@@ -19,23 +19,26 @@ If any of these repositories are missing, the workspace is incomplete.
 Do not pretend web links are a substitute for local context.
 Stop and state that the three-repository local workspace is required.
 
-At startup, run this automatic preflight first:
+At startup, ask the current user for their GitHub login or profile URL, then run this automatic preflight first:
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
+  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 If the session is explicitly about editing the current control-plane repo itself, run:
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
+CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
+  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
 ```
 
 The preflight must verify at least:
 
 - local `git` and `gh` CLIs
 - `gh auth status`
-- authenticated GitHub login, defaulting to `OziinG`
+- authenticated GitHub login explicitly provided by the current user via
+  `CLEVER_EXPECTED_GITHUB_LOGIN` or `--expected-github-login`
 - active membership in the `EVNSolution` GitHub org
 - local three-repository workspace readiness
 - control-plane origin remotes under `EVNSolution/*`
@@ -58,7 +61,8 @@ Before creating a target repo, applying rulesets, or changing GitHub protection
 settings, run admin preflight with the target repo:
 
 ```bash
-python3 scripts/bootstrap_clever_work.py \
+CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
+  python3 scripts/bootstrap_clever_work.py \
   --cwd "$PWD" \
   --admin-preflight \
   --target-repo-full-name EVNSolution/<target-repo> \
@@ -80,7 +84,8 @@ conversation if the answers are not already present.
 First action:
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
+  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 Then apply the result:
@@ -556,7 +561,7 @@ Do not:
 
 The expected operating flow is:
 
-1. Run preflight for the three-repository local workspace and GitHub account
+1. Ask for the current user's GitHub login or profile URL, then run preflight for the three-repository local workspace and GitHub account
 2. Gather the startup frame
    - collect `work_kind`, `architecture_kind`, `session_goal`
    - fill the startup branch state template

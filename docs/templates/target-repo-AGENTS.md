@@ -22,23 +22,25 @@
 
 새 target repo에서 팀 작업 자동화, issue/PR 동시작업 판정, ruleset 적용, CODEOWNERS/CI 보강 같은 team-work automation을 시작하기 전에는 control-plane preflight가 먼저 통과되어야 한다.
 
-control-plane workspace의 `clever-agent-project`에서 실행한다.
+control-plane workspace의 `clever-agent-project`에서 실행한다. 첫 실행 때는 사용자에게 GitHub login 또는 profile URL을 물어보고 `CLEVER_EXPECTED_GITHUB_LOGIN`에 넣는다.
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
+  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 repo 생성, ruleset 적용, branch protection 변경처럼 GitHub admin 권한이 필요한 단계는 대상 repo를 지정해 admin preflight를 다시 통과한다.
 
 ```bash
-python3 scripts/bootstrap_clever_work.py \
+CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
+  python3 scripts/bootstrap_clever_work.py \
   --cwd "$PWD" \
   --admin-preflight \
   --target-repo-full-name <target_repo_full_name> \
   --json
 ```
 
-preflight는 최소한 `gh auth status`, GitHub login `OziinG`, `EVNSolution` org membership, `EVNSolution/*` origin, public repo, issue/PR/ruleset 조회 권한, clean worktree, remote fetch 접근을 확인한다.
+preflight는 최소한 `gh auth status`, 사용자가 제공한 GitHub login 또는 profile URL, `EVNSolution` org membership, `EVNSolution/*` origin, public repo, issue/PR/ruleset 조회 권한, clean worktree, remote fetch 접근을 확인한다.
 새 repo 생성 권한은 destructive create 없이 완전히 증명할 수 없으므로, preflight 통과 후 `gh repo create` 성공 결과를 생성 proof로 본다.
 출력의 `preflight_check.ready=true`를 확인한 뒤에만 구현 계획, repo bootstrap, 동시작업 gate 판정으로 내려간다.
 실패하면 해당 단계로 내려가지 않는다.

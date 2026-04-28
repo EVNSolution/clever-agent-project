@@ -84,7 +84,7 @@ gh auth status
 ```
 
 헤드리스 환경에서는 `GH_TOKEN` 환경 변수 또는 `gh auth login --with-token` 방식을 사용할 수 있다.
-CLEVER 기본 계정은 `OziinG`으로 검증한다. 다른 계정을 쓸 때는 `CLEVER_EXPECTED_GITHUB_LOGIN` 또는 `--expected-github-login`을 명시한다.
+공용 CLEVER 기본 계정은 없다. 첫 실행 때 사용자에게 GitHub login 또는 profile URL을 물어보고 `CLEVER_EXPECTED_GITHUB_LOGIN` 또는 `--expected-github-login`으로 명시한다.
 preflight는 `EVNSolution` org active membership도 확인한다.
 
 ## Superpowers 설치
@@ -264,7 +264,8 @@ git fetch --prune origin
 초기 `main` commit과 `dev` push가 끝난 뒤 먼저 admin preflight를 실행한다.
 
 ```bash
-python3 scripts/bootstrap_clever_work.py \
+CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
+  python3 scripts/bootstrap_clever_work.py \
   --cwd "$PWD" \
   --admin-preflight \
   --target-repo-full-name <owner>/<repo> \
@@ -284,7 +285,7 @@ scripts/apply-github-rulesets.sh <owner>/<repo>
 - `dev`: PR 경유만 허용하고 direct push를 막는다. 승인 수는 0명이다.
 - 그 외 branch: GitHub ruleset을 적용하지 않는다.
 
-이 작업에는 `gh auth status` 통과, GitHub login `OziinG`, `EVNSolution` org membership, target repo의 GitHub Administration write 권한이 필요하다.
+이 작업에는 `gh auth status` 통과, 사용자가 제공한 GitHub login 또는 profile URL 검증, `EVNSolution` org membership, target repo의 GitHub Administration write 권한이 필요하다.
 새 repo 생성 권한은 destructive create 없이 완전히 증명할 수 없으므로, preflight는 membership과 API 접근을 먼저 확인하고 실제 생성 성공은 `gh repo create` 결과로 확정한다.
 
 ### 로컬 `main` push 금지 가드
@@ -361,16 +362,18 @@ bootstrap packet의 `target_repo_seed_files` 항목은 위 두 파일을 target 
 
 ## 첫 대화 하드 게이트
 
-첫 질문을 던지기 전에 에이전트는 먼저 로컬 workspace, `gh auth status`, GitHub 계정, 원격 접근, issue/PR/ruleset 조회 가능 여부를 자동 감지한다.
+첫 질문을 던지기 전에 에이전트는 먼저 사용자에게 GitHub login 또는 profile URL을 물어보고 로컬 workspace, `gh auth status`, GitHub login, 원격 접근, issue/PR/ruleset 조회 가능 여부를 자동 감지한다.
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
+  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 현재 control-plane 저장소 자체를 직접 수정하는 세션이면 아래처럼 유지보수 모드로 확인한다.
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
+CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
+  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
 ```
 
 `preflight_check.ready=false`이면 시작 질문으로 내려가지 않고 실패한 check를 먼저 해결한다.
