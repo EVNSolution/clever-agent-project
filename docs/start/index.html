@@ -69,6 +69,9 @@
     .output { min-height: 420px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; }
     .hint { font-size: 0.92rem; color: var(--muted); }
     .target { padding: 12px 14px; border-radius: 12px; background: #f2f4f7; color: var(--ink); }
+    .subpanel { border: 1px solid var(--line); border-radius: 16px; padding: 16px; background: #fbfcff; margin-top: 14px; }
+    .subpanel h3 { margin: 0 0 8px; font-size: 1.05rem; }
+    .hidden { display: none !important; }
     .ok { color: var(--ok); font-weight: 700; }
     .warn { color: var(--danger); font-weight: 700; }
     code { background: #eef2f7; padding: 2px 5px; border-radius: 5px; }
@@ -138,14 +141,41 @@
 
     <section class="panel" aria-labelledby="info-title">
       <h2 id="info-title">3. 대상 정보</h2>
-      <div class="grid">
-        <div><label for="repo">repo</label><input id="repo" data-field="repo" placeholder="없으면 비워도 됨"></div>
-        <div><label for="service">service/app</label><input id="service" data-field="service" placeholder="없으면 비워도 됨"></div>
-        <div><label for="screen">화면</label><input id="screen" data-field="screen"></div>
-        <div><label for="api">API</label><input id="api" data-field="api"></div>
-        <div><label for="db">DB/model</label><input id="db" data-field="db"></div>
-        <div><label for="docs">문서</label><input id="docs" data-field="docs"></div>
+      <p>선택한 작업 성격과 대상 범위에 맞는 카드만 보여줍니다. 신규 개발은 새로 만들 대상 중심으로, 기존 작업은 이미 있는 대상 중심으로 적습니다.</p>
+
+      <div class="subpanel" data-target-card="new">
+        <h3>새로 만들 대상 정보</h3>
+        <p class="hint">새 개발에는 아직 repo나 화면/API가 없을 수 있습니다. 만들 대상의 이름과 시작에 필요한 단서만 적습니다.</p>
+        <div class="grid">
+          <div><label for="newTargetName">새 대상 이름/가칭</label><input id="newTargetName" data-field="newTargetName" placeholder="예: 파트너 포털, 인증 v2"></div>
+          <div><label for="newRepoCandidate">만들 repo/service 후보</label><input id="newRepoCandidate" data-field="newRepoCandidate" placeholder="예: 새 repo 필요, 기존 monorepo 안에 추가"></div>
+          <div><label for="newServiceGoal">대상 사용자/목적</label><input id="newServiceGoal" data-field="newServiceGoal" placeholder="누가 무엇을 하게 만들지"></div>
+          <div><label for="newUserFlow">첫 화면/API/흐름 후보</label><input id="newUserFlow" data-field="newUserFlow" placeholder="예: 로그인 → 신청서 작성 → 승인"></div>
+        </div>
+        <label for="newSeedInfo">초기 입력/자료</label>
+        <textarea id="newSeedInfo" data-field="newSeedInfo" placeholder="정책, 예시 데이터, 레퍼런스, 반드시 포함할 기능을 적어 주세요."></textarea>
       </div>
+
+      <div class="subpanel" data-target-card="existing">
+        <h3>기존 대상 정보</h3>
+        <p class="hint">이미 있는 앱/서비스/기능을 고치는 작업이면 repo, 화면, API, DB/model, 문서처럼 찾을 수 있는 위치를 적습니다.</p>
+        <div class="grid">
+          <div><label for="repo">repo</label><input id="repo" data-field="repo" placeholder="기존 repo 이름 또는 URL"></div>
+          <div><label for="service">service/app</label><input id="service" data-field="service" placeholder="기존 service/app 이름"></div>
+          <div><label for="screen">화면</label><input id="screen" data-field="screen"></div>
+          <div><label for="api">API</label><input id="api" data-field="api"></div>
+          <div><label for="db">DB/model</label><input id="db" data-field="db"></div>
+          <div><label for="docs">문서</label><input id="docs" data-field="docs"></div>
+        </div>
+      </div>
+
+      <div class="subpanel" data-target-card="unknown">
+        <h3>대상 정보가 아직 애매함</h3>
+        <p class="hint">새로 만들지, 기존 것을 고칠지 아직 모르면 지금 알고 있는 단서만 적습니다. 에이전트가 먼저 분류합니다.</p>
+        <label for="targetClues">알고 있는 대상 단서</label>
+        <textarea id="targetClues" data-field="targetClues" placeholder="예: 고객이 쓰는 관리자 쪽, 결제 관련, 최근 에러가 난 화면 등"></textarea>
+      </div>
+
       <label for="references">issue/PR/Figma/회의 메모/에러 로그</label>
       <textarea id="references" data-field="references" placeholder="관련 링크나 로그를 붙여 넣으세요."></textarea>
     </section>
@@ -198,6 +228,12 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json`;
       workNature: "아직 모름",
       targetScope: "아직 모름",
       goalLevel: "아직 모름",
+      newTargetName: "",
+      newRepoCandidate: "",
+      newServiceGoal: "",
+      newUserFlow: "",
+      newSeedInfo: "",
+      targetClues: "",
       repo: "",
       service: "",
       screen: "",
@@ -220,6 +256,38 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json`;
       "Terminal CLI": "clever-agent-workspace/clever-agent-project 경로에서 CLI 에이전트를 연 뒤, 프롬프트 입력창에 이 내용을 붙여넣어 주세요."
     };
 
+    const existingTargetScopes = [
+      "기존 앱/서비스/기능",
+      "화면/UI",
+      "API",
+      "DB/model",
+      "CI/CD 또는 배포 workflow",
+      "문서/운영 설정"
+    ];
+
+    const existingWorkNatures = [
+      "기존 기능 확장/수정",
+      "버그 수정",
+      "리팩터링/구조 개선",
+      "문서/설정/운영 정리"
+    ];
+
+    function targetInfoMode() {
+      if (state.targetScope === "새 앱/서비스/기능") return "new";
+      if (existingTargetScopes.includes(state.targetScope)) return "existing";
+      if (state.workNature === "신규 개발") return "new";
+      if (existingWorkNatures.includes(state.workNature)) return "existing";
+      return "unknown";
+    }
+
+    function targetInfoModeLabel() {
+      return {
+        new: "새로 만들 대상",
+        existing: "기존 대상",
+        unknown: "아직 모르는 대상"
+      }[targetInfoMode()];
+    }
+
     function valueOrUnknown(value) {
       const trimmed = String(value || "").trim();
       return trimmed || "아직 모름";
@@ -227,6 +295,52 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json`;
 
     function line(label, value) {
       return `- ${label}: ${valueOrUnknown(value)}`;
+    }
+
+    function targetInfoBlock() {
+      const mode = targetInfoMode();
+      const common = [
+        "4. 대상 정보 입력 방향",
+        line("방향", targetInfoModeLabel()),
+        line("선택 근거", `작업 성격=${state.workNature}, 대상 범위=${state.targetScope}`)
+      ];
+
+      if (mode === "new") {
+        return [
+          ...common,
+          "",
+          "[새로 만들 대상]",
+          line("새 대상 이름/가칭", state.newTargetName),
+          line("만들 repo/service 후보", state.newRepoCandidate),
+          line("대상 사용자/목적", state.newServiceGoal),
+          line("첫 화면/API/흐름 후보", state.newUserFlow),
+          line("초기 입력/자료", state.newSeedInfo),
+          line("issue/PR/Figma/회의 메모/에러 로그", state.references)
+        ].join("\n");
+      }
+
+      if (mode === "existing") {
+        return [
+          ...common,
+          "",
+          "[기존 대상]",
+          line("repo", state.repo),
+          line("service/app", state.service),
+          line("화면", state.screen),
+          line("API", state.api),
+          line("DB/model", state.db),
+          line("문서", state.docs),
+          line("issue/PR/Figma/회의 메모/에러 로그", state.references)
+        ].join("\n");
+      }
+
+      return [
+        ...common,
+        "",
+        "[아직 모르는 대상 단서]",
+        line("알고 있는 대상 단서", state.targetClues),
+        line("issue/PR/Figma/회의 메모/에러 로그", state.references)
+      ].join("\n");
     }
 
     function buildOutput() {
@@ -265,14 +379,7 @@ preflight가 통과하면 아래 입력을 startup branch state로 정규화하�
 3. 이번 작업의 목표 수준은 어디까지인가요?
 - 선택: ${state.goalLevel}
 
-4. 알고 있는 이름이나 링크가 있나요? 없으면 비워도 됩니다.
-${line("repo", state.repo)}
-${line("service/app", state.service)}
-${line("화면", state.screen)}
-${line("API", state.api)}
-${line("DB/model", state.db)}
-${line("문서", state.docs)}
-${line("issue/PR/Figma/회의 메모/에러 로그", state.references)}
+${targetInfoBlock()}
 
 5. 현재 상태를 알고 있나요? 모르면 \`아직 모름\`으로 둬도 됩니다.
 ${line("이미 되어 있는 것", state.alreadyDone)}
@@ -290,6 +397,10 @@ ${line("보안/운영/배포 관련 주의사항", state.opsSecurity)}
     function render() {
       document.querySelectorAll(".chip[data-field]").forEach((button) => {
         button.setAttribute("aria-pressed", String(state[button.dataset.field] === button.dataset.value));
+      });
+      const mode = targetInfoMode();
+      document.querySelectorAll("[data-target-card]").forEach((card) => {
+        card.classList.toggle("hidden", card.dataset.targetCard !== mode);
       });
       document.getElementById("copyOutput").value = buildOutput();
       document.getElementById("pasteTarget").textContent = pasteTargets[state.surface] || pasteTargets.Application;
