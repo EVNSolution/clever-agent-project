@@ -113,27 +113,65 @@ If the user has not already provided the startup branch, leave this exact block:
 ```text
 작업 시작
 
-1. 작업 종류:
-- 새 작업 시작
-- 기존 서비스 변경
-- 현재 저장소 자체 수정
+먼저 하려는 일을 한 줄로 적어 주세요.
+선택지에 맞춰 답해도 되고, 애매하면 문장으로 편하게 설명해도 됩니다.
 
-2. 구조:
-- MONO
-- MSA
-
-3. 이번 세션 목표:
-- 요구사항/문서 정의
-- 서비스 온보딩 정의
-- 구현 repo 작업
-- 배포 준비
-
-추가 설명
 - 하려는 일:
-- 왜 필요한지:
-- 제약:
-- 기대 결과:
-- 알고 있는 repo/service가 있으면:
+
+아래 항목은 모르면 `아직 모름`으로 둬도 됩니다.
+각 항목은 선택지 중 하나를 골라도 되고, 선택지에 딱 맞지 않으면 직접 설명해도 됩니다.
+
+1. 작업 성격은 어디에 가깝나요?
+- 신규 개발
+- 기존 기능 확장/수정
+- 버그 수정
+- 리팩터링/구조 개선
+- 문서/설정/운영 정리
+- 아직 모름
+- 직접 설명:
+
+2. 대상 범위는 무엇인가요?
+- 새 앱/서비스/기능
+- 기존 앱/서비스/기능
+- 화면/UI
+- API
+- DB/model
+- CI/CD 또는 배포 workflow
+- 문서/운영 설정
+- 아직 모름
+- 직접 설명:
+
+3. 이번 작업의 목표 수준은 어디까지인가요?
+- 요구사항 정리
+- 설계 문서 작성
+- 구현 계획 수립
+- 실제 코드 변경
+- 테스트/검증
+- 배포/운영 준비
+- 1차 MVP 개발 및 배포
+- 운영 반영
+- 아직 모름
+- 직접 설명:
+
+4. 알고 있는 이름이나 링크가 있나요? 없으면 비워도 됩니다.
+- repo:
+- service/app:
+- 화면:
+- API:
+- DB/model:
+- 문서:
+- issue/PR/Figma/회의 메모/에러 로그:
+
+5. 현재 상태를 알고 있나요? 모르면 `아직 모름`으로 둬도 됩니다.
+- 이미 되어 있는 것:
+- 아직 없는 것:
+- 먼저 확인해야 할 것:
+
+6. 주의할 점이 있나요? 없으면 비워도 됩니다.
+- 꼭 지킬 것:
+- 피할 것:
+- 건드리면 안 되는 범위:
+- 보안/운영/배포 관련 주의사항:
 ```
 
 If the user starts with free-form text, do not discard it. Restate it into the
@@ -143,28 +181,33 @@ same block and mark missing values as `needs-input`.
 
 When the user writes naturally instead of filling the form:
 
-1. Extract known answers into the startup branch fields.
-2. Preserve the user's intent in `하려는 일`.
-3. Infer `작업 종류`, `구조`, and `이번 세션 목표` only when the wording is clear.
-4. Mark ambiguous or missing fields as `needs-input`.
-5. Ask only for the missing fields.
+1. Preserve the user's intent in `하려는 일` first.
+2. Convert the easy choices into internal `work_nature`, `target_scope`, and `goal_level` values.
+3. Derive `project_scope`, `service_scope`, and `session_goal` from those values only when clear.
+4. Infer `architecture_kind` only when the wording or repository context is clear; otherwise keep it `unknown`.
+5. Do not ask 전문 용어 such as MONO/MSA, `target_service`, rollout scope, or `change_id` in the first response.
+6. Mark ambiguous or missing fields as `needs-input`.
+7. Ask only for the missing fields that block the next step.
 
 Example:
 
 ```text
 사용자 입력:
-회원가입, 로그인, 사용자 확인 기능이 있는 단순한 인증 시스템을 새 프로젝트로 만들고 싶다.
-처음에는 MONO 구조로 가고, 새 repo를 만들면서 AGENTS.md와 docs/project-brief.md도 같이 준비해줘.
-권한 관리나 소셜 로그인은 나중에 하고, 지금은 기본 인증 흐름만 동작하면 된다.
+회원가입, 로그인, 사용자 확인 기능이 있는 단순한 인증 시스템을 만들고 싶다.
+작업 성격은 신규 개발이고, 대상 범위는 새 앱/서비스/기능이다.
+이번에는 실제 코드 변경까지 하고 싶고, 권한 관리나 소셜 로그인은 나중에 하고 싶다.
 
 정규화:
-- 작업 종류: 새 작업 시작
-- 구조: MONO
-- 이번 세션 목표: 구현 repo 작업
-- 하려는 일: 회원가입, 로그인, 사용자 확인 기능이 있는 단순한 인증 시스템 개발
-- 제약: 권한 관리와 소셜 로그인은 초기 범위 제외
-- 기대 결과: 새 repo와 seed 파일, 기본 인증 흐름 작업 기반 준비
-- needs-input: 왜 필요한지, 알고 있는 repo/service가 있으면
+- work_nature: new_development
+- target_scope: new_app_service_feature
+- goal_level: code_change
+- project_scope: new_project
+- service_scope: new_service
+- architecture_kind: unknown
+- session_goal: implementation_work
+- requested_work_summary: 회원가입, 로그인, 사용자 확인 기능이 있는 단순한 인증 시스템 개발
+- constraints: 권한 관리와 소셜 로그인은 초기 범위 제외
+- needs-input: 알려진 repo/service가 있는지, 꼭 지켜야 할 추가 조건이 있는지
 ```
 
 ### 질문 원장
@@ -174,14 +217,21 @@ When information is partial, leave a short question ledger before continuing:
 ```text
 질문 원장
 - known answer:
-  - 작업 종류:
-  - 구조:
-  - 이번 세션 목표:
   - 하려는 일:
-  - 왜 필요한지:
-  - 제약:
-  - 기대 결과:
-  - 알고 있는 repo/service:
+  - 작업 성격:
+  - 대상 범위:
+  - 목표 수준:
+  - 알고 있는 이름이나 링크:
+  - 현재 상태:
+  - 주의할 점:
+- normalized:
+  - work_nature:
+  - target_scope:
+  - goal_level:
+  - project_scope:
+  - service_scope:
+  - architecture_kind:
+  - session_goal:
 - needs-input:
   - <missing field 1>
   - <missing field 2>
@@ -286,27 +336,65 @@ Use this exact first-response template:
 
 ```text
 [시작 분기]
-1. 작업 종류:
-- 새 작업 시작
-- 기존 서비스 변경
-- 현재 저장소 자체 수정
+먼저 하려는 일을 한 줄로 적어 주세요.
+선택지에 맞춰 답해도 되고, 애매하면 문장으로 편하게 설명해도 됩니다.
 
-2. 구조:
-- MONO
-- MSA
-
-3. 이번 세션 목표:
-- 요구사항/문서 정의
-- 서비스 온보딩 정의
-- 구현 repo 작업
-- 배포 준비
-
-추가 설명
 - 하려는 일:
-- 왜 필요한지:
-- 제약:
-- 기대 결과:
-- 알고 있는 repo/service가 있으면:
+
+아래 항목은 모르면 `아직 모름`으로 둬도 됩니다.
+각 항목은 선택지 중 하나를 골라도 되고, 선택지에 딱 맞지 않으면 직접 설명해도 됩니다.
+
+1. 작업 성격은 어디에 가깝나요?
+- 신규 개발
+- 기존 기능 확장/수정
+- 버그 수정
+- 리팩터링/구조 개선
+- 문서/설정/운영 정리
+- 아직 모름
+- 직접 설명:
+
+2. 대상 범위는 무엇인가요?
+- 새 앱/서비스/기능
+- 기존 앱/서비스/기능
+- 화면/UI
+- API
+- DB/model
+- CI/CD 또는 배포 workflow
+- 문서/운영 설정
+- 아직 모름
+- 직접 설명:
+
+3. 이번 작업의 목표 수준은 어디까지인가요?
+- 요구사항 정리
+- 설계 문서 작성
+- 구현 계획 수립
+- 실제 코드 변경
+- 테스트/검증
+- 배포/운영 준비
+- 1차 MVP 개발 및 배포
+- 운영 반영
+- 아직 모름
+- 직접 설명:
+
+4. 알고 있는 이름이나 링크가 있나요? 없으면 비워도 됩니다.
+- repo:
+- service/app:
+- 화면:
+- API:
+- DB/model:
+- 문서:
+- issue/PR/Figma/회의 메모/에러 로그:
+
+5. 현재 상태를 알고 있나요? 모르면 `아직 모름`으로 둬도 됩니다.
+- 이미 되어 있는 것:
+- 아직 없는 것:
+- 먼저 확인해야 할 것:
+
+6. 주의할 점이 있나요? 없으면 비워도 됩니다.
+- 꼭 지킬 것:
+- 피할 것:
+- 건드리면 안 되는 범위:
+- 보안/운영/배포 관련 주의사항:
 ```
 
 Normalize the answers into the startup branch state template in:
@@ -563,7 +651,7 @@ The expected operating flow is:
 
 1. Ask for the current user's GitHub login or profile URL, then run preflight for the three-repository local workspace and GitHub account
 2. Gather the startup frame
-   - collect `work_kind`, `architecture_kind`, `session_goal`
+   - collect `work_nature`, `target_scope`, `goal_level`, then derive `project_scope`, `service_scope`, `architecture_kind`, `session_goal`
    - fill the startup branch state template
 3. Read canonical context
 4. Draft the `project-start` payload

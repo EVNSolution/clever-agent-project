@@ -108,6 +108,14 @@ def run_cli(*args):
     return json.loads(proc.stdout)
 
 
+def first_text_block_after(text: str, marker: str) -> str:
+    marker_index = text.index(marker)
+    fence_start = text.index("```text", marker_index)
+    block_start = fence_start + len("```text\n")
+    block_end = text.index("```", block_start)
+    return text[block_start:block_end]
+
+
 def run_workspace_check(*args, cwd: Path | None = None):
     proc = subprocess.run(
         [
@@ -578,9 +586,12 @@ def test_agent_project_agents_file_is_clone_ready_for_startup_questions():
     assert "known answer" in agents
     assert "needs-input" in agents
     assert "python3 scripts/bootstrap_clever_work.py --cwd \"$PWD\" --preflight --json" in agents
-    assert "작업 종류" in agents
-    assert "구조" in agents
-    assert "이번 세션 목표" in agents
+    assert "작업 성격은 어디에 가깝나요?" in agents
+    assert "신규 개발" in agents
+    assert "버그 수정" in agents
+    assert "대상 범위는 무엇인가요?" in agents
+    assert "CI/CD 또는 배포 workflow" in agents
+    assert "전문 용어" in agents
     assert "양식을 채워도 되고, 자연어로 편하게 설명해도 된다" in agents
     assert "자연어 입력 처리 규칙" in agents
 
@@ -589,12 +600,23 @@ def test_readme_exposes_copyable_first_clone_command_box():
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
 
     assert "## 1분 설치" not in readme
-    assert readme.count("## 빠른 시작") == 1
+    assert "## 빠른 시작" not in readme
+    assert "## 사용 환경별 시작" in readme
+    assert readme.index("## 사용 환경별 시작") < readme.index("```bash\nmkdir -p clever-agent-workspace")
     assert "## How to Start" not in readme
     assert "## 시작 입력" in readme
-    assert "## 운영 세부 기준" in readme
-    assert "## 상세 빠른 시작" not in readme
-    assert "아래 박스를 그대로 복사해서 실행한다" in readme
+    assert "## 운영 세부 기준" not in readme
+    assert "## 워크스페이스 레포지토리" not in readme
+    assert "## 빠른 링크" not in readme
+    assert "## CLEVER란 무엇인가" not in readme
+    assert "## 왜 3개 레포가 모두 필요한가" not in readme
+    assert "## 필수 워크스페이스 계약" not in readme
+    assert "## 레포 맵" not in readme
+    assert "## 시나리오 다이어그램" not in readme
+    assert "## 상세 문서" not in readme
+    assert "## 관련 레포" not in readme
+    assert "터미널 CLI용 직접 설정 명령" in readme
+    assert "아래 명령은 터미널 CLI 사용자를 위한 직접 설정용이다" in readme
     assert "```bash\nmkdir -p clever-agent-workspace" in readme
     assert "git clone https://github.com/EVNSolution/clever-agent-project.git" in readme
     assert "git clone https://github.com/EVNSolution/clever-context-monorepo.git" in readme
@@ -603,6 +625,7 @@ def test_readme_exposes_copyable_first_clone_command_box():
     assert readme.count("git clone https://github.com/EVNSolution/clever-context-monorepo.git") == 1
     assert readme.count("git clone https://github.com/EVNSolution/clever-change-control.git") == 1
     assert "cd clever-agent-project" in readme
+    assert 'CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \\\n  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json' in readme
     assert "python3 scripts/bootstrap_clever_work.py --cwd \"$PWD\" --preflight --json" in readme
     assert "에이전트 종류별 실행 예시" in readme
     assert "codex --yolo" in readme
@@ -663,14 +686,13 @@ def test_build_ssot_docs_uses_project_start_aligned_surface():
 
 
 def test_readme_and_setting_document_public_target_repo_visibility_rule():
-    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     setting = (REPO_ROOT / "docs/setting.md").read_text(encoding="utf-8")
     skill = (REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md").read_text(
         encoding="utf-8"
     )
 
-    assert "새 프로젝트 repo는 public으로 만든다" in readme
-    assert "GitHub Free 조직에서 private repo ruleset이 enforce되지 않는다" in readme
+    assert "새 target repo는 public으로 생성한다" in setting
+    assert "GitHub Free 조직에서 private repo ruleset이 enforce되지 않는다" in setting
     assert "gh repo create <owner>/<repo> --public" in setting
     assert "새 target repo는 public으로 생성한다" in skill
 
@@ -992,7 +1014,13 @@ def test_docs_require_preflight_before_startup_and_admin_repo_bootstrap():
         encoding="utf-8"
     )
 
-    for text in (readme, agents, skill):
+    assert "--preflight" in readme
+    assert "GitHub login" in readme
+    assert "CLEVER_EXPECTED_GITHUB_LOGIN" in readme
+    assert "OziinG" not in readme
+    assert "--admin-preflight" not in readme
+
+    for text in (agents, skill):
         assert "--preflight" in text
         assert "gh auth status" in text
         assert "GitHub login" in text
@@ -1002,6 +1030,129 @@ def test_docs_require_preflight_before_startup_and_admin_repo_bootstrap():
     assert "OziinG" not in target_agents
     assert "Preflight Gate" in target_agents
     assert "team-work automation" in target_agents
+
+
+def test_readme_guides_non_expert_users_by_entry_surface():
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "## 사용 환경별 시작" in readme
+    assert readme.count("<details>") >= 3
+    assert readme.count("</details>") >= 3
+    assert "<summary><strong>앱형 에이전트 / Application</strong> — 채팅에 프롬프트를 붙여 넣고 기본 세팅을 맡긴다.</summary>" in readme
+    assert "<summary><strong>VS Code Extension</strong> — 확장 채팅과 Integrated Terminal로 기본 세팅을 맡긴다.</summary>" in readme
+    assert "<summary><strong>터미널 CLI</strong> — 개발자처럼 직접 작업 디렉토리에서 시작한다.</summary>" in readme
+    assert readme.index("앱형 에이전트 / Application</strong>") < readme.index("터미널 CLI</strong>")
+    assert readme.index("VS Code Extension</strong>") < readme.index("터미널 CLI</strong>")
+    for surface in [
+        "앱형 에이전트",
+        "터미널 CLI",
+        "VS Code Extension",
+    ]:
+        assert surface in readme
+    assert "터미널 CLI는 개발자처럼 직접 작업 디렉토리에서 시작한다" in readme
+    assert "앱형 에이전트는 LLM과 대화하듯이 세팅을 맡긴다" in readme
+    assert "VS Code Extension도 확장 채팅에 세팅을 맡긴다" in readme
+    assert "아래 프롬프트를 그대로 붙여 넣는다" in readme
+    assert "내 GitHub login 또는 profile URL을 먼저 물어봐줘" in readme
+    assert "3개 repo clone부터 preflight까지 진행해줘" in readme
+    assert "필요한 shell 명령은 네가 실행하고 결과를 확인해줘" in readme
+    assert "Integrated Terminal" in readme
+
+
+def test_startup_first_questions_prioritize_project_and_service_scope():
+    docs = [
+        REPO_ROOT / "README.md",
+        REPO_ROOT / "AGENTS.md",
+        REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md",
+        REPO_ROOT / "docs/templates/startup-branch-state-template.md",
+        REPO_ROOT / "docs/setting.md",
+        REPO_ROOT / "docs/guides/session-start-smoke-test.md",
+    ]
+
+    for doc_path in docs:
+        text = doc_path.read_text(encoding="utf-8")
+        assert "먼저 하려는 일을 한 줄로 적어 주세요" in text
+        assert "작업 성격은 어디에 가깝나요?" in text
+        assert "신규 개발" in text
+        assert "기존 기능 확장/수정" in text
+        assert "버그 수정" in text
+        assert "리팩터링/구조 개선" in text
+        assert "대상 범위는 무엇인가요?" in text
+        assert "CI/CD 또는 배포 workflow" in text
+        assert "현재 상태를 알고 있나요?" in text
+        assert "모르면 `아직 모름`" in text
+
+
+def test_startup_visible_template_uses_actionable_non_expert_questions():
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    skill = (
+        REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md"
+    ).read_text(encoding="utf-8")
+    startup_template = (
+        REPO_ROOT / "docs/templates/startup-branch-state-template.md"
+    ).read_text(encoding="utf-8")
+
+    visible_blocks = [
+        first_text_block_after(readme, "## 시작 입력"),
+        first_text_block_after(agents, "If the user has not already provided"),
+        first_text_block_after(skill, "Use this exact first-response template"),
+        first_text_block_after(startup_template, "## 사용자에게 보여주는 입력 양식"),
+    ]
+
+    for block in visible_blocks:
+        assert "하려는 일:" in block
+        assert "작업 성격은 어디에 가깝나요?" in block
+        assert "대상 범위는 무엇인가요?" in block
+        assert "이번 작업의 목표 수준은 어디까지인가요?" in block
+        assert "현재 상태를 알고 있나요?" in block
+        assert "건드리면 안 되는 범위" in block
+        assert "보안/운영/배포 관련 주의사항" in block
+        assert "알고 있는 이름이나 링크" in block
+        assert "주의할 점" in block
+        assert "직접 설명:" in block
+        assert "MONO" not in block
+        assert "MSA" not in block
+        assert "target_service" not in block
+        assert "프로젝트 상태:" not in block
+        assert "서비스 범위:" not in block
+        assert "이번 세션 목표:" not in block
+        assert "왜 필요한지" not in block
+        assert "기대 결과" not in block
+
+
+def test_process_docs_stay_synced_with_current_startup_language():
+    docs = [
+        REPO_ROOT / "docs/diagrams/README.md",
+        REPO_ROOT / "docs/diagrams/clever-work-lifecycle.md",
+        REPO_ROOT / "docs/diagrams/clever-work-lifecycle.html",
+        REPO_ROOT / "docs/diagrams/clever-control-plane-overview.html",
+        REPO_ROOT / "docs/guides/clever-project-workflows.md",
+    ]
+    stale_phrases = [
+        "3단계 시작 템플릿",
+        "three-step opening template",
+        "작업 유형 + MSA/MONO",
+        "새 서비스 개발 vs. 기존 서비스 추가",
+        "추가 설명: 목적, 제약, 기대 결과",
+        "모든 경우에 아래 규칙은 공통이다.\n\n1. 시작은 `clever-agent-project`에서 한다.",
+        "candidate template lineage",
+    ]
+
+    for doc_path in docs:
+        text = doc_path.read_text(encoding="utf-8")
+        for phrase in stale_phrases:
+            assert phrase not in text, f"{doc_path} still contains {phrase!r}"
+
+    lifecycle = (REPO_ROOT / "docs/diagrams/clever-work-lifecycle.md").read_text(
+        encoding="utf-8"
+    )
+    workflows = (REPO_ROOT / "docs/guides/clever-project-workflows.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "작업 성격 + 대상 범위 + 목표 수준" in lifecycle
+    assert "generic startup은 `clever-agent-project`에서 시작한다" in workflows
 
 
 def test_agent_files_startup_behavior_uses_preflight_gate():

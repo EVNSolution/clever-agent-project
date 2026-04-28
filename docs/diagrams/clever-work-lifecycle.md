@@ -11,8 +11,8 @@ sequenceDiagram
     participant TR as 대상 레포지토리
 
     U->>AP: 세션 시작<br/>README.md
-    AP->>U: 3단계 시작 템플릿 강제<br/>README.md + SKILL.md
-    U->>AP: 작업 유형 + MSA/MONO + 추가 설명 입력
+    AP->>U: 쉬운 시작 템플릿 제시<br/>README.md + SKILL.md
+    U->>AP: 작업 성격 + 대상 범위 + 목표 수준 입력
 
     AP->>AP: 요청 정규화<br/>docs/setting.md + guides
     AP->>CTX: 권한과 계보 해석<br/>docs/root/index.md<br/>authority-boundaries.md
@@ -41,7 +41,7 @@ sequenceDiagram
 ## 단계 요약
 
 1. 시작은 `clever-agent-project/README.md`에서 열린다.
-2. 하드 게이트는 `SKILL.md`와 시작 템플릿 규칙으로 강제된다.
+2. 하드 게이트는 `SKILL.md`와 시작 템플릿 규칙으로 강제되고, 답변은 `work_nature`, `target_scope`, `goal_level` 중심으로 정규화된다.
 3. 해석은 `clever-context-monorepo/docs/root`, `docs/services`, `docs/templates`를 읽어 결정한다.
 4. 루트는 `clever-change-control`의 `project-start issue #`로 열린다.
 5. 범위가 고정된 실행은 `change request`, `changes/`, `releases/*`로 내려간다.

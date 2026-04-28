@@ -24,9 +24,11 @@
 
 ## 항상 지켜야 하는 규칙
 
-모든 경우에 아래 규칙은 공통이다.
+generic startup은 `clever-agent-project`에서 시작한다. 단, `clever-context-monorepo`나 `clever-change-control` 자체를 직접 수정하는 repo-local maintenance 세션은 해당 레포에서 계속할 수 있다.
 
-1. 시작은 `clever-agent-project`에서 한다.
+공통 규칙은 아래와 같다.
+
+1. 첫 입력은 쉬운 시작 템플릿으로 받고, `work_nature`, `target_scope`, `goal_level`을 먼저 정규화한다.
 2. 초안 작성 전에 SSOT를 읽는다.
 3. repo를 만들거나 바꾸기 전에 `project-start` 초안을 만든다.
 4. 승인 전에는 GitHub issue 생성이나 repo bootstrap을 하지 않는다.
@@ -47,22 +49,23 @@
 
 실행 순서는 아래와 같다.
 
-1. `clever-agent-project`에서 시작한다.
-2. `clever-context-monorepo`와 `clever-change-control`을 읽는다.
-3. `project-start` 초안을 만든다.
-4. 승인을 받는다.
-5. `clever-change-control`의 `project-start` 이슈를 생성한다.
-6. 생성된 issue 번호를 root identifier로 쓴다.
-7. 첫 target repo를 결정한다.
-8. 필요하면 GitHub repo를 만든다.
-9. 로컬에 clone 또는 pull 한다.
-10. target repo에 초기 seed 파일을 만든다.
+1. `clever-agent-project`에서 generic startup으로 시작한다.
+2. 쉬운 시작 템플릿 답변을 `work_nature`, `target_scope`, `goal_level`로 정규화한다.
+3. `clever-context-monorepo`와 `clever-change-control`을 읽는다.
+4. `project-start` 초안을 만든다.
+5. 승인을 받는다.
+6. `clever-change-control`의 `project-start` 이슈를 생성한다.
+7. 생성된 issue 번호를 root identifier로 쓴다.
+8. 첫 target repo를 결정한다.
+9. 필요하면 GitHub repo를 만든다.
+10. 로컬에 clone 또는 pull 한다.
+11. target repo에 초기 seed 파일을 만든다.
     - `AGENTS.md`: agent 실행 절차서
     - `docs/project-brief.md`: 프로젝트 기획 초안
-11. 초기 remote bootstrap이면 `main`에 첫 commit을 올린다.
-12. 곧바로 `dev` branch를 만들고 push 한다.
-13. `dev`가 생기면 로컬에서 `main` direct push를 막는다.
-14. 그 target repo에서 새 세션으로 이동한다.
+12. 초기 remote bootstrap이면 `main`에 첫 commit을 올린다.
+13. 곧바로 `dev` branch를 만들고 push 한다.
+14. `dev`가 생기면 로컬에서 `main` direct push를 막는다.
+15. 그 target repo에서 새 세션으로 이동한다.
 
 결과는 아래와 같다.
 
@@ -152,11 +155,12 @@ child issue 유형은 보통 아래 중 하나다.
 
 대부분의 경우 시작 시 필요한 것은 아래 정도다.
 
-- 목적 또는 배경 1~2문장
-- 이미 알고 있는 중요한 제약
-- 기대 결과
-- candidate template lineage
-- candidate target repo/service if known
+- 하려는 일 한 줄
+- 작업 성격: 신규 개발, 기존 기능 확장/수정, 버그 수정, 리팩터링/구조 개선, 문서/설정/운영 정리 중 어디에 가까운지
+- 대상 범위: 새/기존 앱·서비스·기능, 화면/UI, API, DB/model, CI/CD, 문서/운영 설정 중 어디인지
+- 목표 수준: 요구사항, 설계, 계획, 코드 변경, 테스트, 배포/운영 중 어디까지 원하는지
+- 알고 있는 repo/service/API/화면/문서/issue/로그 링크
+- 현재 상태와 주의사항, 아는 제약
 
 처음부터 아래를 모두 확정하게 만들면 안 된다.
 
