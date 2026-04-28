@@ -47,8 +47,9 @@ ALLOWED_UI_IMPACTS = {
 DEFAULT_GITHUB_OWNER = "EVNSolution"
 DEFAULT_EXPECTED_GITHUB_LOGIN: str | None = None
 GITHUB_LOGIN_REQUEST_MESSAGE = (
-    "Ask the user for their GitHub login or profile URL, then set "
-    "CLEVER_EXPECTED_GITHUB_LOGIN or pass --expected-github-login."
+    "Ask the user for their GitHub login or profile URL only when the "
+    "authenticated account cannot be inferred from gh CLI or must be overridden, "
+    "then set CLEVER_EXPECTED_GITHUB_LOGIN or pass --expected-github-login."
 )
 
 CONTEXT_DOCS = [
@@ -456,6 +457,209 @@ def collect_control_plane_paths(workspace_check: dict[str, Any]) -> dict[str, Pa
     return paths
 
 
+def check_by_name(checks: list[dict[str, Any]], name: str) -> dict[str, Any] | None:
+    return next((check for check in checks if check.get("name") == name), None)
+
+
+def build_preflight_auto_skipped_questions(
+    *,
+    checks: list[dict[str, Any]],
+    workspace_check: dict[str, Any],
+    normalized_expected_github_login: str | None,
+    github_login: str | None,
+) -> list[dict[str, str]]:
+    skipped: list[dict[str, str]] = []
+
+    if normalized_expected_github_login is None and github_login:
+        skipped.append(
+            {
+                "question": "github_login",
+                "reason": "gh CLI inferred the authenticated GitHub account.",
+                "evidence": github_login,
+            }
+        )
+
+    agent_action = workspace_check.get("agent_action")
+    if agent_action:
+        skipped.append(
+            {
+                "question": "startup_location",
+                "reason": "workspace_check.agent_action already selected the startup path.",
+                "evidence": str(agent_action),
+            }
+        )
+
+    clean_check = check_by_name(checks, "control-plane-worktrees-clean")
+    if clean_check:
+        skipped.append(
+            {
+                "question": "dirty_state",
+                "reason": "control-plane worktree cleanliness was checked automatically.",
+                "evidence": str(clean_check["status"]),
+            }
+        )
+
+    return skipped
+
+
+def build_preflight_recovery_actions(
+    *,
+    checks: list[dict[str, Any]],
+    workspace_check: dict[str, Any],
+    github_owner: str,
+) -> list[dict[str, str]]:
+    failed = {check["name"]: check for check in checks if check.get("status") != "pass"}
+    actions: list[dict[str, str]] = []
+
+    def add(check: str, action: str, command: str | None = None) -> None:
+        item = {"check": check, "action": action}
+        if command:
+            item["command"] = command
+        actions.append(item)
+
+    if "gh-cli" in failed:
+        add(
+            "gh-cli",
+            "Install GitHub CLI, then authenticate before rerunning preflight.",
+            "gh auth login",
+        )
+    if "gh-auth" in failed:
+        add(
+            "gh-auth",
+            "Authenticate GitHub CLI for the current user.",
+            "gh auth login && gh auth setup-git",
+        )
+    if "github-account" in failed:
+        add(
+            "github-account",
+            "Run gh auth login or provide the GitHub login/profile URL to use as an override.",
+            "gh auth login",
+        )
+    if "github-org-membership" in failed:
+        add(
+            "github-org-membership",
+            f"Use a GitHub account with active {github_owner} org membership or request access.",
+        )
+    if "workspace" in failed:
+        missing = workspace_check.get("missing_repositories") or []
+        if missing:
+            add(
+                "workspace",
+                "Clone the missing control-plane repositories into the same workspace root.",
+                "\n".join(
+                    f"git clone https://github.com/{github_owner}/{repo_name_value}.git"
+                    for repo_name_value in missing
+                ),
+            )
+        else:
+            add(
+                "workspace",
+                "Move to the recommended CLEVER workspace or rerun from clever-agent-project.",
+            )
+    if "control-plane-remotes" in failed:
+        add(
+            "control-plane-remotes",
+            f"Fix control-plane origin remotes so they point to {github_owner}/*.",
+        )
+    if "control-plane-worktrees-clean" in failed:
+        add(
+            "control-plane-worktrees-clean",
+            "Review, commit, stash, or discard dirty control-plane worktree changes before startup.",
+            "git status --short",
+        )
+    if "control-plane-remote-fetch" in failed:
+        add(
+            "control-plane-remote-fetch",
+            "Check network and remote permissions, then verify each control-plane origin can fetch.",
+            "git fetch --dry-run origin",
+        )
+    if "github-repo-access" in failed:
+        add(
+            "github-repo-access",
+            "Confirm the authenticated GitHub account can read all public control-plane repositories.",
+            f"gh repo view {github_owner}/{START_REPO_NAME}",
+        )
+    if "github-issue-pr-access" in failed:
+        add(
+            "github-issue-pr-access",
+            "Confirm issue and PR list access for every control-plane repository.",
+            f"gh issue list --repo {github_owner}/{CHANGE_REPO_NAME} --limit 1",
+        )
+    if "ruleset-read" in failed:
+        add(
+            "ruleset-read",
+            "Confirm the token can read repository rulesets for the control-plane repositories.",
+            f"gh api repos/{github_owner}/{START_REPO_NAME}/rulesets",
+        )
+    if "target-repo-admin" in failed:
+        add(
+            "target-repo-admin",
+            "Use a public target repository where the authenticated account has ADMIN permission.",
+        )
+
+    return actions
+
+
+def build_preflight_next_questions(
+    *,
+    ready: bool,
+    checks: list[dict[str, Any]],
+    workspace_check: dict[str, Any],
+    github_login: str | None,
+) -> list[dict[str, str]]:
+    failed = {check["name"]: check for check in checks if check.get("status") != "pass"}
+    questions: list[dict[str, str]] = []
+
+    if not ready:
+        if "github-account" in failed and github_login is None:
+            questions.append(
+                {
+                    "id": "github_login",
+                    "prompt": "GitHub login 또는 profile URL을 알려 주세요.",
+                    "reason": "gh CLI could not infer the authenticated account.",
+                }
+            )
+        elif "github-account" in failed:
+            questions.append(
+                {
+                    "id": "github_login_override",
+                    "prompt": "현재 gh CLI 계정과 다른 GitHub login/profile URL을 써야 하나요?",
+                    "reason": "The inferred GitHub account did not match the expected override.",
+                }
+            )
+
+        if "control-plane-worktrees-clean" in failed:
+            questions.append(
+                {
+                    "id": "dirty_worktree_resolution",
+                    "prompt": "감지된 dirty 변경을 커밋, stash, 폐기, 또는 별도 PR 중 어떻게 처리할까요?",
+                    "reason": "preflight found dirty control-plane worktrees.",
+                }
+            )
+
+        return questions
+
+    agent_action = workspace_check.get("agent_action")
+    if agent_action == "proceed-with-hard-gate":
+        questions.append(
+            {
+                "id": "startup_branch_input",
+                "prompt": "작업 시작: 먼저 하려는 일을 한 줄로 적어 주세요.",
+                "reason": "preflight passed and the workspace is ready for the startup template.",
+            }
+        )
+    elif agent_action == "current-repo-maintenance":
+        questions.append(
+            {
+                "id": "maintenance_target",
+                "prompt": "현재 control-plane repo에서 고칠 대상과 기대 결과를 한 줄로 알려 주세요.",
+                "reason": "preflight classified this session as repo-local maintenance.",
+            }
+        )
+
+    return questions
+
+
 def build_preflight_check(
     *,
     cwd: Path,
@@ -503,21 +707,27 @@ def build_preflight_check(
 
         user_result = run_command_result(["gh", "api", "user", "--jq", ".login"])
         github_login = user_result.stdout.strip() if user_result.returncode == 0 else None
-        login_ok = (
-            normalized_expected_github_login is not None
-            and github_login is not None
-            and github_login.lower() == normalized_expected_github_login.lower()
-        )
-        if normalized_expected_github_login is None:
+        if normalized_expected_github_login is None and github_login:
+            login_ok = True
+            account_message = f"GitHub account inferred from gh CLI: {github_login}."
+        elif normalized_expected_github_login is None:
+            login_ok = False
             account_message = (
-                f"No expected GitHub account is configured. {GITHUB_LOGIN_REQUEST_MESSAGE}"
+                "Cannot infer GitHub account from gh CLI. "
+                f"{GITHUB_LOGIN_REQUEST_MESSAGE}"
             )
-        elif login_ok:
-            account_message = f"GitHub account is {github_login}."
         else:
+            login_ok = (
+                github_login is not None
+                and github_login.lower() == normalized_expected_github_login.lower()
+            )
             account_message = (
-                "Expected GitHub account "
-                f"{normalized_expected_github_login}, got {github_login or command_message(user_result)}."
+                f"GitHub account is {github_login}."
+                if login_ok
+                else (
+                    "Expected GitHub account "
+                    f"{normalized_expected_github_login}, got {github_login or command_message(user_result)}."
+                )
             )
         add_preflight_check(
             checks,
@@ -785,6 +995,23 @@ def build_preflight_check(
         )
 
     ready = all(check["status"] == "pass" for check in checks)
+    auto_skipped_questions = build_preflight_auto_skipped_questions(
+        checks=checks,
+        workspace_check=workspace_check,
+        normalized_expected_github_login=normalized_expected_github_login,
+        github_login=github_login,
+    )
+    recovery_actions = build_preflight_recovery_actions(
+        checks=checks,
+        workspace_check=workspace_check,
+        github_owner=github_owner,
+    )
+    next_questions = build_preflight_next_questions(
+        ready=ready,
+        checks=checks,
+        workspace_check=workspace_check,
+        github_login=github_login,
+    )
     return {
         "mode": mode,
         "ready": ready,
@@ -794,6 +1021,9 @@ def build_preflight_check(
         "target_repo": normalized_target_repo,
         "workspace_check": workspace_check,
         "checks": checks,
+        "auto_skipped_questions": auto_skipped_questions,
+        "recovery_actions": recovery_actions,
+        "next_questions": next_questions,
     }
 
 
@@ -1268,6 +1498,23 @@ def print_preflight_check(preflight_check: dict[str, Any]) -> None:
     print("checks:")
     for check in preflight_check["checks"]:
         print(f"- {check['name']}: {check['status']} - {check['message']}")
+    if preflight_check.get("auto_skipped_questions"):
+        print("auto-skipped-questions:")
+        for item in preflight_check["auto_skipped_questions"]:
+            print(
+                f"- {item['question']}: {item['reason']} "
+                f"(evidence: {item['evidence']})"
+            )
+    if preflight_check.get("recovery_actions"):
+        print("recovery-actions:")
+        for item in preflight_check["recovery_actions"]:
+            print(f"- {item['check']}: {item['action']}")
+            if item.get("command"):
+                print(f"  command: {item['command']}")
+    if preflight_check.get("next_questions"):
+        print("next-questions:")
+        for item in preflight_check["next_questions"]:
+            print(f"- {item['id']}: {item['prompt']} ({item['reason']})")
     print("PREFLIGHT_CHECK_END")
 
 

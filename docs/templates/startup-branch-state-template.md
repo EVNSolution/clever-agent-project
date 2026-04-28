@@ -13,42 +13,84 @@
 3. SSOT 해석
 4. `project-start` 초안과 bootstrap packet 생성
 
-## 첫 진입시 대화문
+## 사용자에게 보여주는 입력 양식
 
-에이전트는 첫 응답에서 아래 템플릿을 사용한다.
+에이전트는 첫 응답에서 아래처럼 비전공자도 바로 적을 수 있는 템플릿을 사용한다. 전문 용어는 내부 정규화 단계에서만 쓴다.
 
 ```text
 [시작 분기]
-1. 작업 종류:
-- 새 작업 시작
-- 기존 서비스 변경
-- 현재 저장소 자체 수정
+먼저 하려는 일을 한 줄로 적어 주세요.
+선택지에 맞춰 답해도 되고, 애매하면 문장으로 편하게 설명해도 됩니다.
 
-2. 구조:
-- MONO
-- MSA
-
-3. 이번 세션 목표:
-- 요구사항/문서 정의
-- 서비스 온보딩 정의
-- 구현 repo 작업
-- 배포 준비
-
-추가 설명
 - 하려는 일:
-- 왜 필요한지:
-- 제약:
-- 기대 결과:
-- 알고 있는 repo/service가 있으면:
+
+아래 항목은 모르면 `아직 모름`으로 둬도 됩니다.
+각 항목은 선택지 중 하나를 골라도 되고, 선택지에 딱 맞지 않으면 직접 설명해도 됩니다.
+
+1. 작업 성격은 어디에 가깝나요?
+- 신규 개발
+- 기존 기능 확장/수정
+- 버그 수정
+- 리팩터링/구조 개선
+- 문서/설정/운영 정리
+- 아직 모름
+- 직접 설명:
+
+2. 대상 범위는 무엇인가요?
+- 새 앱/서비스/기능
+- 기존 앱/서비스/기능
+- 화면/UI
+- API
+- DB/model
+- CI/CD 또는 배포 workflow
+- 문서/운영 설정
+- 아직 모름
+- 직접 설명:
+
+3. 이번 작업의 목표 수준은 어디까지인가요?
+- 요구사항 정리
+- 설계 문서 작성
+- 구현 계획 수립
+- 실제 코드 변경
+- 테스트/검증
+- 배포/운영 준비
+- 1차 MVP 개발 및 배포
+- 운영 반영
+- 아직 모름
+- 직접 설명:
+
+4. 알고 있는 이름이나 링크가 있나요? 없으면 비워도 됩니다.
+- repo:
+- service/app:
+- 화면:
+- API:
+- DB/model:
+- 문서:
+- issue/PR/Figma/회의 메모/에러 로그:
+
+5. 현재 상태를 알고 있나요? 모르면 `아직 모름`으로 둬도 됩니다.
+- 이미 되어 있는 것:
+- 아직 없는 것:
+- 먼저 확인해야 할 것:
+
+6. 주의할 점이 있나요? 없으면 비워도 됩니다.
+- 꼭 지킬 것:
+- 피할 것:
+- 건드리면 안 되는 범위:
+- 보안/운영/배포 관련 주의사항:
 ```
 
 ## normalized startup branch state
 
 ```yaml
 startup_branch:
-  work_kind: new_start | existing_change | repo_maintenance
-  architecture_kind: mono | msa
-  session_goal: requirements_definition | service_onboarding | implementation_work | deploy_preparation
+  work_nature: new_development | feature_change | bugfix | refactor | docs_ops | unknown
+  target_scope: new_app_service_feature | existing_app_service_feature | ui | api | db_model | cicd_deploy_workflow | docs_ops_config | unknown
+  goal_level: requirements | design_doc | implementation_plan | code_change | test_verification | deploy_preparation | mvp_develop_deploy | operations_rollout | unknown
+  project_scope: new_project | existing_project | control_plane_maintenance | unknown
+  service_scope: new_service | existing_service_change | docs_or_ops_only | unknown
+  architecture_kind: mono | msa | unknown
+  session_goal: requirements_definition | design_documentation | planning | implementation_work | test_verification | deploy_preparation | operations_rollout | unknown
 
 context:
   requested_work_summary: ""
@@ -86,25 +128,45 @@ deferred:
 
 ### startup_branch
 
-- `새 작업 시작` -> `work_kind: new_start`
-- `기존 서비스 변경` -> `work_kind: existing_change`
-- `현재 저장소 자체 수정` -> `work_kind: repo_maintenance`
+- `신규 개발` -> `work_nature: new_development`
+- `기존 기능 확장/수정` -> `work_nature: feature_change`
+- `버그 수정` -> `work_nature: bugfix`
+- `리팩터링/구조 개선` -> `work_nature: refactor`
+- `문서/설정/운영 정리` -> `work_nature: docs_ops`
+- `아직 모름` 또는 `직접 설명` -> `work_nature: unknown` or infer later
 
-- `MONO` -> `architecture_kind: mono`
-- `MSA` -> `architecture_kind: msa`
+- `새 앱/서비스/기능` -> `target_scope: new_app_service_feature`
+- `기존 앱/서비스/기능` -> `target_scope: existing_app_service_feature`
+- `화면/UI` -> `target_scope: ui`
+- `API` -> `target_scope: api`
+- `DB/model` -> `target_scope: db_model`
+- `CI/CD 또는 배포 workflow` -> `target_scope: cicd_deploy_workflow`
+- `문서/운영 설정` -> `target_scope: docs_ops_config`
+- `아직 모름` 또는 `직접 설명` -> `target_scope: unknown` or infer later
 
-- `요구사항/문서 정의` -> `session_goal: requirements_definition`
-- `서비스 온보딩 정의` -> `session_goal: service_onboarding`
-- `구현 repo 작업` -> `session_goal: implementation_work`
-- `배포 준비` -> `session_goal: deploy_preparation`
+- `요구사항 정리` -> `goal_level: requirements`
+- `설계 문서 작성` -> `goal_level: design_doc`
+- `구현 계획 수립` -> `goal_level: implementation_plan`
+- `실제 코드 변경` -> `goal_level: code_change`
+- `테스트/검증` -> `goal_level: test_verification`
+- `배포/운영 준비` -> `goal_level: deploy_preparation`
+- `1차 MVP 개발 및 배포` -> `goal_level: mvp_develop_deploy`
+- `운영 반영` -> `goal_level: operations_rollout`
+- `아직 모름` 또는 `직접 설명` -> `goal_level: unknown` or infer later
+
+- `project_scope`, `service_scope`, and `session_goal` are derived from the above values.
+- 첫 입력에서는 MONO/MSA를 묻지 않는다.
+- 요청 내용이나 repo 문맥에서 명확하면 `architecture_kind: mono | msa`를 채운다.
+- 명확하지 않으면 `architecture_kind: unknown`으로 둔다.
 
 ### context
 
 - `하려는 일` -> `requested_work_summary`
-- `왜 필요한지` -> `why_now`
-- `제약` -> `constraints`
-- `기대 결과` -> `expected_result`
-- `알고 있는 repo/service가 있으면` -> `known_repo`, `known_service`
+- `알고 있는 이름이나 링크` -> `known_repo`, `known_service`, UI/API/DB/document/issue/PR/Figma/log references
+- `현재 상태` -> current-state notes in `requested_work_summary` or follow-up context
+- `주의할 점` -> `constraints`
+- 목표 수준은 `expected_result` and `session_goal` candidates로 함께 사용한다.
+- 배경/왜 필요한지는 사용자가 자연어로 말했을 때만 `why_now`에 채운다.
 
 repo와 service가 둘 다 확정되지 않았으면 빈 값으로 둔다.
 

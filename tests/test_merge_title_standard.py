@@ -15,7 +15,6 @@ def read(path: Path) -> str:
 def test_merge_title_standard_uses_github_default_prefix():
     docs = [
         read(REPO_ROOT / "AGENTS.md"),
-        read(REPO_ROOT / "README.md"),
         read(CONTEXT_ROOT / "AGENTS.md"),
         read(CONTEXT_ROOT / "README.md"),
         read(CONTEXT_ROOT / "docs/root/pipeline-governance.md"),

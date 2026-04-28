@@ -33,32 +33,35 @@ Do not put the project planning draft into `AGENTS.md`.
 
 ## First-Response Hard Gate
 
-Before showing the first-response template, ask the user for their GitHub login or profile URL, then automatically inspect the local workspace,
+Before showing the first-response template, infer the GitHub account from gh CLI first, then automatically inspect the local workspace,
 `gh auth status`, GitHub login, remotes, repo visibility, and issue/PR/ruleset read access:
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
+
+Ask the user for their GitHub login or profile URL only if gh CLI cannot infer the authenticated account or the user needs to override it. In that case, pass it with `CLEVER_EXPECTED_GITHUB_LOGIN` or `--expected-github-login`.
 
 If the session is explicitly about editing the current control-plane repo itself, run:
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
 ```
 
 Interpret the result like this:
 
 - `preflight_check.ready=false`: stop and show the failed checks before asking startup questions.
 - `preflight_check.ready=true`: continue by reading `workspace_check.agent_action`.
+- `auto_skipped_questions`: do not ask these questions again; tool evidence already answered them.
+- `recovery_actions`: use these concrete commands/actions to fix failed checks before continuing.
+- `next_questions`: ask only these remaining user questions after automatic checks.
 - `workspace_check.agent_action=proceed-with-hard-gate`: continue in the current session
 - `workspace_check.agent_action=current-repo-maintenance`: stay in the current control-plane repo and treat it as the target
 - `workspace_check.agent_action=switch-to-clever-agent-project`: move startup to `clever-agent-project` first
 - `workspace_check.agent_action=stop-and-fix-workspace`: stop and clearly state that the local three-repository workspace is incomplete
 
 There is no shared default GitHub login.
-On first startup, ask the user for their GitHub login or profile URL, then pass it with `CLEVER_EXPECTED_GITHUB_LOGIN` or `--expected-github-login`.
+On first startup, infer the GitHub account from gh CLI first. Ask for a GitHub login/profile URL only when gh CLI cannot infer the account or the user needs to override it, then pass it with `CLEVER_EXPECTED_GITHUB_LOGIN` or `--expected-github-login`.
 Preflight also checks active `EVNSolution` org membership. Repository creation
 permission cannot be proven without the actual `gh repo create` write attempt,
 so treat that command's success as the creation proof after preflight passes.
@@ -69,27 +72,65 @@ Use this exact first-response template:
 
 ```text
 [시작 분기]
-1. 작업 종류:
-- 새 작업 시작
-- 기존 서비스 변경
-- 현재 저장소 자체 수정
+먼저 하려는 일을 한 줄로 적어 주세요.
+선택지에 맞춰 답해도 되고, 애매하면 문장으로 편하게 설명해도 됩니다.
 
-2. 구조:
-- MONO
-- MSA
-
-3. 이번 세션 목표:
-- 요구사항/문서 정의
-- 서비스 온보딩 정의
-- 구현 repo 작업
-- 배포 준비
-
-추가 설명
 - 하려는 일:
-- 왜 필요한지:
-- 제약:
-- 기대 결과:
-- 알고 있는 repo/service가 있으면:
+
+아래 항목은 모르면 `아직 모름`으로 둬도 됩니다.
+각 항목은 선택지 중 하나를 골라도 되고, 선택지에 딱 맞지 않으면 직접 설명해도 됩니다.
+
+1. 작업 성격은 어디에 가깝나요?
+- 신규 개발
+- 기존 기능 확장/수정
+- 버그 수정
+- 리팩터링/구조 개선
+- 문서/설정/운영 정리
+- 아직 모름
+- 직접 설명:
+
+2. 대상 범위는 무엇인가요?
+- 새 앱/서비스/기능
+- 기존 앱/서비스/기능
+- 화면/UI
+- API
+- DB/model
+- CI/CD 또는 배포 workflow
+- 문서/운영 설정
+- 아직 모름
+- 직접 설명:
+
+3. 이번 작업의 목표 수준은 어디까지인가요?
+- 요구사항 정리
+- 설계 문서 작성
+- 구현 계획 수립
+- 실제 코드 변경
+- 테스트/검증
+- 배포/운영 준비
+- 1차 MVP 개발 및 배포
+- 운영 반영
+- 아직 모름
+- 직접 설명:
+
+4. 알고 있는 이름이나 링크가 있나요? 없으면 비워도 됩니다.
+- repo:
+- service/app:
+- 화면:
+- API:
+- DB/model:
+- 문서:
+- issue/PR/Figma/회의 메모/에러 로그:
+
+5. 현재 상태를 알고 있나요? 모르면 `아직 모름`으로 둬도 됩니다.
+- 이미 되어 있는 것:
+- 아직 없는 것:
+- 먼저 확인해야 할 것:
+
+6. 주의할 점이 있나요? 없으면 비워도 됩니다.
+- 꼭 지킬 것:
+- 피할 것:
+- 건드리면 안 되는 범위:
+- 보안/운영/배포 관련 주의사항:
 ```
 
 Rules:
@@ -148,14 +189,14 @@ You should infer or propose the rest:
 
 The workflow must not require a fixed `target-service` for general work or a generated `change-id` at start time.
 
-To clear the hard gate, the intake must have enough information for:
+To clear the first hard gate, the intake only needs enough non-technical information for:
 
-- `1. 작업 종류`
-- `2. 구조`
-- `3. 이번 세션 목표`
-- `왜 필요한지`
-- `제약`
-- `기대 결과`
+- `하려는 일`
+- `1. 작업 성격은 어디에 가깝나요?`
+- `2. 대상 범위는 무엇인가요?`
+- `3. 이번 작업의 목표 수준은 어디까지인가요?`
+
+Known names, links, current state, constraints, and background are optional at first. Do not force users to answer prerequisites they may not know yet.
 
 ## Work-Type Branching
 
@@ -165,28 +206,46 @@ The user-facing questions stay simple, but the agent must interpret them against
 
 ### Interpretation Rules
 
-Interpret the first three answers in this order:
+Interpret the easy answers in this order:
 
-1. `작업 종류`
-2. `구조`
-3. `이번 세션 목표`
+1. `하려는 일`
+2. `작업 성격은 어디에 가깝나요?`
+3. `대상 범위는 무엇인가요?`
+4. `이번 작업의 목표 수준은 어디까지인가요?`
 
-Map them like this:
+Map work nature like this:
 
-- `새 작업 시작` + `MSA`: default to MSA-oriented onboarding or requirements work
-- `새 작업 시작` + `MONO`: default to general development onboarding or requirements work
-- `기존 서비스 변경` + `MSA`: default to existing MSA workload change
-- `기존 서비스 변경` + `MONO`: default to existing MONO workload change
-- `현재 저장소 자체 수정`: treat the current control-plane repo as the target and do not route into generic startup
+- `신규 개발` -> `work_nature=new_development`
+- `기존 기능 확장/수정` -> `work_nature=feature_change`
+- `버그 수정` -> `work_nature=bugfix`
+- `리팩터링/구조 개선` -> `work_nature=refactor`
+- `문서/설정/운영 정리` -> `work_nature=docs_ops`
+- `아직 모름` or `직접 설명` -> keep or infer the matching internal field later
 
-Then derive:
+Map target scope like this:
 
-- `MONO` -> `workload_shape=single_workload`
-- `MSA` -> `workload_shape=multiple_workloads`
-- `요구사항/문서 정의` -> requirements-first session
-- `서비스 온보딩 정의` -> service onboarding session
-- `구현 repo 작업` -> target repo implementation session
-- `배포 준비` -> deploy preparation session
+- `새 앱/서비스/기능` -> `target_scope=new_app_service_feature`
+- `기존 앱/서비스/기능` -> `target_scope=existing_app_service_feature`
+- `화면/UI` -> `target_scope=ui`
+- `API` -> `target_scope=api`
+- `DB/model` -> `target_scope=db_model`
+- `CI/CD 또는 배포 workflow` -> `target_scope=cicd_deploy_workflow`
+- `문서/운영 설정` -> `target_scope=docs_ops_config`
+- `아직 모름` or `직접 설명` -> keep or infer the matching internal field later
+
+Map goal level like this:
+
+- `요구사항 정리` -> `goal_level=requirements`
+- `설계 문서 작성` -> `goal_level=design_doc`
+- `구현 계획 수립` -> `goal_level=implementation_plan`
+- `실제 코드 변경` -> `goal_level=code_change`
+- `테스트/검증` -> `goal_level=test_verification`
+- `배포/운영 준비` -> `goal_level=deploy_preparation`
+- `1차 MVP 개발 및 배포` -> `goal_level=mvp_develop_deploy`
+- `운영 반영` -> `goal_level=operations_rollout`
+- `아직 모름` or `직접 설명` -> keep or infer the matching internal field later
+
+Then derive `project_scope`, `service_scope`, and `session_goal` from the combination. MONO/MSA is not user-facing in the first template; infer `architecture_kind` from context later, or keep it `unknown`.
 
 If the explanation is still too vague after the first template pass, ask a short follow-up question before continuing.
 
@@ -197,9 +256,9 @@ After this interpretation, classify the task into one of these paths:
 
 Treat MSA-oriented new or existing service work as the MSA path.
 
-Treat MONO-oriented service work as the general development path.
+Treat MONO-oriented service work as the general development path, but do not ask users to choose MONO/MSA terminology in the first response.
 
-Treat `현재 저장소 자체 수정` as control-plane maintenance and do not force a target service.
+Treat `현재 control-plane 저장소 자체 수정` as control-plane maintenance and do not force a target service.
 
 ### MSA/SaaS Replication Path
 
@@ -316,7 +375,7 @@ Once the user approves:
    - initial remote bootstrap commit may land on `main`
    - immediately after that, create and push `dev`
    - before applying rulesets or repository protection settings, run:
-     `CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --admin-preflight --target-repo-full-name <owner>/<repo> --json`
+     `python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --admin-preflight --target-repo-full-name <owner>/<repo> --json` (add `CLEVER_EXPECTED_GITHUB_LOGIN` only when gh CLI inference fails or needs override)
    - after `dev` exists, run `scripts/apply-github-rulesets.sh <owner>/<repo>` when GitHub Administration write permission is available
    - GitHub rulesets should target only `main` and `dev`: both require PR-only updates with `required_approving_review_count=0`, and other branches stay unrestricted by ruleset
    - after `dev` exists, block direct local pushes to `main`
@@ -377,7 +436,11 @@ Before the helper script, every run should normalize the startup branch state in
 
 ```yaml
 startup_branch:
-  work_kind:
+  work_nature:
+  target_scope:
+  goal_level:
+  project_scope:
+  service_scope:
   architecture_kind:
   session_goal:
 
@@ -487,7 +550,7 @@ git fetch --prune origin
 
 - Treating MSA/SaaS replication rules as the default path for every CLEVER task.
 - Treating the current repo as the workflow SSOT.
-- Skipping the three-step opening template because the request "already sounds clear enough."
+- Skipping the easy startup template because the request "already sounds clear enough."
 - Skipping the template choice conversation because one option looks obvious.
 - Starting implementation before the `project-start` issue is drafted and approved.
 - Requiring an inferred `target-service` before the intake can begin for general work.

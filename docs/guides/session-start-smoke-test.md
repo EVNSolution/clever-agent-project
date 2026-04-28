@@ -48,21 +48,88 @@
    - `.agent/skills/bootstrap-clever-work/SKILL.md`
 4. 로컬 파일 접근이 가능해야 한다. 웹 링크만 있는 상태는 통과 조건이 아니다.
 
-운영 환경에서는 첫 질문 전에 아래 자동 감지 명령을 먼저 돌린다.
+운영 환경에서는 첫 질문 전에 아래 자동 감지 명령을 먼저 돌린다. gh CLI에서 GitHub 계정이 확인되면 별도로 묻지 않고, 확인할 수 없거나 다른 계정으로 고정해야 할 때만 GitHub login/profile URL을 묻는다.
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 이 문서의 시나리오는 그 결과가 `preflight_check.ready=true`이고
 `workspace_check.agent_action=proceed-with-hard-gate`일 때 시작 하드 게이트가 제대로 적용되는지 보는 테스트다.
+또한 `auto_skipped_questions`에 자동 생략된 질문이 기록되고, 실패 시 `recovery_actions`가 나오며,
+성공 시 `next_questions`가 시작 입력으로 최소화되는지 확인한다.
 
 현재 control-plane 저장소 자체를 직접 수정하는 세션은 아래처럼 유지보수 모드로 따로 확인한다.
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
+```
+
+## 시작 템플릿 기준
+
+스모크 테스트에서 기대하는 첫 분기 템플릿은 전문 용어를 앞세우지 않는다. 사용자가 먼저 한 줄로 말하고, 모르는 항목은 `아직 모름`으로 남길 수 있어야 한다.
+
+```text
+[시작 분기]
+먼저 하려는 일을 한 줄로 적어 주세요.
+선택지에 맞춰 답해도 되고, 애매하면 문장으로 편하게 설명해도 됩니다.
+
+- 하려는 일:
+
+아래 항목은 모르면 `아직 모름`으로 둬도 됩니다.
+각 항목은 선택지 중 하나를 골라도 되고, 선택지에 딱 맞지 않으면 직접 설명해도 됩니다.
+
+1. 작업 성격은 어디에 가깝나요?
+- 신규 개발
+- 기존 기능 확장/수정
+- 버그 수정
+- 리팩터링/구조 개선
+- 문서/설정/운영 정리
+- 아직 모름
+- 직접 설명:
+
+2. 대상 범위는 무엇인가요?
+- 새 앱/서비스/기능
+- 기존 앱/서비스/기능
+- 화면/UI
+- API
+- DB/model
+- CI/CD 또는 배포 workflow
+- 문서/운영 설정
+- 아직 모름
+- 직접 설명:
+
+3. 이번 작업의 목표 수준은 어디까지인가요?
+- 요구사항 정리
+- 설계 문서 작성
+- 구현 계획 수립
+- 실제 코드 변경
+- 테스트/검증
+- 배포/운영 준비
+- 1차 MVP 개발 및 배포
+- 운영 반영
+- 아직 모름
+- 직접 설명:
+
+4. 알고 있는 이름이나 링크가 있나요? 없으면 비워도 됩니다.
+- repo:
+- service/app:
+- 화면:
+- API:
+- DB/model:
+- 문서:
+- issue/PR/Figma/회의 메모/에러 로그:
+
+5. 현재 상태를 알고 있나요? 모르면 `아직 모름`으로 둬도 됩니다.
+- 이미 되어 있는 것:
+- 아직 없는 것:
+- 먼저 확인해야 할 것:
+
+6. 주의할 점이 있나요? 없으면 비워도 됩니다.
+- 꼭 지킬 것:
+- 피할 것:
+- 건드리면 안 되는 범위:
+- 보안/운영/배포 관련 주의사항:
 ```
 
 ## 합격 기준
@@ -70,8 +137,10 @@ CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
 아래를 모두 만족하면 스모크 테스트 통과로 본다.
 
 - 첫 응답이 시작 템플릿 또는 그와 동등한 구조로 시작한다.
-- 질문 순서가 먼저 `1 -> 2 -> 3`을 따른다.
-- 추가 설명으로 `하려는 일`, `왜 필요한지`, `제약`, `기대 결과`, `관련 repo/service가 있으면`을 받는다.
+- 질문 순서가 먼저 `하려는 일 -> 작업 성격 -> 대상 범위 -> 목표 수준`을 따른다.
+- 사용자가 모르면 `아직 모름`을 남길 수 있다.
+- 첫 템플릿에서 MONO/MSA, `target_service`, change id 같은 전문 용어를 강제하지 않는다.
+- 이름/링크/주의사항은 선택 정보로 받고, 선행 조건을 몰라도 시작할 수 있다.
 - 사용자가 자유문으로 시작해도 에이전트가 같은 구조로 다시 정리한다.
 - `change-control` 타입 해석은 에이전트가 맡고, 사용자가 내부 taxonomy를 직접 채우게 하지 않는다.
 - `change_id`를 루트 시작 식별자로 사용하지 않는다.
@@ -83,6 +152,7 @@ CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
 아래 중 하나라도 나오면 실패로 본다.
 
 - 첫 응답에서 시작 템플릿 없이 바로 구현 질문으로 들어간다.
+- 첫 템플릿에서 MONO/MSA, `target_service`, change id, rollout scope를 묻는다.
 - `change_id`를 시작 시점 필수값으로 요구한다.
 - `target_service`를 generic intake에서 확정값으로 강제한다.
 - `project-start` line 없이 scoped change부터 열려고 한다.
@@ -91,7 +161,7 @@ CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
 
 ## 권장 테스트 순서
 
-운영 기준으로는 아래 네 가지를 한 묶음으로 보는 것이 가장 안정적이다.
+운영 기준으로는 아래 다섯 가지를 한 묶음으로 보는 것이 가장 안정적이다.
 
 1. 구조화된 입력 성공 시나리오
 2. 자유문 입력 정규화 시나리오
@@ -101,22 +171,49 @@ CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
 
 ## 시나리오 1: 구조화된 입력 성공
 
-가장 기본적인 통과 시나리오다. 사용자가 시작 템플릿을 그대로 채워 넣는 경우를 본다.
+가장 기본적인 통과 시나리오다. 사용자가 쉬운 시작 템플릿을 그대로 채워 넣는 경우를 본다.
 
 ### 테스트 입력
 
 ```text
 [시작 분기]
-1. 작업 종류: 기존 서비스 변경
-2. 구조: MSA
-3. 이번 세션 목표: 요구사항/문서 정의
+먼저 하려는 일을 한 줄로 적어 주세요.
+선택지에 맞춰 답해도 되고, 애매하면 문장으로 편하게 설명해도 됩니다.
 
-추가 설명
 - 하려는 일: 정산 서비스에 월별 집계 기준을 추가하고 싶다.
-- 왜 필요한지: 운영팀이 수동 계산을 줄이고 싶어 한다.
-- 제약: 기존 API 계약을 바로 깨면 안 된다.
-- 기대 결과: project-start 초안에 들어갈 수 있는 수준의 시작 정리
-- 관련 repo/service가 있으면: service-settlement
+
+아래 항목은 모르면 `아직 모름`으로 둬도 됩니다.
+각 항목은 선택지 중 하나를 골라도 되고, 선택지에 딱 맞지 않으면 직접 설명해도 됩니다.
+
+1. 작업 성격은 어디에 가깝나요?
+- 기존 기능 확장/수정
+
+2. 대상 범위는 무엇인가요?
+- 기존 앱/서비스/기능
+- API
+
+3. 이번 작업의 목표 수준은 어디까지인가요?
+- 요구사항 정리
+
+4. 알고 있는 이름이나 링크가 있나요? 없으면 비워도 됩니다.
+- repo:
+- service/app: service-settlement
+- 화면:
+- API:
+- DB/model:
+- 문서:
+- issue/PR/Figma/회의 메모/에러 로그:
+
+5. 현재 상태를 알고 있나요? 모르면 `아직 모름`으로 둬도 됩니다.
+- 이미 되어 있는 것: 아직 모름
+- 아직 없는 것: 월별 집계 기준
+- 먼저 확인해야 할 것: 기존 정산 서비스 계약
+
+6. 주의할 점이 있나요? 없으면 비워도 됩니다.
+- 꼭 지킬 것: 기존 API 계약을 바로 깨면 안 된다.
+- 피할 것:
+- 건드리면 안 되는 범위:
+- 보안/운영/배포 관련 주의사항:
 ```
 
 ### 기대 동작
@@ -124,13 +221,14 @@ CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
 에이전트는 아래처럼 움직여야 한다.
 
 1. 입력을 intake로 받아들인다.
-2. `기존 서비스 변경`, `MSA`, `요구사항/문서 정의`를 시작 분기로 고정한다.
-3. 내부적으로는 `change-control` taxonomy 후보를 해석하되, 사용자가 taxonomy 필드를 직접 채우게 하지 않는다.
-4. `clever-context-monorepo/docs/services/service-settlement/index.md` 같은 관련 서비스 문서를 읽을 준비를 한다.
-5. 필요한 경우에만 부족한 칸을 좁혀 묻는다.
-6. 바로 `change_id`를 만들지 않는다.
-7. 바로 구현 계획으로 뛰지 않는다.
-8. 목표는 `project-start` payload 초안 준비 상태까지다.
+2. 쉬운 답변을 `work_nature=feature_change`, `target_scope=existing_app_service_feature`, `goal_level=requirements`로 정규화하고 `project_scope=existing_project`, `service_scope=existing_service_change`, `session_goal=requirements_definition`을 파생한다.
+3. 구조는 첫 질문에서 묻지 않고, 서비스 문서와 repo 문맥을 읽은 뒤 추론한다.
+4. 내부적으로는 `change-control` taxonomy 후보를 해석하되, 사용자가 taxonomy 필드를 직접 채우게 하지 않는다.
+5. `clever-context-monorepo/docs/services/service-settlement/index.md` 같은 관련 서비스 문서를 읽을 준비를 한다.
+6. 필요한 경우에만 부족한 칸을 좁혀 묻는다.
+7. 바로 `change_id`를 만들지 않는다.
+8. 바로 구현 계획으로 뛰지 않는다.
+9. 목표는 `project-start` payload 초안 준비 상태까지다.
 
 ### 합격 포인트
 
@@ -140,13 +238,13 @@ CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
 
 ## 시나리오 2: 자유문 입력 정규화 성공
 
-실제 운영에서는 사용자가 템플릿 없이 자유문으로 시작하는 경우가 많다. 이 시나리오는 에이전트가 자유문을 시작 템플릿 구조로 되돌릴 수 있는지 본다.
+실제 운영에서는 사용자가 템플릿 없이 자유문으로 시작하는 경우가 많다. 이 시나리오는 에이전트가 자유문을 쉬운 시작 템플릿 구조로 되돌릴 수 있는지 본다.
 
 ### 테스트 입력
 
 ```text
 정산 쪽을 좀 손봐야 하는데, 월별 마감 집계 기준이 지금 운영 방식이랑 안 맞아요.
-기존 서비스 건드리는 거고, 아마 MSA 쪽일 것 같고, 지금은 정확히 어떤 변경 타입으로 잡아야 할지 모르겠어요.
+어떤 레포인지 정확히는 모르고, 일단 설명을 정리해서 시작하고 싶어요.
 ```
 
 ### 기대 동작
@@ -154,12 +252,13 @@ CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
 에이전트는 아래처럼 움직여야 한다.
 
 1. 자유문을 그대로 받되, 바로 구현으로 들어가지 않는다.
-2. 사용자의 문장을 시작 템플릿 구조로 다시 정리한다.
+2. 사용자의 문장을 쉬운 시작 템플릿 구조로 다시 정리한다.
 3. 먼저 아래를 분명하게 만든다.
-   - `1. 작업 종류`
-   - `2. 구조`
-   - `3. 이번 세션 목표`
-4. 이후 `왜 필요한지`, `제약`, `기대 결과`를 보강한다.
+   - `하려는 일`
+   - `1. 작업 성격은 어디에 가깝나요?`
+   - `2. 대상 범위는 무엇인가요?`
+   - `3. 이번 작업의 목표 수준은 어디까지인가요?`
+4. repo/service 이름은 모르면 비워 둔다.
 5. 사용자가 `change-control` taxonomy를 직접 선택하게 하지 않는다.
 6. 필요한 경우 `service-settlement` 같은 candidate service를 제안하되, generic intake 시작 단계에서 확정 강제는 하지 않는다.
 
@@ -253,8 +352,8 @@ Stay in the current repository and treat it as the target for this session.
 
 - 시작 위치가 `clever-agent-project`인가
 - 첫 응답이 시작 템플릿 구조인가
-- `1 -> 2 -> 3` 질문 순서를 먼저 지키는가
-- `왜 필요한지`, `제약`, `기대 결과`를 빼먹지 않았는가
+- `하려는 일 -> 작업 성격 -> 대상 범위 -> 목표 수준` 질문 순서를 먼저 지키는가
+- 모르는 항목을 억지로 요구하지 않고 `아직 모름`을 허용하는가
 - `change_id`를 너무 일찍 꺼내지 않는가
 - `target_service`를 generic intake에서 확정 강제하지 않는가
 - `project-start` 이전에 구현 계획으로 뛰지 않는가

@@ -84,7 +84,7 @@ gh auth status
 ```
 
 헤드리스 환경에서는 `GH_TOKEN` 환경 변수 또는 `gh auth login --with-token` 방식을 사용할 수 있다.
-공용 CLEVER 기본 계정은 없다. 첫 실행 때 사용자에게 GitHub login 또는 profile URL을 물어보고 `CLEVER_EXPECTED_GITHUB_LOGIN` 또는 `--expected-github-login`으로 명시한다.
+공용 CLEVER 기본 계정은 없다. 첫 실행 때는 gh CLI에서 GitHub 계정이 확인되면 별도로 묻지 않는다. 계정을 확인할 수 없거나 다른 계정으로 고정해야 할 때만 사용자에게 GitHub login 또는 profile URL을 물어보고 `CLEVER_EXPECTED_GITHUB_LOGIN` 또는 `--expected-github-login`으로 명시한다.
 preflight는 `EVNSolution` org active membership도 확인한다.
 
 ## Superpowers 설치
@@ -264,8 +264,7 @@ git fetch --prune origin
 초기 `main` commit과 `dev` push가 끝난 뒤 먼저 admin preflight를 실행한다.
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py \
+python3 scripts/bootstrap_clever_work.py \
   --cwd "$PWD" \
   --admin-preflight \
   --target-repo-full-name <owner>/<repo> \
@@ -362,21 +361,22 @@ bootstrap packet의 `target_repo_seed_files` 항목은 위 두 파일을 target 
 
 ## 첫 대화 하드 게이트
 
-첫 질문을 던지기 전에 에이전트는 먼저 사용자에게 GitHub login 또는 profile URL을 물어보고 로컬 workspace, `gh auth status`, GitHub login, 원격 접근, issue/PR/ruleset 조회 가능 여부를 자동 감지한다.
+첫 질문을 던지기 전에 에이전트는 먼저 gh CLI에서 GitHub 계정을 확인하고 로컬 workspace, `gh auth status`, GitHub login, 원격 접근, issue/PR/ruleset 조회 가능 여부를 자동 감지한다. gh CLI에서 GitHub 계정이 확인되면 별도로 묻지 않는다. 계정을 확인할 수 없거나 다른 계정으로 고정해야 할 때만 사용자에게 GitHub login 또는 profile URL을 물어본다.
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 현재 control-plane 저장소 자체를 직접 수정하는 세션이면 아래처럼 유지보수 모드로 확인한다.
 
 ```bash
-CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
-  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
 ```
 
 `preflight_check.ready=false`이면 시작 질문으로 내려가지 않고 실패한 check를 먼저 해결한다.
+이때 `recovery_actions`에 실패 check별 복구 명령이나 처리 지시가 들어간다.
+`auto_skipped_questions`는 도구가 이미 답한 질문이므로 다시 묻지 않는다.
+`next_questions`는 자동 확인 뒤에도 남아 있는 최소 사용자 질문만 담는다.
 `true`이면 내부 `workspace_check.agent_action`이 아래 중 하나를 돌려준다.
 
 - `proceed-with-hard-gate`: 현재 위치에서 시작 템플릿으로 진행
@@ -388,42 +388,80 @@ CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
 
 ```text
 [시작 분기]
-1. 작업 종류:
-- 새 작업 시작
-- 기존 서비스 변경
-- 현재 저장소 자체 수정
+먼저 하려는 일을 한 줄로 적어 주세요.
+선택지에 맞춰 답해도 되고, 애매하면 문장으로 편하게 설명해도 됩니다.
 
-2. 구조:
-- MONO
-- MSA
-
-3. 이번 세션 목표:
-- 요구사항/문서 정의
-- 서비스 온보딩 정의
-- 구현 repo 작업
-- 배포 준비
-
-추가 설명
 - 하려는 일:
-- 왜 필요한지:
-- 제약:
-- 기대 결과:
-- 알고 있는 repo/service가 있으면:
+
+아래 항목은 모르면 `아직 모름`으로 둬도 됩니다.
+각 항목은 선택지 중 하나를 골라도 되고, 선택지에 딱 맞지 않으면 직접 설명해도 됩니다.
+
+1. 작업 성격은 어디에 가깝나요?
+- 신규 개발
+- 기존 기능 확장/수정
+- 버그 수정
+- 리팩터링/구조 개선
+- 문서/설정/운영 정리
+- 아직 모름
+- 직접 설명:
+
+2. 대상 범위는 무엇인가요?
+- 새 앱/서비스/기능
+- 기존 앱/서비스/기능
+- 화면/UI
+- API
+- DB/model
+- CI/CD 또는 배포 workflow
+- 문서/운영 설정
+- 아직 모름
+- 직접 설명:
+
+3. 이번 작업의 목표 수준은 어디까지인가요?
+- 요구사항 정리
+- 설계 문서 작성
+- 구현 계획 수립
+- 실제 코드 변경
+- 테스트/검증
+- 배포/운영 준비
+- 1차 MVP 개발 및 배포
+- 운영 반영
+- 아직 모름
+- 직접 설명:
+
+4. 알고 있는 이름이나 링크가 있나요? 없으면 비워도 됩니다.
+- repo:
+- service/app:
+- 화면:
+- API:
+- DB/model:
+- 문서:
+- issue/PR/Figma/회의 메모/에러 로그:
+
+5. 현재 상태를 알고 있나요? 모르면 `아직 모름`으로 둬도 됩니다.
+- 이미 되어 있는 것:
+- 아직 없는 것:
+- 먼저 확인해야 할 것:
+
+6. 주의할 점이 있나요? 없으면 비워도 됩니다.
+- 꼭 지킬 것:
+- 피할 것:
+- 건드리면 안 되는 범위:
+- 보안/운영/배포 관련 주의사항:
 ```
 
 운영 규칙은 아래와 같다.
 
 - 사용자가 템플릿을 그대로 채워 넣으면 그 값을 그대로 intake로 사용한다.
 - 사용자가 자유문으로 시작하면 에이전트가 같은 구조로 다시 정리해 부족한 칸만 묻는다.
-- 질문 순서는 항상 `1 -> 2 -> 3`을 먼저 고정한다.
+- 질문 순서는 항상 `하려는 일 -> 작업 성격 -> 대상 범위 -> 목표 수준`을 먼저 고정한다.
+- `4. 알고 있는 이름이나 링크`, `5. 현재 상태`, `6. 주의할 점`은 있으면 받되, 사용자가 모르면 비워 둔다.
+- MONO/MSA, `target_service`, rollout scope 같은 전문 용어는 첫 입력에서 묻지 않는다.
 - `change-control`용 `work_type_group`, `work_type_detail`은 사용자가 직접 고르지 않는다. 에이전트가 해석한다.
 - 아래가 충분히 채워지기 전에는 다음 단계로 넘어가지 않는다.
-  - `1. 작업 종류`
-  - `2. 구조`
-  - `3. 이번 세션 목표`
-  - `왜 필요한지`
-  - `제약`
-  - `기대 결과`
+  - `하려는 일`
+  - `1. 작업 성격은 어디에 가깝나요?`
+  - `2. 대상 범위는 무엇인가요?`
+  - `3. 이번 작업의 목표 수준은 어디까지인가요?`
 
 에이전트는 이 응답을 바로 narrative로 넘기지 않고, 먼저 아래 템플릿으로 정규화해야 한다.
 
@@ -456,28 +494,28 @@ CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
 - 유지보수 작업:
   - `clever-context-monorepo/docs/services/<service-name>/index.md`
 
-## 신규 개발 시작 절차
+## 새 프로젝트 / 새 서비스 시작 절차
 
-신규 개발은 아래 순서로 진행한다.
+새 프로젝트 또는 새 서비스 시작은 아래 순서로 진행한다.
 
 1. `clever-agent-project`에서 시작한다.
-2. 먼저 세션 시작 템플릿의 `1 -> 2 -> 3` 질문과 추가 설명을 채운다.
-3. 에이전트가 답변을 해석해 `MSA/SaaS 복제형`인지 `일반 개발`인지 분기한다.
+2. 먼저 세션 시작 템플릿의 `하려는 일 -> 작업 성격 -> 대상 범위 -> 목표 수준` 질문을 채우고, 이름/링크/현재상태/주의사항은 아는 만큼만 적는다.
+3. 에이전트가 쉬운 답변을 `work_nature`, `target_scope`, `goal_level`로 정규화한 뒤 `project_scope`, `service_scope`, `session_goal`을 파생하고, 구조는 repo/context를 읽은 뒤 `MSA/SaaS 복제형`인지 `일반 개발`인지 분기한다.
 4. 템플릿 후보를 사용자에게 항상 보여준다.
 5. 선택한 템플릿과 배포 프로파일을 기준으로 bootstrap packet을 만든다.
 6. `project-start` 초안을 제시하고 승인 게이트를 거친다.
 7. 승인 후 `clever-change-control`의 `project-start` root 기록을 만든다.
 8. target repo를 제안하거나 확정하고 handoff 한다.
 
-중요한 점은, 신규 개발의 첫 앵커가 `target_service` 고정이 아니라 `템플릿 후보 검토`라는 점과, root canonical identifier가 `change id`가 아니라 `project-start issue #`라는 점이다.
+중요한 점은, 새 프로젝트/서비스의 첫 앵커가 `target_service` 고정이 아니라 `프로젝트 상태 + 서비스 범위 + 템플릿 후보 검토`라는 점과, root canonical identifier가 `change id`가 아니라 `project-start issue #`라는 점이다.
 
-## 기존 서비스 변경 / 유지보수 절차
+## 기존 프로젝트 / 기존 서비스 변경·유지보수 절차
 
-유지보수는 코드 수정으로 바로 들어가지 않는다. 먼저 서비스 메타를 읽고, 기존 템플릿 계보를 확인한 뒤 진행한다.
+기존 프로젝트나 기존 서비스 변경은 코드 수정으로 바로 들어가지 않는다. 먼저 서비스 메타를 읽고, 기존 템플릿 계보를 확인한 뒤 진행한다.
 
 기본 절차는 아래와 같다.
 
-1. 먼저 세션 시작 템플릿의 `1 -> 2 -> 3` 질문과 추가 설명을 채운다.
+1. 먼저 세션 시작 템플릿의 `하려는 일 -> 작업 성격 -> 대상 범위 -> 목표 수준` 질문을 채우고, 이름/링크/현재상태/주의사항은 아는 만큼만 적는다.
 2. 대상 서비스 또는 관련 서비스군을 확인한다.
 3. `clever-context-monorepo/docs/services/<service-name>/index.md`를 읽는다.
 4. 아래 메타를 확인한다.
@@ -616,11 +654,11 @@ python3 scripts/sync_issue_from_md.py <draft-file>.md
 flowchart TB
     U["사용자 요청"] --> A["clever-agent-project<br/>시작 세션"]
 
-    subgraph CLASSIFY["1. 작업 성격 분기"]
-        A --> B["작업 유형 확인"]
+    subgraph CLASSIFY["1. 프로젝트/서비스 범위 분기"]
+        A --> B["프로젝트 상태 + 서비스 범위 확인"]
         B --> C["MSA/SaaS 복제형"]
-        B --> D["일반 개발"]
-        B --> E["기존 서비스 변경 / 유지보수"]
+        B --> D["일반 개발 / 새 프로젝트"]
+        B --> E["기존 서비스 기능 추가/변경"]
     end
 
     subgraph READ["2. 먼저 읽는 정본"]
