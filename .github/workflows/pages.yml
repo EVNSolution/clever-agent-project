@@ -2,33 +2,64 @@ name: Deploy GitHub Pages
 
 on:
   push:
-    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
+  validate:
+    name: Validate static Pages site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Serve docs and verify pages open
+        run: |
+          python3 -m http.server 8000 --directory docs > /tmp/clever-pages.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+
+          for _ in {1..20}; do
+            if curl -fsS http://127.0.0.1:8000/ -o /tmp/pages-root.html; then
+              break
+            fi
+            sleep 0.5
+          done
+
+          curl -fsS http://127.0.0.1:8000/ -o /tmp/pages-root.html
+          curl -fsS http://127.0.0.1:8000/start/ -o /tmp/pages-start.html
+          grep -q "CLEVER 시작 도우미" /tmp/pages-root.html
+          grep -q "url=start/" /tmp/pages-root.html
+          grep -q "CLEVER 시작 도우미" /tmp/pages-start.html
+          grep -q "copyOutput" /tmp/pages-start.html
+          grep -q "navigator.clipboard.writeText" /tmp/pages-start.html
+
   deploy:
+    needs: validate
+    if: ${{ github.ref == 'refs/heads/main' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v5
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
