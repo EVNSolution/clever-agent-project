@@ -77,12 +77,25 @@ def test_start_wizard_output_is_clone_ready_and_copyable():
 def test_pages_workflow_publishes_docs_directory():
     workflow = read(".github/workflows/pages.yml")
 
-    assert "actions/configure-pages@v5" in workflow
-    assert "actions/upload-pages-artifact@v4" in workflow
-    assert "actions/deploy-pages@v4" in workflow
+    assert "actions/configure-pages@v6" in workflow
+    assert "actions/upload-pages-artifact@v5" in workflow
+    assert "actions/deploy-pages@v5" in workflow
     assert "path: docs" in workflow
     assert "pages: write" in workflow
     assert "id-token: write" in workflow
+
+
+def test_pages_workflow_validates_branch_site_before_main_deploy():
+    workflow = read(".github/workflows/pages.yml")
+
+    assert "pull_request:" in workflow
+    assert "validate:" in workflow
+    assert "python3 -m http.server 8000 --directory docs" in workflow
+    assert "http://127.0.0.1:8000/" in workflow
+    assert "http://127.0.0.1:8000/start/" in workflow
+    assert "copyOutput" in workflow
+    assert "needs: validate" in workflow
+    assert "github.ref == 'refs/heads/main'" in workflow
 
 
 def test_gitignore_allows_pages_and_wizard_files():
