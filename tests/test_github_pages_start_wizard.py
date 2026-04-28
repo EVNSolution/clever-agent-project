@@ -56,6 +56,23 @@ def test_start_wizard_collects_environment_requirements_and_context():
         assert field in html
 
 
+def test_start_wizard_target_info_switches_by_selected_context():
+    html = read("docs/start/index.html")
+
+    assert "새로 만들 대상 정보" in html
+    assert "기존 대상 정보" in html
+    assert 'data-target-card="new"' in html
+    assert 'data-target-card="existing"' in html
+    assert 'data-target-card="unknown"' in html
+    assert "function targetInfoMode()" in html
+    assert "신규 개발" in html
+    assert "새 앱/서비스/기능" in html
+    assert "기존 기능 확장/수정" in html
+    assert "기존 앱/서비스/기능" in html
+    assert "대상 정보 입력 방향" in html
+    assert "선택한 작업 성격과 대상 범위에 맞는 카드만 보여줍니다" in html
+
+
 def test_start_wizard_output_is_clone_ready_and_copyable():
     html = read("docs/start/index.html")
 
