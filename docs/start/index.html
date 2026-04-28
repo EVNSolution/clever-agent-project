@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CLEVER 시작 도우미</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --ink: #182033;
+      --muted: #667085;
+      --line: #d7dce7;
+      --primary: #275fe4;
+      --primary-soft: #e8efff;
+      --danger: #b42318;
+      --ok: #067647;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.55;
+    }
+    header, main { max-width: 1040px; margin: 0 auto; padding: 24px; }
+    header { padding-top: 40px; }
+    h1 { font-size: clamp(2rem, 4vw, 3.25rem); line-height: 1.1; margin: 0 0 12px; }
+    h2 { font-size: 1.3rem; margin: 0 0 12px; }
+    p { margin: 0 0 12px; color: var(--muted); }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 12px 32px rgba(16, 24, 40, 0.06);
+      margin-bottom: 18px;
+    }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    @media (max-width: 760px) { .grid, .grid.three { grid-template-columns: 1fr; } }
+    label { display: block; font-weight: 700; margin: 10px 0 6px; }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+    textarea { min-height: 86px; resize: vertical; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 14px; }
+    button, .chip {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 9px 13px;
+      font: inherit;
+      cursor: pointer;
+    }
+    .chip[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); font-weight: 700; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 14px; }
+    .primary { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 800; border-radius: 12px; }
+    .secondary { border-radius: 12px; }
+    .output { min-height: 420px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; }
+    .hint { font-size: 0.92rem; color: var(--muted); }
+    .target { padding: 12px 14px; border-radius: 12px; background: #f2f4f7; color: var(--ink); }
+    .ok { color: var(--ok); font-weight: 700; }
+    .warn { color: var(--danger); font-weight: 700; }
+    code { background: #eef2f7; padding: 2px 5px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>CLEVER 시작 도우미</h1>
+    <p>개발 환경, 요구사항, 대상 정보, 현재 상태, 주의사항을 버튼과 텍스트로 정리한 뒤 에이전트에 붙여넣을 copy text를 만듭니다.</p>
+    <p class="hint">설치 프로그램이 아닙니다. 마지막에 생성된 프롬프트를 지정된 위치에 복사해서 붙여넣어 주세요.</p>
+  </header>
+
+  <main>
+    <section class="panel" aria-labelledby="env-title">
+      <h2 id="env-title">1. 개발 환경</h2>
+      <p>어디에서 CLEVER를 시작할지 고릅니다.</p>
+      <div class="chips" role="group" aria-label="개발 환경">
+        <button class="chip" type="button" data-field="surface" data-value="Application">Application</button>
+        <button class="chip" type="button" data-field="surface" data-value="VS Code Extension">VS Code Extension</button>
+        <button class="chip" type="button" data-field="surface" data-value="Terminal CLI">Terminal CLI</button>
+      </div>
+      <label for="workspace">원하는 workspace 위치</label>
+      <input id="workspace" data-field="workspace" placeholder="예: ~/clever-agent-workspace 또는 아직 모름">
+      <p class="hint">프롬프트에는 3개 repo가 있는지 확인하고, 없는 repo만 clone하는 명령이 포함됩니다.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="req-title">
+      <h2 id="req-title">2. 요구사항</h2>
+      <label for="summary">하려는 일 한 줄</label>
+      <textarea id="summary" data-field="summary" placeholder="예: 신규 인증 기능을 만들고 싶다."></textarea>
+
+      <label>작업 성격</label>
+      <div class="chips" role="group" aria-label="작업 성격">
+        <button class="chip" type="button" data-field="workNature" data-value="신규 개발">신규 개발</button>
+        <button class="chip" type="button" data-field="workNature" data-value="기존 기능 확장/수정">기존 기능 확장/수정</button>
+        <button class="chip" type="button" data-field="workNature" data-value="버그 수정">버그 수정</button>
+        <button class="chip" type="button" data-field="workNature" data-value="리팩터링/구조 개선">리팩터링/구조 개선</button>
+        <button class="chip" type="button" data-field="workNature" data-value="문서/설정/운영 정리">문서/설정/운영 정리</button>
+        <button class="chip" type="button" data-field="workNature" data-value="아직 모름">아직 모름</button>
+      </div>
+
+      <label>대상 범위</label>
+      <div class="chips" role="group" aria-label="대상 범위">
+        <button class="chip" type="button" data-field="targetScope" data-value="새 앱/서비스/기능">새 앱/서비스/기능</button>
+        <button class="chip" type="button" data-field="targetScope" data-value="기존 앱/서비스/기능">기존 앱/서비스/기능</button>
+        <button class="chip" type="button" data-field="targetScope" data-value="화면/UI">화면/UI</button>
+        <button class="chip" type="button" data-field="targetScope" data-value="API">API</button>
+        <button class="chip" type="button" data-field="targetScope" data-value="DB/model">DB/model</button>
+        <button class="chip" type="button" data-field="targetScope" data-value="CI/CD 또는 배포 workflow">CI/CD 또는 배포 workflow</button>
+        <button class="chip" type="button" data-field="targetScope" data-value="문서/운영 설정">문서/운영 설정</button>
+        <button class="chip" type="button" data-field="targetScope" data-value="아직 모름">아직 모름</button>
+      </div>
+
+      <label>목표 수준</label>
+      <div class="chips" role="group" aria-label="목표 수준">
+        <button class="chip" type="button" data-field="goalLevel" data-value="요구사항 정리">요구사항 정리</button>
+        <button class="chip" type="button" data-field="goalLevel" data-value="설계 문서 작성">설계 문서 작성</button>
+        <button class="chip" type="button" data-field="goalLevel" data-value="구현 계획 수립">구현 계획 수립</button>
+        <button class="chip" type="button" data-field="goalLevel" data-value="실제 코드 변경">실제 코드 변경</button>
+        <button class="chip" type="button" data-field="goalLevel" data-value="테스트/검증">테스트/검증</button>
+        <button class="chip" type="button" data-field="goalLevel" data-value="배포/운영 준비">배포/운영 준비</button>
+        <button class="chip" type="button" data-field="goalLevel" data-value="1차 MVP 개발 및 배포">1차 MVP 개발 및 배포</button>
+        <button class="chip" type="button" data-field="goalLevel" data-value="운영 반영">운영 반영</button>
+        <button class="chip" type="button" data-field="goalLevel" data-value="아직 모름">아직 모름</button>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="info-title">
+      <h2 id="info-title">3. 대상 정보</h2>
+      <div class="grid">
+        <div><label for="repo">repo</label><input id="repo" data-field="repo" placeholder="없으면 비워도 됨"></div>
+        <div><label for="service">service/app</label><input id="service" data-field="service" placeholder="없으면 비워도 됨"></div>
+        <div><label for="screen">화면</label><input id="screen" data-field="screen"></div>
+        <div><label for="api">API</label><input id="api" data-field="api"></div>
+        <div><label for="db">DB/model</label><input id="db" data-field="db"></div>
+        <div><label for="docs">문서</label><input id="docs" data-field="docs"></div>
+      </div>
+      <label for="references">issue/PR/Figma/회의 메모/에러 로그</label>
+      <textarea id="references" data-field="references" placeholder="관련 링크나 로그를 붙여 넣으세요."></textarea>
+    </section>
+
+    <section class="panel" aria-labelledby="state-title">
+      <h2 id="state-title">4. 현재 상태</h2>
+      <div class="grid three">
+        <div><label for="alreadyDone">이미 되어 있는 것</label><textarea id="alreadyDone" data-field="alreadyDone"></textarea></div>
+        <div><label for="missing">아직 없는 것</label><textarea id="missing" data-field="missing"></textarea></div>
+        <div><label for="checkFirst">먼저 확인해야 할 것</label><textarea id="checkFirst" data-field="checkFirst"></textarea></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="caution-title">
+      <h2 id="caution-title">5. 주의사항</h2>
+      <div class="grid">
+        <div><label for="mustKeep">꼭 지킬 것</label><textarea id="mustKeep" data-field="mustKeep"></textarea></div>
+        <div><label for="avoid">피할 것</label><textarea id="avoid" data-field="avoid"></textarea></div>
+        <div><label for="dontTouch">건드리면 안 되는 범위</label><textarea id="dontTouch" data-field="dontTouch"></textarea></div>
+        <div><label for="opsSecurity">보안/운영/배포 관련 주의사항</label><textarea id="opsSecurity" data-field="opsSecurity"></textarea></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="copy-title">
+      <h2 id="copy-title">6. copy text</h2>
+      <p id="pasteTarget" class="target">아래 copy text를 사용할 에이전트 채팅창에 붙여넣어 주세요.</p>
+      <textarea id="copyOutput" class="output" readonly aria-label="copy text"></textarea>
+      <div class="actions">
+        <button id="copyButton" class="primary" type="button">copy text 복사</button>
+        <button id="resetButton" class="secondary" type="button">초기화</button>
+        <span id="copyStatus" class="hint" role="status"></span>
+      </div>
+      <p class="hint">마지막 안내: 선택한 환경의 채팅/프롬프트 경로에 이 프롬프트를 복사해서 붙여넣어 주세요.</p>
+    </section>
+  </main>
+
+  <script>
+    const repoCommands = `mkdir -p clever-agent-workspace
+cd clever-agent-workspace
+test -d clever-agent-project || git clone https://github.com/EVNSolution/clever-agent-project.git
+test -d clever-context-monorepo || git clone https://github.com/EVNSolution/clever-context-monorepo.git
+test -d clever-change-control || git clone https://github.com/EVNSolution/clever-change-control.git
+cd clever-agent-project
+python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json`;
+
+    const state = {
+      surface: "Application",
+      workspace: "",
+      summary: "",
+      workNature: "아직 모름",
+      targetScope: "아직 모름",
+      goalLevel: "아직 모름",
+      repo: "",
+      service: "",
+      screen: "",
+      api: "",
+      db: "",
+      docs: "",
+      references: "",
+      alreadyDone: "",
+      missing: "",
+      checkFirst: "",
+      mustKeep: "",
+      avoid: "",
+      dontTouch: "",
+      opsSecurity: ""
+    };
+
+    const pasteTargets = {
+      "Application": "앱형 에이전트의 새 대화창에 이 프롬프트를 복사해서 붙여넣어 주세요.",
+      "VS Code Extension": "VS Code에서 workspace를 연 뒤, VS Code Extension 채팅창에 이 프롬프트를 복사해서 붙여넣어 주세요.",
+      "Terminal CLI": "clever-agent-workspace/clever-agent-project 경로에서 CLI 에이전트를 연 뒤, 프롬프트 입력창에 이 내용을 붙여넣어 주세요."
+    };
+
+    function valueOrUnknown(value) {
+      const trimmed = String(value || "").trim();
+      return trimmed || "아직 모름";
+    }
+
+    function line(label, value) {
+      return `- ${label}: ${valueOrUnknown(value)}`;
+    }
+
+    function buildOutput() {
+      return `CLEVER 작업을 시작해주세요.
+
+[개발 환경]
+- 사용 환경: ${state.surface}
+- 선호 workspace: ${valueOrUnknown(state.workspace)}
+
+먼저 현재 환경에서 gh CLI 계정을 확인하세요.
+- \`gh auth status\`
+- \`gh api user --jq .login\`
+계정이 확인되면 별도로 GitHub login을 묻지 말고 진행하세요.
+계정을 확인할 수 없거나 다른 계정으로 고정해야 할 때만 GitHub login/profile URL을 물어보세요.
+
+3개 repo가 있는지 확인하고, 없는 repo만 clone한 뒤 preflight를 실행하세요.
+
+\`\`\`bash
+${repoCommands}
+\`\`\`
+
+preflight가 실패하면 시작 질문으로 넘어가지 말고 \`recovery_actions\`와 \`next_questions\`를 읽어 필요한 것만 처리하세요.
+preflight가 통과하면 아래 입력을 startup branch state로 정규화하세요.
+
+작업 시작
+
+먼저 하려는 일을 한 줄로 적어 주세요.
+- 하려는 일: ${valueOrUnknown(state.summary)}
+
+1. 작업 성격은 어디에 가깝나요?
+- 선택: ${state.workNature}
+
+2. 대상 범위는 무엇인가요?
+- 선택: ${state.targetScope}
+
+3. 이번 작업의 목표 수준은 어디까지인가요?
+- 선택: ${state.goalLevel}
+
+4. 알고 있는 이름이나 링크가 있나요? 없으면 비워도 됩니다.
+${line("repo", state.repo)}
+${line("service/app", state.service)}
+${line("화면", state.screen)}
+${line("API", state.api)}
+${line("DB/model", state.db)}
+${line("문서", state.docs)}
+${line("issue/PR/Figma/회의 메모/에러 로그", state.references)}
+
+5. 현재 상태를 알고 있나요? 모르면 \`아직 모름\`으로 둬도 됩니다.
+${line("이미 되어 있는 것", state.alreadyDone)}
+${line("아직 없는 것", state.missing)}
+${line("먼저 확인해야 할 것", state.checkFirst)}
+
+6. 주의할 점이 있나요? 없으면 비워도 됩니다.
+${line("꼭 지킬 것", state.mustKeep)}
+${line("피할 것", state.avoid)}
+${line("건드리면 안 되는 범위", state.dontTouch)}
+${line("보안/운영/배포 관련 주의사항", state.opsSecurity)}
+`;
+    }
+
+    function render() {
+      document.querySelectorAll(".chip[data-field]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(state[button.dataset.field] === button.dataset.value));
+      });
+      document.getElementById("copyOutput").value = buildOutput();
+      document.getElementById("pasteTarget").textContent = pasteTargets[state.surface] || pasteTargets.Application;
+    }
+
+    document.querySelectorAll(".chip[data-field]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state[button.dataset.field] = button.dataset.value;
+        render();
+      });
+    });
+
+    document.querySelectorAll("[data-field]:not(.chip)").forEach((input) => {
+      input.addEventListener("input", () => {
+        state[input.dataset.field] = input.value;
+        render();
+      });
+    });
+
+    document.getElementById("copyButton").addEventListener("click", async () => {
+      const output = document.getElementById("copyOutput").value;
+      try {
+        await navigator.clipboard.writeText(output);
+        document.getElementById("copyStatus").textContent = "복사했습니다.";
+        document.getElementById("copyStatus").className = "ok";
+      } catch (error) {
+        document.getElementById("copyOutput").focus();
+        document.getElementById("copyOutput").select();
+        document.getElementById("copyStatus").textContent = "자동 복사에 실패했습니다. 선택된 텍스트를 직접 복사하세요.";
+        document.getElementById("copyStatus").className = "warn";
+      }
+    });
+
+    document.getElementById("resetButton").addEventListener("click", () => {
+      for (const key of Object.keys(state)) {
+        state[key] = ["surface", "workNature", "targetScope", "goalLevel"].includes(key)
+          ? { surface: "Application", workNature: "아직 모름", targetScope: "아직 모름", goalLevel: "아직 모름" }[key]
+          : "";
+      }
+      document.querySelectorAll("[data-field]:not(.chip)").forEach((input) => { input.value = ""; });
+      document.getElementById("copyStatus").textContent = "";
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>

@@ -8,6 +8,8 @@
 
 !/.github/
 !/.github/PULL_REQUEST_TEMPLATE.md
+!/.github/workflows/
+!/.github/workflows/pages.yml
 
 !/.agent/
 !/.agent/skills/
@@ -19,6 +21,10 @@
 !/.agent/skills/bootstrap-clever-work/scripts/bootstrap_clever_work.py
 
 !/docs/
+!/docs/.nojekyll
+!/docs/index.html
+!/docs/start/
+!/docs/start/index.html
 !/docs/diagrams/
 !/docs/diagrams/README.md
 !/docs/diagrams/*.md
@@ -54,6 +60,7 @@
 !/tests/test_issue_resolution_context_wiki_prompt.py
 !/tests/test_merge_title_standard.py
 !/tests/test_sync_issue_from_md.py
+!/tests/test_github_pages_start_wizard.py
 
 # Defense in depth for common local artifacts.
 **/.DS_Store
