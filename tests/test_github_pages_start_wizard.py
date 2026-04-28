@@ -47,30 +47,44 @@ def test_start_wizard_collects_environment_requirements_and_context():
         "작업 성격",
         "대상 범위",
         "목표 수준",
-        "repo",
-        "service/app",
-        "issue/PR/Figma/회의 메모/에러 로그",
+        "대상 정보",
+        "서비스 이름(가칭)",
+        "현재 상태",
         "꼭 지킬 것",
         "건드리면 안 되는 범위",
     ]:
         assert field in html
 
 
-def test_start_wizard_target_info_switches_by_selected_context():
+def test_start_wizard_uses_minimal_target_and_state_textareas():
     html = read("docs/start/index.html")
 
-    assert "새로 만들 대상 정보" in html
-    assert "기존 대상 정보" in html
-    assert 'data-target-card="new"' in html
-    assert 'data-target-card="existing"' in html
-    assert 'data-target-card="unknown"' in html
-    assert "function targetInfoMode()" in html
-    assert "신규 개발" in html
-    assert "새 앱/서비스/기능" in html
-    assert "기존 기능 확장/수정" in html
-    assert "기존 앱/서비스/기능" in html
-    assert "대상 정보 입력 방향" in html
-    assert "선택한 작업 성격과 대상 범위에 맞는 카드만 보여줍니다" in html
+    assert 'id="targetInfo" data-field="targetInfo"' in html
+    assert 'id="serviceAlias" data-field="serviceAlias"' in html
+    assert 'id="currentState" data-field="currentState"' in html
+    assert "기획문서는 있어서 repo만 만들면 바로 시작 가능" in html
+    assert "바이브코딩이라 대화로 진행" in html
+    assert "다른 MSA 서비스에 있는 기능을 가져와서 새 서비스를 만들거야" in html
+    assert "에이전트가 이 내용을 읽고 새 개발인지 기존 서비스 작업인지 판단하세요" in html
+    assert "대상 정보 입력" in html
+    assert "현재 상태 입력" in html
+
+    removed_detailed_fields = [
+        'data-target-card="new"',
+        'data-target-card="existing"',
+        'function targetInfoMode()',
+        'data-field="repo"',
+        'data-field="service"',
+        'data-field="screen"',
+        'data-field="api"',
+        'data-field="db"',
+        'data-field="docs"',
+        'data-field="alreadyDone"',
+        'data-field="missing"',
+        'data-field="checkFirst"',
+    ]
+    for removed in removed_detailed_fields:
+        assert removed not in html
 
 
 def test_start_wizard_output_is_clone_ready_and_copyable():
