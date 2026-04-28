@@ -5,6 +5,11 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+CONTROL_PLANE_REPOS = [
+    REPO_ROOT,
+    REPO_ROOT.parent / "clever-context-monorepo",
+    REPO_ROOT.parent / "clever-change-control",
+]
 
 
 def test_tracked_files_are_whitelisted_from_default_ignore():
@@ -40,3 +45,24 @@ def test_tracked_files_are_whitelisted_from_default_ignore():
             blocked.append(f"{path} matched {pattern}")
 
     assert blocked == []
+
+
+def test_control_plane_repos_ignore_ds_store_files():
+    for repo_path in CONTROL_PLANE_REPOS:
+        ignored = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo_path),
+                "check-ignore",
+                "-v",
+                "--",
+                ".DS_Store",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        assert ignored.returncode == 0, repo_path
+        assert ".DS_Store" in ignored.stdout

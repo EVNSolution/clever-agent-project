@@ -33,17 +33,19 @@ Do not put the project planning draft into `AGENTS.md`.
 
 ## First-Response Hard Gate
 
-Before showing the first-response template, automatically inspect the local workspace,
-`gh auth status`, GitHub account, remotes, repo visibility, and issue/PR/ruleset read access:
+Before showing the first-response template, ask the user for their GitHub login or profile URL, then automatically inspect the local workspace,
+`gh auth status`, GitHub login, remotes, repo visibility, and issue/PR/ruleset read access:
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
+  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 If the session is explicitly about editing the current control-plane repo itself, run:
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
+CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
+  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
 ```
 
 Interpret the result like this:
@@ -55,8 +57,8 @@ Interpret the result like this:
 - `workspace_check.agent_action=switch-to-clever-agent-project`: move startup to `clever-agent-project` first
 - `workspace_check.agent_action=stop-and-fix-workspace`: stop and clearly state that the local three-repository workspace is incomplete
 
-The expected GitHub login defaults to `OziinG`.
-Use `CLEVER_EXPECTED_GITHUB_LOGIN` or `--expected-github-login` only when the user explicitly authorizes another account.
+There is no shared default GitHub login.
+On first startup, ask the user for their GitHub login or profile URL, then pass it with `CLEVER_EXPECTED_GITHUB_LOGIN` or `--expected-github-login`.
 Preflight also checks active `EVNSolution` org membership. Repository creation
 permission cannot be proven without the actual `gh repo create` write attempt,
 so treat that command's success as the creation proof after preflight passes.
@@ -314,7 +316,7 @@ Once the user approves:
    - initial remote bootstrap commit may land on `main`
    - immediately after that, create and push `dev`
    - before applying rulesets or repository protection settings, run:
-     `python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --admin-preflight --target-repo-full-name <owner>/<repo> --json`
+     `CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --admin-preflight --target-repo-full-name <owner>/<repo> --json`
    - after `dev` exists, run `scripts/apply-github-rulesets.sh <owner>/<repo>` when GitHub Administration write permission is available
    - GitHub rulesets should target only `main` and `dev`: both require PR-only updates with `required_approving_review_count=0`, and other branches stay unrestricted by ruleset
    - after `dev` exists, block direct local pushes to `main`

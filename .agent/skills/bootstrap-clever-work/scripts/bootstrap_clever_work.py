@@ -45,7 +45,11 @@ ALLOWED_UI_IMPACTS = {
     "없음",
 }
 DEFAULT_GITHUB_OWNER = "EVNSolution"
-DEFAULT_EXPECTED_GITHUB_LOGIN = "OziinG"
+DEFAULT_EXPECTED_GITHUB_LOGIN: str | None = None
+GITHUB_LOGIN_REQUEST_MESSAGE = (
+    "Ask the user for their GitHub login or profile URL, then set "
+    "CLEVER_EXPECTED_GITHUB_LOGIN or pass --expected-github-login."
+)
 
 CONTEXT_DOCS = [
     "README.md",
@@ -405,6 +409,42 @@ def normalize_repo_full_name(repo: str | None, *, github_owner: str) -> str | No
     return repo if "/" in repo else f"{github_owner}/{repo}"
 
 
+def normalize_github_login_identifier(value: str | None) -> str | None:
+    if value is None:
+        return None
+
+    candidate = value.strip()
+    if not candidate:
+        return None
+
+    candidate = re.split(r"[?#]", candidate, maxsplit=1)[0].strip().rstrip("/")
+    if candidate.startswith("@"):
+        candidate = candidate[1:]
+
+    github_url_match = re.match(
+        r"^(?:https?://)?(?:www\.)?github\.com/(?P<login>[^/]+)(?:/.*)?$",
+        candidate,
+        flags=re.IGNORECASE,
+    )
+    if github_url_match:
+        candidate = github_url_match.group("login")
+
+    ssh_url_match = re.match(
+        r"^git@github\.com:(?P<login>[^/]+)/?.*$",
+        candidate,
+        flags=re.IGNORECASE,
+    )
+    if ssh_url_match:
+        candidate = ssh_url_match.group("login")
+
+    if candidate.endswith(".git"):
+        candidate = candidate[:-4]
+    if candidate.startswith("@"):
+        candidate = candidate[1:]
+
+    return candidate or None
+
+
 def collect_control_plane_paths(workspace_check: dict[str, Any]) -> dict[str, Path]:
     paths: dict[str, Path] = {}
     repos = workspace_check.get("repos", {})
@@ -419,7 +459,7 @@ def collect_control_plane_paths(workspace_check: dict[str, Any]) -> dict[str, Pa
 def build_preflight_check(
     *,
     cwd: Path,
-    expected_github_login: str = DEFAULT_EXPECTED_GITHUB_LOGIN,
+    expected_github_login: str | None = DEFAULT_EXPECTED_GITHUB_LOGIN,
     github_owner: str = DEFAULT_GITHUB_OWNER,
     admin: bool = False,
     target_repo_full_name: str | None = None,
@@ -427,6 +467,7 @@ def build_preflight_check(
 ) -> dict[str, Any]:
     mode = "admin" if admin else "basic"
     checks: list[dict[str, Any]] = []
+    normalized_expected_github_login = normalize_github_login_identifier(expected_github_login)
 
     git_path = shutil.which("git")
     add_preflight_check(
@@ -462,21 +503,29 @@ def build_preflight_check(
 
         user_result = run_command_result(["gh", "api", "user", "--jq", ".login"])
         github_login = user_result.stdout.strip() if user_result.returncode == 0 else None
-        login_ok = github_login == expected_github_login
+        login_ok = (
+            normalized_expected_github_login is not None
+            and github_login is not None
+            and github_login.lower() == normalized_expected_github_login.lower()
+        )
+        if normalized_expected_github_login is None:
+            account_message = (
+                f"No expected GitHub account is configured. {GITHUB_LOGIN_REQUEST_MESSAGE}"
+            )
+        elif login_ok:
+            account_message = f"GitHub account is {github_login}."
+        else:
+            account_message = (
+                "Expected GitHub account "
+                f"{normalized_expected_github_login}, got {github_login or command_message(user_result)}."
+            )
         add_preflight_check(
             checks,
             name="github-account",
             passed=login_ok,
-            message=(
-                f"GitHub account is {github_login}."
-                if login_ok
-                else (
-                    "Expected GitHub account "
-                    f"{expected_github_login}, got {github_login or command_message(user_result)}."
-                )
-            ),
+            message=account_message,
             details={
-                "expected": expected_github_login,
+                "expected": normalized_expected_github_login,
                 "actual": github_login,
             },
         )
@@ -518,8 +567,12 @@ def build_preflight_check(
             checks,
             name="github-account",
             passed=False,
-            message=f"Cannot confirm expected GitHub account {expected_github_login}.",
-            details={"expected": expected_github_login, "actual": None},
+            message=(
+                f"Cannot confirm expected GitHub account {normalized_expected_github_login}."
+                if normalized_expected_github_login
+                else f"Cannot confirm GitHub account because gh CLI is missing. {GITHUB_LOGIN_REQUEST_MESSAGE}"
+            ),
+            details={"expected": normalized_expected_github_login, "actual": None},
         )
         add_preflight_check(
             checks,
@@ -735,7 +788,7 @@ def build_preflight_check(
     return {
         "mode": mode,
         "ready": ready,
-        "expected_github_login": expected_github_login,
+        "expected_github_login": normalized_expected_github_login,
         "github_login": github_login,
         "github_owner": github_owner,
         "target_repo": normalized_target_repo,
@@ -1106,8 +1159,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--expected-github-login",
-        default=os.environ.get("CLEVER_EXPECTED_GITHUB_LOGIN", DEFAULT_EXPECTED_GITHUB_LOGIN),
-        help="Expected GitHub login for gh authenticated operations.",
+        default=os.environ.get("CLEVER_EXPECTED_GITHUB_LOGIN") or DEFAULT_EXPECTED_GITHUB_LOGIN,
+        help=(
+            "Expected GitHub login or profile URL for gh authenticated operations. "
+            "No shared default is assumed; ask the user on first startup."
+        ),
     )
     parser.add_argument(
         "--github-owner",
@@ -1202,7 +1258,10 @@ def print_preflight_check(preflight_check: dict[str, Any]) -> None:
     print(f"mode: {preflight_check['mode']}")
     print(f"ready: {'yes' if preflight_check['ready'] else 'no'}")
     print(f"github-owner: {preflight_check['github_owner']}")
-    print(f"expected-github-login: {preflight_check['expected_github_login']}")
+    print(
+        "expected-github-login: "
+        f"{preflight_check['expected_github_login'] or 'needs-user-input'}"
+    )
     print(f"github-login: {preflight_check['github_login'] or 'unknown'}")
     if preflight_check.get("target_repo"):
         print(f"target-repo: {preflight_check['target_repo']}")

@@ -51,7 +51,8 @@
 운영 환경에서는 첫 질문 전에 아래 자동 감지 명령을 먼저 돌린다.
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
+CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
+  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 ```
 
 이 문서의 시나리오는 그 결과가 `preflight_check.ready=true`이고
@@ -60,7 +61,8 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json
 현재 control-plane 저장소 자체를 직접 수정하는 세션은 아래처럼 유지보수 모드로 따로 확인한다.
 
 ```bash
-python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
+CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \
+  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo-maintenance --json
 ```
 
 ## 합격 기준
