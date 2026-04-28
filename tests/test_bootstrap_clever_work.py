@@ -621,9 +621,9 @@ def test_readme_exposes_copyable_first_clone_command_box():
     assert "git clone https://github.com/EVNSolution/clever-agent-project.git" in readme
     assert "git clone https://github.com/EVNSolution/clever-context-monorepo.git" in readme
     assert "git clone https://github.com/EVNSolution/clever-change-control.git" in readme
-    assert readme.count("git clone https://github.com/EVNSolution/clever-agent-project.git") == 1
-    assert readme.count("git clone https://github.com/EVNSolution/clever-context-monorepo.git") == 1
-    assert readme.count("git clone https://github.com/EVNSolution/clever-change-control.git") == 1
+    assert readme.count("git clone https://github.com/EVNSolution/clever-agent-project.git") == 3
+    assert readme.count("git clone https://github.com/EVNSolution/clever-context-monorepo.git") == 3
+    assert readme.count("git clone https://github.com/EVNSolution/clever-change-control.git") == 3
     assert "cd clever-agent-project" in readme
     assert 'CLEVER_EXPECTED_GITHUB_LOGIN="<github-login-or-profile-url>" \\\n  python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json' in readme
     assert "python3 scripts/bootstrap_clever_work.py --cwd \"$PWD\" --preflight --json" in readme
@@ -1244,9 +1244,19 @@ def test_readme_guides_non_expert_users_by_entry_surface():
     assert "아래 프롬프트를 그대로 붙여 넣는다" in readme
     assert "gh CLI에서 계정을 확인할 수 있으면 별도로 묻지 말고" in readme
     assert "GitHub 계정을 확인할 수 없거나 다른 계정을 써야 할 때만 물어봐줘" in readme
-    assert "3개 repo clone부터 preflight까지 진행해줘" in readme
+    assert "3개 repo가 있는지 확인하고, 없는 repo만" in readme
     assert "필요한 shell 명령은 네가 실행하고 결과를 확인해줘" in readme
     assert "Integrated Terminal" in readme
+
+    app_prompt = first_text_block_after(readme, "앱형 에이전트 / Application")
+    vscode_prompt = first_text_block_after(readme, "VS Code Extension")
+    for prompt in (app_prompt, vscode_prompt):
+        assert "3개 repo가 있는지 확인하고, 없는 repo만" in prompt
+        assert "mkdir -p clever-agent-workspace" in prompt
+        assert "git clone https://github.com/EVNSolution/clever-agent-project.git" in prompt
+        assert "git clone https://github.com/EVNSolution/clever-context-monorepo.git" in prompt
+        assert "git clone https://github.com/EVNSolution/clever-change-control.git" in prompt
+        assert 'python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json' in prompt
 
 
 def test_startup_first_questions_prioritize_project_and_service_scope():
