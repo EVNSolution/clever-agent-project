@@ -92,11 +92,12 @@
       </div>
       <label for="workspace">원하는 workspace 위치</label>
       <input id="workspace" data-field="workspace" placeholder="예: ~/clever-agent-workspace 또는 아직 모름">
+      <input id="workspaceFolderInput" type="file" webkitdirectory directory multiple hidden aria-label="workspace 폴더 선택">
       <div class="actions">
         <button id="chooseWorkspaceButton" class="secondary" type="button">폴더 선택</button>
         <span id="workspacePickerStatus" class="hint" role="status"></span>
       </div>
-      <p class="hint">브라우저가 지원하면 실제 폴더 선택 패널이 열립니다. 보안상 전체 로컬 경로 대신 선택한 폴더 이름이 들어갈 수 있으니, 필요하면 직접 수정하세요.</p>
+      <p class="hint">폴더 선택 패널은 선택 폴더 기준의 상대 경로만 제공합니다. 확인된 폴더명/상대 경로 힌트를 입력하고, 실제 경로가 필요하면 직접 수정하세요.</p>
       <p class="hint">프롬프트에는 3개 repo가 있는지 확인하고, 없는 repo만 clone하는 명령이 포함됩니다.</p>
     </section>
 
@@ -210,8 +211,6 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json`;
       opsSecurity: ""
     };
 
-    let workspaceDirectoryHandle = null;
-
     const pasteTargets = {
       "Application": "앱형 에이전트의 새 대화창에 이 프롬프트를 복사해서 붙여넣어 주세요.",
       "VS Code Extension": "VS Code에서 workspace를 연 뒤, VS Code Extension 채팅창에 이 프롬프트를 복사해서 붙여넣어 주세요.",
@@ -291,30 +290,38 @@ ${line("보안/운영/배포 관련 주의사항", state.opsSecurity)}
       status.className = className;
     }
 
-    async function chooseWorkspaceDirectory() {
-      if (!("showDirectoryPicker" in window)) {
-        setWorkspacePickerStatus("폴더 선택을 지원하지 않는 브라우저입니다. workspace 위치를 직접 입력하세요.", "warn");
+    function selectedFolderNameFromFiles(files) {
+      const firstFile = Array.from(files || [])[0];
+      if (!firstFile) {
+        return "";
+      }
+      const relativePath = firstFile.webkitRelativePath || firstFile.name || "";
+      return relativePath.split("/").filter(Boolean)[0] || "";
+    }
+
+    function chooseWorkspaceDirectory() {
+      const workspaceFolderInput = document.getElementById("workspaceFolderInput");
+      workspaceFolderInput.click();
+    }
+
+    function handleWorkspaceFolderSelection(event) {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) {
+        setWorkspacePickerStatus("빈 폴더이거나 선택한 파일이 없습니다. workspace 위치를 직접 입력하세요.", "warn");
         return;
       }
 
-      try {
-        const directoryHandle = await window.showDirectoryPicker({
-          id: "clever-agent-workspace",
-          mode: "read",
-          startIn: "documents"
-        });
-        workspaceDirectoryHandle = directoryHandle;
-        state.workspace = directoryHandle.name;
-        document.getElementById("workspace").value = directoryHandle.name;
-        setWorkspacePickerStatus(`선택한 폴더: ${directoryHandle.name}. 전체 로컬 경로 대신 선택한 폴더 이름을 입력했습니다. 필요하면 직접 수정하세요.`, "ok");
-        render();
-      } catch (error) {
-        if (error && error.name === "AbortError") {
-          setWorkspacePickerStatus("폴더 선택을 취소했습니다.", "hint");
-          return;
-        }
-        setWorkspacePickerStatus("폴더 선택을 열 수 없습니다. workspace 위치를 직접 입력하세요.", "warn");
+      const folderName = selectedFolderNameFromFiles(files);
+      if (!folderName) {
+        setWorkspacePickerStatus("선택한 폴더의 상대 경로를 확인할 수 없습니다. workspace 위치를 직접 입력하세요.", "warn");
+        return;
       }
+
+      const firstRelativePath = files[0].webkitRelativePath || files[0].name || folderName;
+      state.workspace = folderName;
+      document.getElementById("workspace").value = folderName;
+      setWorkspacePickerStatus(`선택한 폴더의 상대 경로를 확인했습니다: ${firstRelativePath}. workspace에는 폴더명 "${folderName}"을 입력했습니다. 실제 경로가 필요하면 직접 수정하세요.`, "ok");
+      render();
     }
 
     function render() {
@@ -340,6 +347,7 @@ ${line("보안/운영/배포 관련 주의사항", state.opsSecurity)}
     });
 
     document.getElementById("chooseWorkspaceButton").addEventListener("click", chooseWorkspaceDirectory);
+    document.getElementById("workspaceFolderInput").addEventListener("change", handleWorkspaceFolderSelection);
 
     document.getElementById("copyButton").addEventListener("click", async () => {
       const output = document.getElementById("copyOutput").value;
@@ -361,8 +369,8 @@ ${line("보안/운영/배포 관련 주의사항", state.opsSecurity)}
           ? { surface: "Application", workNature: "아직 모름", targetScope: "아직 모름", goalLevel: "아직 모름" }[key]
           : "";
       }
-      workspaceDirectoryHandle = null;
       document.querySelectorAll("[data-field]:not(.chip)").forEach((input) => { input.value = ""; });
+      document.getElementById("workspaceFolderInput").value = "";
       document.getElementById("copyStatus").textContent = "";
       setWorkspacePickerStatus("", "hint");
       render();
