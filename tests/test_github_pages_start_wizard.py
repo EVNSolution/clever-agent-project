@@ -110,20 +110,25 @@ def test_start_wizard_current_state_placeholder_uses_status_examples():
         assert state_example in current_state_placeholder
 
 
-def test_start_wizard_can_pick_workspace_directory_when_browser_supports_it():
+def test_start_wizard_can_pick_workspace_directory_with_html_directory_input():
     html = read("docs/start/index.html")
 
     assert 'id="chooseWorkspaceButton"' in html
     assert 'id="workspacePickerStatus"' in html
+    assert 'id="workspaceFolderInput"' in html
+    assert 'type="file"' in html
+    assert "webkitdirectory" in html
+    assert "directory" in html
+    assert "multiple" in html
     assert "폴더 선택" in html
-    assert "window.showDirectoryPicker" in html
-    assert 'mode: "read"' in html
-    assert 'startIn: "documents"' in html
-    assert "workspaceDirectoryHandle" in html
-    assert "directoryHandle.name" in html
-    assert "폴더 선택을 지원하지 않는 브라우저" in html
-    assert "전체 로컬 경로 대신 선택한 폴더 이름" in html
-    assert "AbortError" in html
+    assert "workspaceFolderInput.click()" in html
+    assert "webkitRelativePath" in html
+    assert "selectedFolderNameFromFiles" in html
+    assert "선택한 폴더의 상대 경로" in html
+    assert "빈 폴더" in html
+    assert "window.showDirectoryPicker" not in html
+    assert "workspaceDirectoryHandle" not in html
+    assert "AbortError" not in html
 
 
 def test_start_wizard_output_is_clone_ready_and_copyable():
