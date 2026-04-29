@@ -18,9 +18,11 @@ def h2_texts(html: str) -> list[str]:
 def test_readme_links_github_pages_start_wizard():
     readme = read("README.md")
 
+    assert "최신 권장 시작점" in readme
     assert "GitHub Pages 시작 도우미" in readme
     assert "https://evnsolution.github.io/clever-agent-project/start/" in readme
-    assert "버튼과 텍스트 입력으로 답한 뒤 최종 copy text" in readme
+    assert "현재 최신 시작 화면" in readme
+    assert "README의 긴 양식을 먼저 복사하지 말고" in readme
 
 
 def test_docs_index_redirects_to_start_wizard():
@@ -36,7 +38,7 @@ def test_start_wizard_puts_work_content_before_execution_details():
 
     assert "CLEVER 시작 도우미" in html
     assert "짧게 입력하면 에이전트용 작업 프롬프트를 생성합니다." in html
-    assert "작업 위치는 에이전트가 현재 디렉터리를 먼저 확인한 뒤 판단합니다." in html
+    assert "작업 경로 입력은 제거했습니다. 실행 환경별 시작 방식만 안내합니다." in html
 
     assert h2_texts(html) == [
         "1. 작업 요약",
@@ -122,6 +124,10 @@ def test_start_wizard_omits_workspace_picker_and_uses_current_directory_rules():
     assert "ls" in html
     assert 'basename "$PWD"' in html
     assert 'cd ..' in html
+    assert "surfaceGuide" in html
+    assert "작업 디렉터리는 에이전트가 먼저 질문하게 됩니다." in html
+    assert "VS Code에서 '폴더 열기'로 작업할 폴더를 먼저 여세요." in html
+    assert "원하는 작업 경로에서 터미널을 먼저 여세요." in html
     assert "window.showDirectoryPicker" not in html
     assert "workspaceDirectoryHandle" not in html
     assert "AbortError" not in html
@@ -144,7 +150,8 @@ def test_start_wizard_output_is_concise_clone_ready_and_rule_based():
         assert command in html
 
     assert "mkdir -p clever-agent-workspace" not in html
-    assert "먼저 현재 위치를 확인하세요." in html
+    assert "[에이전트 작업 시작 규칙]" in html
+    assert "작업 시작 전에 현재 위치를 확인하세요." in html
     assert "현재 위치가 clever-agent-project 내부라면 상위 workspace 기준으로 이동해 판단하세요." in html
     assert "현재 위치가 workspace root라면 그 위치에서 3개 repo 존재 여부를 확인하세요." in html
     assert "3개 repo가 없으면 없는 repo만 clone하세요." in html
@@ -152,7 +159,6 @@ def test_start_wizard_output_is_concise_clone_ready_and_rule_based():
     assert "recovery_actions와 next_questions만 처리하세요." in html
     assert "startup branch state로 정규화하고 진행하세요." in html
     assert "파일 수정/생성/git 작업 전에 사용자에게 한 번만 확인 질문을 하세요." in html
-    assert "작업 시작" not in html
     assert "1. 작업 성격은 어디에 가깝나요?" not in html
     assert "먼저 하려는 일을 한 줄로 적어 주세요." not in html
     assert "navigator.clipboard.writeText" in html
