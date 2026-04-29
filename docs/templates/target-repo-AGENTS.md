@@ -80,6 +80,13 @@ preflight는 최소한 `gh auth status`, gh CLI에서 확인한 GitHub login 또
 초기 remote bootstrap 후에는 `dev`를 만들고, 이후 일반 작업은 `dev` 또는 task branch에서 진행한다.
 `dev`가 생긴 뒤에는 `main`에 직접 push하지 않는다.
 
+첫 main push 전 필수 확인:
+
+- target repo 루트 `AGENTS.md`가 존재해야 한다.
+- 루트 `AGENTS.md`는 bootstrap source `docs/templates/target-repo-AGENTS.md` 내용이 반영된 agent 실행 절차서여야 한다.
+- 위 항목이 빠졌거나 비어 있으면 첫 main push를 진행하지 않고, 먼저 seed 파일을 복사한 뒤 `git status --short`와 `git diff -- AGENTS.md`로 포함 여부를 확인한다.
+- 첫 main push commit에는 루트 `AGENTS.md`를 반드시 포함한다. 확인 전에는 push하지 않는다.
+
 ### PR merge commit 제목
 
 `main`으로 PR을 merge할 때는 GitHub 기본형 merge subject를 쓴다.
@@ -113,6 +120,26 @@ git fetch --prune origin
 - 기본은 `git branch -d <source-branch>`를 쓴다.
 - merge 없이 닫은 branch를 폐기해야 할 때만 사용자 확인 후 `git branch -D <source-branch>`를 쓴다.
 - remote branch가 GitHub에서 이미 삭제됐더라도 `git fetch --prune origin`으로 로컬 추적 branch를 정리한다.
+
+### 다음 작업 이슈 생성 템플릿
+
+main merge가 끝나고 관련 이슈/브랜치 정리까지 완료했으면 다음 작업을 시작하기 전에
+사용자에게 아래 이슈 생성 템플릿을 전달한다. 사용자가 작성한 템플릿이나 기존 issue URL을
+제공하기 전에는 새 구현 작업으로 넘어가지 않는다.
+
+```markdown
+[이슈 요약]:
+[이슈 내용]:
+[작업 유형]: [기능/버그/변경/리팩토링/문서/테스트/운영]
+[대상 범위]: [서비스/화면/API/문서/설정]
+[완료 기준]:
+- [ ]
+- [ ]
+[검증 방법]:
+- [ ]
+[참고 링크/자료]:
+- [ ]
+```
 
 ## GitHub Ruleset 운영
 
