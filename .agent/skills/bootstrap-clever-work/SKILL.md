@@ -371,7 +371,8 @@ Once the user approves:
    - `docs/templates/target-repo-project-brief.md` -> target repo `docs/project-brief.md`
    - `docs/templates/apply-target-repo-rulesets.sh` -> target repo `scripts/apply-github-rulesets.sh`
    - `docs/templates/target-repo-PULL_REQUEST_TEMPLATE.md` -> target repo `.github/PULL_REQUEST_TEMPLATE.md`
-7. Apply or confirm the branch operating contract in the target repo:
+7. 첫 main push 전에는 target repo 루트 `AGENTS.md`가 존재하고, copied source `docs/templates/target-repo-AGENTS.md`의 실행 절차가 반영되어 initial commit에 staged 되었는지 확인한다. 루트 `AGENTS.md`가 없거나 비어 있거나 staged 상태가 아니면 push하지 않는다. 먼저 stage한 뒤 `git status --short`와 `git diff --cached -- AGENTS.md`로 확인한다.
+8. Apply or confirm the branch operating contract in the target repo:
    - initial remote bootstrap commit may land on `main`
    - immediately after that, create and push `dev`
    - before applying rulesets or repository protection settings, run:
@@ -380,7 +381,7 @@ Once the user approves:
    - GitHub rulesets should target only `main` and `dev`: both require PR-only updates with `required_approving_review_count=0`, and other branches stay unrestricted by ruleset
    - after `dev` exists, block direct local pushes to `main`
    - default new work to task branches from `dev` unless the work is intentionally direct-on-`dev`
-8. Recommend a new session in the cloned target repo for planning or implementation.
+9. Recommend a new session in the cloned target repo for planning or implementation.
 
 Only after the root issue is approved and the execution scope is fixed should a scoped change request introduce a `change-id`.
 

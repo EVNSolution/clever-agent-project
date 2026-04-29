@@ -532,6 +532,41 @@ def test_docs_require_remote_task_branch_cleanup_after_pr_completion():
         assert "open PR" in text
 
 
+def test_target_repo_agents_prompts_next_issue_template_after_main_cleanup():
+    agents = (REPO_ROOT / "docs/templates/target-repo-AGENTS.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "### 다음 작업 이슈 생성 템플릿" in agents
+    assert "main merge" in agents
+    assert "이슈/브랜치 정리" in agents
+    assert "다음 작업을 시작하기 전에" in agents
+    assert "[이슈 요약]:" in agents
+    assert "[이슈 내용]:" in agents
+    assert "[완료 기준]:" in agents
+    assert "- [ ]" in agents
+    assert "사용자가 작성한 템플릿이나 기존 issue URL" in agents
+
+
+def test_first_main_push_requires_root_agents_seed_confirmation():
+    docs = [
+        (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8"),
+        (REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md").read_text(
+            encoding="utf-8"
+        ),
+        (REPO_ROOT / "docs/templates/target-repo-AGENTS.md").read_text(
+            encoding="utf-8"
+        ),
+        (REPO_ROOT / "docs/setting.md").read_text(encoding="utf-8"),
+    ]
+
+    for text in docs:
+        assert "첫 main push" in text
+        assert "루트 `AGENTS.md`" in text
+        assert "docs/templates/target-repo-AGENTS.md" in text
+        assert "push하지 않는다" in text
+
+
 def test_target_repo_pr_template_makes_review_finish_with_wiki_update():
     pr_template = (
         REPO_ROOT / "docs/templates/target-repo-PULL_REQUEST_TEMPLATE.md"

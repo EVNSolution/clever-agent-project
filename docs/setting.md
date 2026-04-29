@@ -355,6 +355,8 @@ PR 정보를 wiki에 올리는 것이 아니다. wiki에는 필요한 서비스/
 `AGENTS.md`는 프로젝트 설명서가 아니다. agent가 따라야 할 작업 순서, branch/issue 연결 방식, 테스트와 검증 순서, context 문서 반영 기준, 완료 조건을 담는다.
 또한 target repo에서 실행할 수 있는 branch role prefix 강제 hook 설치 명령을 포함한다.
 
+첫 main push 전에는 target repo 루트 `AGENTS.md`가 `docs/templates/target-repo-AGENTS.md`에서 복사되어 initial commit에 포함되는지 반드시 확인한다. 누락, 빈 파일, stage 누락 상태이면 먼저 seed 파일을 복사/stage하고 `git status --short`, `git diff --cached -- AGENTS.md`로 확인하기 전에는 push하지 않는다.
+
 `docs/project-brief.md`는 프로젝트 기획 초안이다. 목적, 기대 결과, 제약, 초기 범위, 미정 사항, 다음 작업 목록을 담는다.
 
 bootstrap packet의 `target_repo_seed_files` 항목은 위 두 파일을 target repo에 복사하라는 handoff 지시다. 확정되지 않은 placeholder는 추측해서 채우지 말고 `pending` 또는 빈 값으로 남긴다.

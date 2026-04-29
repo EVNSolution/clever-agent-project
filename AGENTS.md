@@ -592,6 +592,8 @@ When the agent bootstraps or confirms a target repo, it should preserve this mea
 - `dev = work`
 - `branch = role-specific work`
 
+첫 main push 전에는 target repo 루트 `AGENTS.md`가 `docs/templates/target-repo-AGENTS.md`에서 복사되어 initial commit에 포함되는지 반드시 확인한다. 누락, 빈 파일, stage 누락 상태이면 먼저 seed 파일을 복사/stage하고 `git status --short`, `git diff --cached -- AGENTS.md`로 확인하기 전에는 push하지 않는다.
+
 If local branch protection is requested or available, prefer a repo-local `pre-push` guard for `main`.
 
 ## PR Merge Commit Title Contract
