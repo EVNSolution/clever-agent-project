@@ -3,7 +3,7 @@
 > CLEVER는 단일 레포지토리 에이전트가 아니다.  
 > 로컬에 함께 내려받은 3개 레포지토리를 함께 읽고, 이후 실제 구현 대상 레포지토리로 실행을 넘기는 워크스페이스 우선 제어 평면 런타임이다.
 
-## 최신 권장 시작점
+## 시작 권장 위치
 
 **[GitHub Pages 시작 도우미](https://evnsolution.github.io/clever-agent-project/start/)가 현재 최신 시작 화면입니다.**
 
