@@ -110,6 +110,22 @@ def test_start_wizard_current_state_placeholder_uses_status_examples():
         assert state_example in current_state_placeholder
 
 
+def test_start_wizard_can_pick_workspace_directory_when_browser_supports_it():
+    html = read("docs/start/index.html")
+
+    assert 'id="chooseWorkspaceButton"' in html
+    assert 'id="workspacePickerStatus"' in html
+    assert "폴더 선택" in html
+    assert "window.showDirectoryPicker" in html
+    assert 'mode: "read"' in html
+    assert 'startIn: "documents"' in html
+    assert "workspaceDirectoryHandle" in html
+    assert "directoryHandle.name" in html
+    assert "폴더 선택을 지원하지 않는 브라우저" in html
+    assert "전체 로컬 경로 대신 선택한 폴더 이름" in html
+    assert "AbortError" in html
+
+
 def test_start_wizard_output_is_clone_ready_and_copyable():
     html = read("docs/start/index.html")
 
