@@ -7,214 +7,402 @@
   <style>
     :root {
       color-scheme: light;
-      --bg: #f7f8fb;
+      --bg: #f5f5f7;
       --panel: #ffffff;
-      --ink: #182033;
-      --muted: #667085;
-      --line: #d7dce7;
-      --primary: #275fe4;
-      --primary-soft: #e8efff;
+      --ink: #1d1d1f;
+      --muted: #7a7a7a;
+      --line: #e0e0e0;
+      --primary: #0066cc;
+      --primary-focus: #0071e3;
+      --primary-soft: #e8f2ff;
       --danger: #b42318;
       --ok: #067647;
+      --tile: #fafafc;
     }
-    * { box-sizing: border-box; }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: "SF Pro Text", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: var(--bg);
       color: var(--ink);
-      line-height: 1.55;
+      line-height: 1.47;
+      letter-spacing: -0.374px;
     }
-    header, main { max-width: 1040px; margin: 0 auto; padding: 24px; }
-    header { padding-top: 40px; }
-    h1 { font-size: clamp(2rem, 4vw, 3.25rem); line-height: 1.1; margin: 0 0 12px; }
-    h2 { font-size: 1.3rem; margin: 0 0 12px; }
-    p { margin: 0 0 12px; color: var(--muted); }
+
+    header,
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    header {
+      padding-top: 56px;
+      padding-bottom: 30px;
+      text-align: center;
+    }
+
+    h1 {
+      font-family: "SF Pro Display", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: clamp(2.5rem, 6vw, 4.6rem);
+      font-weight: 600;
+      line-height: 1.07;
+      letter-spacing: -0.28px;
+      margin: 0 0 16px;
+    }
+
+    h2 {
+      font-family: "SF Pro Display", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: clamp(1.55rem, 3vw, 2.5rem);
+      font-weight: 600;
+      line-height: 1.1;
+      margin: 0 0 14px;
+    }
+
+    p {
+      margin: 0 0 12px;
+      color: var(--muted);
+    }
+
+    .lede {
+      max-width: 620px;
+      margin-left: auto;
+      margin-right: auto;
+      font-size: 1.3rem;
+      color: var(--ink);
+    }
+
     .panel {
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 18px;
-      padding: 22px;
-      box-shadow: 0 12px 32px rgba(16, 24, 40, 0.06);
+      padding: clamp(22px, 4vw, 34px);
       margin-bottom: 18px;
     }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    @media (max-width: 760px) { .grid, .grid.three { grid-template-columns: 1fr; } }
-    label { display: block; font-weight: 700; margin: 10px 0 6px; }
-    input, textarea, select {
+
+    .panel.subtle {
+      background: var(--tile);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    @media (max-width: 760px) {
+      header,
+      main {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin: 12px 0 7px;
+    }
+
+    input,
+    textarea {
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 12px 14px;
+      padding: 13px 15px;
       font: inherit;
       background: #fff;
       color: var(--ink);
+      outline: none;
+      transition: border-color 160ms ease, box-shadow 160ms ease;
     }
-    textarea { min-height: 86px; resize: vertical; }
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 14px; }
-    button, .chip {
+
+    input:focus,
+    textarea:focus,
+    button:focus-visible {
+      border-color: var(--primary-focus);
+      box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.14);
+    }
+
+    textarea {
+      min-height: 94px;
+      resize: vertical;
+    }
+
+    #summary {
+      min-height: 116px;
+      font-size: 1.05rem;
+    }
+
+    .output {
+      min-height: 420px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre;
+      letter-spacing: 0;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 8px 0 16px;
+    }
+
+    button,
+    .chip {
       border: 1px solid var(--line);
       background: #fff;
       color: var(--ink);
-      border-radius: 999px;
-      padding: 9px 13px;
+      border-radius: 9999px;
+      padding: 9px 14px;
       font: inherit;
       cursor: pointer;
+      transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
     }
-    .chip[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); font-weight: 700; }
-    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 14px; }
-    .primary { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 800; border-radius: 12px; }
-    .secondary { border-radius: 12px; }
-    .output { min-height: 420px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; }
-    .hint { font-size: 0.92rem; color: var(--muted); }
-    .target { padding: 12px 14px; border-radius: 12px; background: #f2f4f7; color: var(--ink); }
-    .ok { color: var(--ok); font-weight: 700; }
-    .warn { color: var(--danger); font-weight: 700; }
-    code { background: #eef2f7; padding: 2px 5px; border-radius: 5px; }
+
+    .chip[aria-pressed="true"] {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: 14px;
+    }
+
+    .primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      font-weight: 600;
+      border-radius: 9999px;
+      padding: 11px 22px;
+    }
+
+    .primary:hover {
+      background: var(--primary-focus);
+      border-color: var(--primary-focus);
+    }
+
+    .secondary {
+      border-radius: 9999px;
+    }
+
+    .hint {
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+
+    .target {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    .ok {
+      color: var(--ok);
+      font-weight: 700;
+    }
+
+    .warn {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--tile);
+      padding: 14px 16px 18px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    code {
+      background: #eef2f7;
+      padding: 2px 5px;
+      border-radius: 5px;
+      letter-spacing: 0;
+    }
   </style>
 </head>
 <body>
   <header>
     <h1>CLEVER 시작 도우미</h1>
-    <p>개발 환경, 요구사항, 대상 정보, 현재 상태, 주의사항을 버튼과 텍스트로 정리한 뒤 에이전트에 붙여넣을 copy text를 만듭니다.</p>
-    <p class="hint">설치 프로그램이 아닙니다. 마지막에 생성된 프롬프트를 지정된 위치에 복사해서 붙여넣어 주세요.</p>
+    <p class="lede">짧게 입력하면 에이전트용 작업 프롬프트를 생성합니다.</p>
+    <p class="hint">작업 위치는 에이전트가 현재 디렉터리를 먼저 확인한 뒤 판단합니다.</p>
   </header>
 
   <main>
-    <section class="panel" aria-labelledby="env-title">
-      <h2 id="env-title">1. 개발 환경</h2>
-      <p>어디에서 CLEVER를 시작할지 고릅니다.</p>
-      <div class="chips" role="group" aria-label="개발 환경">
-        <button class="chip" type="button" data-field="surface" data-value="Application">Application</button>
-        <button class="chip" type="button" data-field="surface" data-value="VS Code Extension">VS Code Extension</button>
-        <button class="chip" type="button" data-field="surface" data-value="Terminal CLI">Terminal CLI</button>
-      </div>
-      <label for="workspace">원하는 workspace 위치</label>
-      <input id="workspace" data-field="workspace" placeholder="예: ~/clever-agent-workspace 또는 아직 모름">
-      <input id="workspaceFolderInput" type="file" webkitdirectory directory multiple hidden aria-label="workspace 폴더 선택">
-      <div class="actions">
-        <button id="chooseWorkspaceButton" class="secondary" type="button">폴더 선택</button>
-        <span id="workspacePickerStatus" class="hint" role="status"></span>
-      </div>
-      <p class="hint">폴더 선택 패널은 선택 폴더 기준의 상대 경로만 제공합니다. 확인된 폴더명/상대 경로 힌트를 입력하고, 실제 경로가 필요하면 직접 수정하세요.</p>
-      <p class="hint">프롬프트에는 3개 repo가 있는지 확인하고, 없는 repo만 clone하는 명령이 포함됩니다.</p>
+    <section class="panel" aria-labelledby="summary-title">
+      <h2 id="summary-title">1. 작업 요약</h2>
+      <p>가장 먼저 하려는 일만 적어 주세요. 나머지는 모르면 비워도 됩니다.</p>
+
+      <label for="summary">하려는 일</label>
+      <textarea id="summary" data-field="summary" placeholder="예: 천하운수 배송원 앱의 로그인/회원가입 1차 MVP를 만들고 싶다."></textarea>
     </section>
 
-    <section class="panel" aria-labelledby="req-title">
-      <h2 id="req-title">2. 요구사항</h2>
-      <label for="summary">하려는 일 한 줄</label>
-      <textarea id="summary" data-field="summary" placeholder="예: 신규 인증 기능을 만들고 싶다."></textarea>
+    <section class="panel" aria-labelledby="classify-title">
+      <h2 id="classify-title">2. 작업 분류</h2>
+      <p>정확하지 않아도 됩니다. 에이전트가 이후 startup branch state로 다시 정규화합니다.</p>
 
       <label>작업 성격</label>
       <div class="chips" role="group" aria-label="작업 성격">
-        <button class="chip" type="button" data-field="workNature" data-value="신규 개발">신규 개발</button>
-        <button class="chip" type="button" data-field="workNature" data-value="기존 기능 확장/수정">기존 기능 확장/수정</button>
-        <button class="chip" type="button" data-field="workNature" data-value="버그 수정">버그 수정</button>
-        <button class="chip" type="button" data-field="workNature" data-value="리팩터링/구조 개선">리팩터링/구조 개선</button>
-        <button class="chip" type="button" data-field="workNature" data-value="문서/설정/운영 정리">문서/설정/운영 정리</button>
+        <button class="chip" type="button" data-field="workNature" data-value="신규">신규</button>
+        <button class="chip" type="button" data-field="workNature" data-value="기존 수정">기존 수정</button>
+        <button class="chip" type="button" data-field="workNature" data-value="버그">버그</button>
+        <button class="chip" type="button" data-field="workNature" data-value="리팩터링">리팩터링</button>
+        <button class="chip" type="button" data-field="workNature" data-value="문서/운영">문서/운영</button>
         <button class="chip" type="button" data-field="workNature" data-value="아직 모름">아직 모름</button>
       </div>
 
-      <label>대상 범위</label>
-      <div class="chips" role="group" aria-label="대상 범위">
-        <button class="chip" type="button" data-field="targetScope" data-value="새 앱/서비스/기능">새 앱/서비스/기능</button>
-        <button class="chip" type="button" data-field="targetScope" data-value="기존 앱/서비스/기능">기존 앱/서비스/기능</button>
+      <label>대상</label>
+      <div class="chips" role="group" aria-label="대상">
+        <button class="chip" type="button" data-field="targetScope" data-value="앱/서비스">앱/서비스</button>
         <button class="chip" type="button" data-field="targetScope" data-value="화면/UI">화면/UI</button>
         <button class="chip" type="button" data-field="targetScope" data-value="API">API</button>
         <button class="chip" type="button" data-field="targetScope" data-value="DB/model">DB/model</button>
-        <button class="chip" type="button" data-field="targetScope" data-value="CI/CD 또는 배포 workflow">CI/CD 또는 배포 workflow</button>
-        <button class="chip" type="button" data-field="targetScope" data-value="문서/운영 설정">문서/운영 설정</button>
+        <button class="chip" type="button" data-field="targetScope" data-value="CI/CD">CI/CD</button>
+        <button class="chip" type="button" data-field="targetScope" data-value="문서">문서</button>
         <button class="chip" type="button" data-field="targetScope" data-value="아직 모름">아직 모름</button>
       </div>
 
-      <label>목표 수준</label>
-      <div class="chips" role="group" aria-label="목표 수준">
-        <button class="chip" type="button" data-field="goalLevel" data-value="요구사항 정리">요구사항 정리</button>
-        <button class="chip" type="button" data-field="goalLevel" data-value="설계 문서 작성">설계 문서 작성</button>
-        <button class="chip" type="button" data-field="goalLevel" data-value="구현 계획 수립">구현 계획 수립</button>
-        <button class="chip" type="button" data-field="goalLevel" data-value="실제 코드 변경">실제 코드 변경</button>
-        <button class="chip" type="button" data-field="goalLevel" data-value="테스트/검증">테스트/검증</button>
-        <button class="chip" type="button" data-field="goalLevel" data-value="배포/운영 준비">배포/운영 준비</button>
-        <button class="chip" type="button" data-field="goalLevel" data-value="1차 MVP 개발 및 배포">1차 MVP 개발 및 배포</button>
+      <label>목표</label>
+      <div class="chips" role="group" aria-label="목표">
+        <button class="chip" type="button" data-field="goalLevel" data-value="정리">정리</button>
+        <button class="chip" type="button" data-field="goalLevel" data-value="설계">설계</button>
+        <button class="chip" type="button" data-field="goalLevel" data-value="계획">계획</button>
+        <button class="chip" type="button" data-field="goalLevel" data-value="코드 변경">코드 변경</button>
+        <button class="chip" type="button" data-field="goalLevel" data-value="테스트">테스트</button>
+        <button class="chip" type="button" data-field="goalLevel" data-value="1차 MVP 개발/배포">1차 MVP 개발/배포</button>
         <button class="chip" type="button" data-field="goalLevel" data-value="운영 반영">운영 반영</button>
         <button class="chip" type="button" data-field="goalLevel" data-value="아직 모름">아직 모름</button>
       </div>
     </section>
 
-    <section class="panel" aria-labelledby="info-title">
-      <h2 id="info-title">3. 대상 정보</h2>
-      <p>대상을 정확히 분류하려고 하지 말고, 에이전트가 읽고 판단할 수 있게 한 덩어리로 적습니다.</p>
-      <label for="serviceAlias">서비스 이름(가칭)</label>
-      <input id="serviceAlias" data-field="serviceAlias" placeholder="신규 서비스면 예: 파트너 포털, 결제 정산 서비스. 아니면 비워도 됩니다.">
+    <section class="panel" aria-labelledby="target-state-title">
+      <h2 id="target-state-title">3. 대상과 현재 상태</h2>
+      <p>서비스 이름, repo, 화면, API, Figma, 회의 메모, 에러 로그를 자유롭게 한곳에 모읍니다.</p>
+
       <label for="targetInfo">대상 정보</label>
-      <textarea id="targetInfo" data-field="targetInfo" placeholder="예시 1: 신규 정산 서비스. 기존 billing-service의 정산 계산 로직을 참고하되 독립 서비스로 만들고 싶음.
-예시 2: 관리자 화면의 고객 상세 &gt; 결제 내역 탭. API는 GET /admin/customers/{id}/payments 쪽으로 보임.
-예시 3: 모바일 앱 로그인 후 온보딩 화면. Figma 링크와 회의 메모는 이 칸에 같이 붙임."></textarea>
-      <p class="hint">repo, 화면, API, DB/model, Figma, 회의 메모, 에러 로그가 있으면 이 칸에 같이 붙여 넣으세요.</p>
-    </section>
+      <textarea id="targetInfo" data-field="targetInfo" placeholder="서비스/화면/API/repo/Figma/회의 메모/로그를 자유롭게 입력"></textarea>
 
-    <section class="panel" aria-labelledby="state-title">
-      <h2 id="state-title">4. 현재 상태</h2>
-      <p>이미 된 것/없는 것/먼저 볼 것을 나누려 하지 말고 지금 아는 상태만 적습니다.</p>
       <label for="currentState">현재 상태</label>
-      <textarea id="currentState" data-field="currentState" placeholder="예시 1: 기획문서는 있음. repo 생성과 기본 세팅부터 필요.
-예시 2: 아직 정해진 건 거의 없고 대화로 만들면서 결정.
-예시 3: 기존 MSA 서비스 구현을 참고해서 새 서비스로 분리하고 싶음."></textarea>
+      <textarea id="currentState" data-field="currentState" placeholder="이미 된 것, 막힌 것, 참고할 것"></textarea>
     </section>
 
-    <section class="panel" aria-labelledby="caution-title">
-      <h2 id="caution-title">5. 주의사항</h2>
-      <div class="grid">
-        <div><label for="mustKeep">꼭 지킬 것</label><textarea id="mustKeep" data-field="mustKeep"></textarea></div>
-        <div><label for="avoid">피할 것</label><textarea id="avoid" data-field="avoid"></textarea></div>
-        <div><label for="dontTouch">건드리면 안 되는 범위</label><textarea id="dontTouch" data-field="dontTouch"></textarea></div>
-        <div><label for="opsSecurity">보안/운영/배포 관련 주의사항</label><textarea id="opsSecurity" data-field="opsSecurity"></textarea></div>
+    <section class="panel subtle" aria-labelledby="constraints-title">
+      <h2 id="constraints-title">4. 제약사항</h2>
+
+      <details open>
+        <summary>필요한 제약만 적기</summary>
+
+        <div class="grid">
+          <div>
+            <label for="mustKeep">꼭 지킬 것</label>
+            <textarea id="mustKeep" data-field="mustKeep"></textarea>
+          </div>
+
+          <div>
+            <label for="avoid">피할 것</label>
+            <textarea id="avoid" data-field="avoid"></textarea>
+          </div>
+
+          <div>
+            <label for="dontTouch">건드리면 안 되는 범위</label>
+            <textarea id="dontTouch" data-field="dontTouch"></textarea>
+          </div>
+
+          <div>
+            <label for="opsSecurity">보안/운영/배포 주의사항</label>
+            <textarea id="opsSecurity" data-field="opsSecurity"></textarea>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section class="panel" aria-labelledby="execution-title">
+      <h2 id="execution-title">5. 실행 환경</h2>
+      <p>어디에서 에이전트를 사용할지만 선택합니다. 작업 위치는 현재 디렉터리 기준으로 확인하게 합니다.</p>
+
+      <label>사용 환경</label>
+      <div class="chips" role="group" aria-label="사용 환경">
+        <button class="chip" type="button" data-field="surface" data-value="Application">Application</button>
+        <button class="chip" type="button" data-field="surface" data-value="VS Code Extension">VS Code Extension</button>
+        <button class="chip" type="button" data-field="surface" data-value="Terminal CLI">Terminal CLI</button>
       </div>
     </section>
 
     <section class="panel" aria-labelledby="copy-title">
-      <h2 id="copy-title">6. copy text</h2>
-      <p id="pasteTarget" class="target">아래 copy text를 사용할 에이전트 채팅창에 붙여넣어 주세요.</p>
-      <textarea id="copyOutput" class="output" readonly aria-label="copy text"></textarea>
+      <h2 id="copy-title">6. 생성 프롬프트</h2>
+      <p id="pasteTarget" class="target">아래 생성 프롬프트를 사용할 에이전트 채팅창에 붙여넣어 주세요.</p>
+
+      <textarea id="copyOutput" class="output" readonly aria-label="생성 프롬프트"></textarea>
+
       <div class="actions">
-        <button id="copyButton" class="primary" type="button">copy text 복사</button>
+        <button id="copyButton" class="primary" type="button">생성 프롬프트 복사</button>
         <button id="resetButton" class="secondary" type="button">초기화</button>
         <span id="copyStatus" class="hint" role="status"></span>
       </div>
-      <p class="hint">마지막 안내: 선택한 환경의 채팅/프롬프트 경로에 이 프롬프트를 복사해서 붙여넣어 주세요.</p>
+
+      <p class="hint">입력한 업무 내용을 먼저 전달하고, repo 확인과 preflight는 진행 규칙에서 처리하게 합니다.</p>
     </section>
   </main>
 
   <script>
-    const repoCommands = `mkdir -p clever-agent-workspace
-cd clever-agent-workspace
+    const repoCommands = `gh auth status
+gh api user --jq .login
+
+pwd
+ls
+
+if [ "$(basename "$PWD")" = "clever-agent-project" ]; then
+  cd ..
+fi
+
 test -d clever-agent-project || git clone https://github.com/EVNSolution/clever-agent-project.git
 test -d clever-context-monorepo || git clone https://github.com/EVNSolution/clever-context-monorepo.git
 test -d clever-change-control || git clone https://github.com/EVNSolution/clever-change-control.git
+
 cd clever-agent-project
 python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json`;
 
     const state = {
-      surface: "Application",
-      workspace: "",
       summary: "",
       workNature: "아직 모름",
       targetScope: "아직 모름",
       goalLevel: "아직 모름",
-      serviceAlias: "",
       targetInfo: "",
       currentState: "",
       mustKeep: "",
       avoid: "",
       dontTouch: "",
-      opsSecurity: ""
+      opsSecurity: "",
+      surface: "Application"
     };
 
     const pasteTargets = {
       "Application": "앱형 에이전트의 새 대화창에 이 프롬프트를 복사해서 붙여넣어 주세요.",
-      "VS Code Extension": "VS Code에서 workspace를 연 뒤, VS Code Extension 채팅창에 이 프롬프트를 복사해서 붙여넣어 주세요.",
-      "Terminal CLI": "clever-agent-workspace/clever-agent-project 경로에서 CLI 에이전트를 연 뒤, 프롬프트 입력창에 이 내용을 붙여넣어 주세요."
+      "VS Code Extension": "VS Code Extension 채팅창에 이 프롬프트를 복사해서 붙여넣어 주세요.",
+      "Terminal CLI": "CLI 에이전트 프롬프트 입력창에 이 내용을 붙여넣어 주세요."
     };
 
     function valueOrUnknown(value) {
@@ -222,112 +410,52 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json`;
       return trimmed || "아직 모름";
     }
 
-    function line(label, value) {
-      return `- ${label}: ${valueOrUnknown(value)}`;
-    }
-
-    function targetInfoBlock() {
-      return [
-        "4. 대상 정보 입력",
-        "- 에이전트 판단 기준: 에이전트가 이 내용을 읽고 새 개발인지 기존 서비스 작업인지 판단하세요.",
-        line("서비스 이름(가칭)", state.serviceAlias),
-        line("대상 정보", state.targetInfo)
-      ].join("\n");
-    }
-
     function buildOutput() {
       return `CLEVER 작업을 시작해주세요.
 
-[개발 환경]
+[작업]
+- 하려는 일: ${valueOrUnknown(state.summary)}
+- 작업 성격: ${state.workNature}
+- 대상: ${state.targetScope}
+- 목표: ${state.goalLevel}
+
+[대상 정보]
+${valueOrUnknown(state.targetInfo)}
+
+[현재 상태]
+${valueOrUnknown(state.currentState)}
+
+[제약사항]
+- 꼭 지킬 것: ${valueOrUnknown(state.mustKeep)}
+- 피할 것: ${valueOrUnknown(state.avoid)}
+- 건드리면 안 되는 범위: ${valueOrUnknown(state.dontTouch)}
+- 보안/운영/배포 주의사항: ${valueOrUnknown(state.opsSecurity)}
+
+[실행 환경]
 - 사용 환경: ${state.surface}
-- 선호 workspace: ${valueOrUnknown(state.workspace)}
 
-먼저 현재 환경에서 gh CLI 계정을 확인하세요.
-- \`gh auth status\`
-- \`gh api user --jq .login\`
-계정이 확인되면 별도로 GitHub login을 묻지 말고 진행하세요.
-계정을 확인할 수 없거나 다른 계정으로 고정해야 할 때만 GitHub login/profile URL을 물어보세요.
-
-3개 repo가 있는지 확인하고, 없는 repo만 clone한 뒤 preflight를 실행하세요.
+[진행 규칙]
+1. 먼저 현재 위치를 확인하세요.
+2. 현재 위치가 clever-agent-project 내부라면 상위 workspace 기준으로 이동해 판단하세요.
+3. 현재 위치가 workspace root라면 그 위치에서 3개 repo 존재 여부를 확인하세요.
+4. 3개 repo가 없으면 없는 repo만 clone하세요.
+5. GitHub 계정을 확인하되, 계정이 정상 확인되면 별도로 login을 묻지 마세요.
+6. preflight를 실행하세요.
+7. preflight 실패 시 작업을 진행하지 말고 recovery_actions와 next_questions만 처리하세요.
+8. preflight 통과 후 입력 내용을 startup branch state로 정규화하고 진행하세요.
+9. 경로가 불명확하거나 엉뚱한 위치로 판단되면 파일 수정/생성/git 작업 전에 사용자에게 한 번만 확인 질문을 하세요.
 
 \`\`\`bash
 ${repoCommands}
 \`\`\`
-
-preflight가 실패하면 시작 질문으로 넘어가지 말고 \`recovery_actions\`와 \`next_questions\`를 읽어 필요한 것만 처리하세요.
-preflight가 통과하면 아래 입력을 startup branch state로 정규화하세요.
-
-작업 시작
-
-먼저 하려는 일을 한 줄로 적어 주세요.
-- 하려는 일: ${valueOrUnknown(state.summary)}
-
-1. 작업 성격은 어디에 가깝나요?
-- 선택: ${state.workNature}
-
-2. 대상 범위는 무엇인가요?
-- 선택: ${state.targetScope}
-
-3. 이번 작업의 목표 수준은 어디까지인가요?
-- 선택: ${state.goalLevel}
-
-${targetInfoBlock()}
-
-5. 현재 상태 입력
-${line("현재 상태", state.currentState)}
-
-6. 주의할 점이 있나요? 없으면 비워도 됩니다.
-${line("꼭 지킬 것", state.mustKeep)}
-${line("피할 것", state.avoid)}
-${line("건드리면 안 되는 범위", state.dontTouch)}
-${line("보안/운영/배포 관련 주의사항", state.opsSecurity)}
 `;
-    }
-
-    function setWorkspacePickerStatus(message, className = "hint") {
-      const status = document.getElementById("workspacePickerStatus");
-      status.textContent = message;
-      status.className = className;
-    }
-
-    function selectedFolderNameFromFiles(files) {
-      const firstFile = Array.from(files || [])[0];
-      if (!firstFile) {
-        return "";
-      }
-      const relativePath = firstFile.webkitRelativePath || firstFile.name || "";
-      return relativePath.split("/").filter(Boolean)[0] || "";
-    }
-
-    function chooseWorkspaceDirectory() {
-      const workspaceFolderInput = document.getElementById("workspaceFolderInput");
-      workspaceFolderInput.click();
-    }
-
-    function handleWorkspaceFolderSelection(event) {
-      const files = Array.from(event.target.files || []);
-      if (!files.length) {
-        setWorkspacePickerStatus("빈 폴더이거나 선택한 파일이 없습니다. workspace 위치를 직접 입력하세요.", "warn");
-        return;
-      }
-
-      const folderName = selectedFolderNameFromFiles(files);
-      if (!folderName) {
-        setWorkspacePickerStatus("선택한 폴더의 상대 경로를 확인할 수 없습니다. workspace 위치를 직접 입력하세요.", "warn");
-        return;
-      }
-
-      const firstRelativePath = files[0].webkitRelativePath || files[0].name || folderName;
-      state.workspace = folderName;
-      document.getElementById("workspace").value = folderName;
-      setWorkspacePickerStatus(`선택한 폴더의 상대 경로를 확인했습니다: ${firstRelativePath}. workspace에는 폴더명 "${folderName}"을 입력했습니다. 실제 경로가 필요하면 직접 수정하세요.`, "ok");
-      render();
     }
 
     function render() {
       document.querySelectorAll(".chip[data-field]").forEach((button) => {
         button.setAttribute("aria-pressed", String(state[button.dataset.field] === button.dataset.value));
       });
+
       document.getElementById("copyOutput").value = buildOutput();
       document.getElementById("pasteTarget").textContent = pasteTargets[state.surface] || pasteTargets.Application;
     }
@@ -346,11 +474,9 @@ ${line("보안/운영/배포 관련 주의사항", state.opsSecurity)}
       });
     });
 
-    document.getElementById("chooseWorkspaceButton").addEventListener("click", chooseWorkspaceDirectory);
-    document.getElementById("workspaceFolderInput").addEventListener("change", handleWorkspaceFolderSelection);
-
     document.getElementById("copyButton").addEventListener("click", async () => {
       const output = document.getElementById("copyOutput").value;
+
       try {
         await navigator.clipboard.writeText(output);
         document.getElementById("copyStatus").textContent = "복사했습니다.";
@@ -364,15 +490,22 @@ ${line("보안/운영/배포 관련 주의사항", state.opsSecurity)}
     });
 
     document.getElementById("resetButton").addEventListener("click", () => {
+      const defaults = {
+        surface: "Application",
+        workNature: "아직 모름",
+        targetScope: "아직 모름",
+        goalLevel: "아직 모름"
+      };
+
       for (const key of Object.keys(state)) {
-        state[key] = ["surface", "workNature", "targetScope", "goalLevel"].includes(key)
-          ? { surface: "Application", workNature: "아직 모름", targetScope: "아직 모름", goalLevel: "아직 모름" }[key]
-          : "";
+        state[key] = Object.prototype.hasOwnProperty.call(defaults, key) ? defaults[key] : "";
       }
-      document.querySelectorAll("[data-field]:not(.chip)").forEach((input) => { input.value = ""; });
-      document.getElementById("workspaceFolderInput").value = "";
+
+      document.querySelectorAll("[data-field]:not(.chip)").forEach((input) => {
+        input.value = "";
+      });
+
       document.getElementById("copyStatus").textContent = "";
-      setWorkspacePickerStatus("", "hint");
       render();
     });
 
