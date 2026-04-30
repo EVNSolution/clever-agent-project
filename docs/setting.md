@@ -150,15 +150,14 @@ CLEVER 관련 저장소는 하나의 workspace root 아래에 두는 것을 권�
     clever-change-control/
     clever-context-monorepo/
   projects/
-    <project-slug>/
-      <target-repo>/
+    <target-repo>/
 ```
 
 `<CLEVER_ROOT>`는 전체 CLEVER 작업 루트다. 에이전트 제어 평면은 `<CLEVER_ROOT>/clever-agent-workspace/`이고, 3대 레포는 항상 그 안의 sibling으로 둔다.
-실제 제품/서비스 원격 repo는 `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`
+실제 제품/서비스 원격 repo는 `<CLEVER_ROOT>/projects/<target-repo>/`
 아래에 clone 또는 pull 한다. 새 target repo seed 파일은 이 target repo 루트에 주입한다.
 
-generic CLEVER startup 세션은 `<CLEVER_ROOT>/clever-agent-workspace/clever-agent-project`에서 시작한다. 승인 후 target GitHub repo를 생성하거나 확인한 다음, `<CLEVER_ROOT>/projects/<project-slug>/` 아래에 로컬 clone 또는 pull 하고 그 target repo 루트에서 새 세션을 시작한다.
+generic CLEVER startup 세션은 `<CLEVER_ROOT>/clever-agent-workspace/clever-agent-project`에서 시작한다. 승인 후 target GitHub repo를 생성하거나 확인한 다음, `<CLEVER_ROOT>/projects/` 아래에 로컬 clone 또는 pull 하고 그 target repo 루트에서 새 세션을 시작한다.
 
 예외는 sibling control-plane repo 자체를 직접 수정하는 경우다.
 
@@ -354,7 +353,7 @@ PR 정보를 wiki에 올리는 것이 아니다. wiki에는 필요한 서비스/
 
 ### 새 target repo 초기 seed 파일
 
-새 프로젝트 repo를 만들거나 첫 target repo를 bootstrap할 때는 프로젝트 기획 초안과 agent 실행 절차서를 분리해서 넣는다. 주입 위치는 `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`에 clone/pull된 target repo 루트다.
+새 target repo를 만들거나 첫 target repo를 bootstrap할 때는 프로젝트 기획 초안과 agent 실행 절차서를 분리해서 넣는다. 주입 위치는 `<CLEVER_ROOT>/projects/<target-repo>/`에 clone/pull된 target repo 루트다.
 
 - [target repo AGENTS template](templates/target-repo-AGENTS.md) -> target repo `AGENTS.md`
 - [target repo project brief template](templates/target-repo-project-brief.md) -> target repo `docs/project-brief.md`
@@ -397,7 +396,7 @@ pull/clone, target repo agent 문서 주입을 먼저 끝낸 뒤 "초기 작업�
 `<CLEVER_ROOT>` 기준으로 열렸는지 확인한 결과다. `pass`이면
 `<CLEVER_ROOT>/clever-agent-workspace/`와 `<CLEVER_ROOT>/projects/` 구조가 맞다.
 `legacy-layout`이면 기존 direct control-plane layout에서 실행 중이라는 뜻이므로
-새 target repo는 반드시 `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`에
+새 target repo는 반드시 `<CLEVER_ROOT>/projects/<target-repo>/`에
 둔다. `fail`이면 작업 질문으로 내려가기 전에 세션 위치를 먼저 고친다.
 
 `true`이면 내부 `workspace_check.agent_action`이 아래 중 하나를 돌려준다.

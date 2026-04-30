@@ -19,7 +19,7 @@ CLEVER는 한 가지 앱 전용 흐름이 아니다. 사용자가 익숙한 도�
 첫 화면에서는 직접 shell 명령보다 **어떤 환경에서 시작하는지**를 먼저 고른다.
 공통 원칙은 **3개 레포를 같은 로컬 workspace에 두고, 일반 시작은 `clever-agent-project`에서 진행한다**는 점이다.
 
-권장 폴더 구조는 아래처럼 나눈다. `<CLEVER_ROOT>`는 전체 CLEVER 작업 루트이고, 에이전트 제어 평면은 `<CLEVER_ROOT>/clever-agent-workspace/`이며, 실제 제품/서비스 코드는 `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/` 아래에 둔다. target repo를 만들거나 확인한 뒤에는 이 프로젝트 폴더에 원격 repo를 clone/pull 하고, 그 repo 루트에 `AGENTS.md`, `docs/project-brief.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `scripts/apply-github-rulesets.sh`를 주입한다.
+권장 폴더 구조는 아래처럼 나눈다. `<CLEVER_ROOT>`는 전체 CLEVER 작업 루트이고, 에이전트 제어 평면은 `<CLEVER_ROOT>/clever-agent-workspace/`이며, 실제 제품/서비스 코드는 `<CLEVER_ROOT>/projects/<target-repo>/` 아래에 둔다. target repo를 만들거나 확인한 뒤에는 이 target repo 폴더에 원격 repo를 clone/pull 하고, 그 repo 루트에 `AGENTS.md`, `docs/project-brief.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `scripts/apply-github-rulesets.sh`를 주입한다.
 
 ```text
 <CLEVER_ROOT>/
@@ -28,12 +28,11 @@ CLEVER는 한 가지 앱 전용 흐름이 아니다. 사용자가 익숙한 도�
     clever-context-monorepo/
     clever-change-control/
   projects/
-    <project-slug>/
-      <target-repo>/
-        AGENTS.md
-        docs/project-brief.md
-        .github/PULL_REQUEST_TEMPLATE.md
-        scripts/apply-github-rulesets.sh
+    <target-repo>/
+      AGENTS.md
+      docs/project-brief.md
+      .github/PULL_REQUEST_TEMPLATE.md
+      scripts/apply-github-rulesets.sh
 ```
 
 브라우저에서 버튼과 텍스트 입력으로 한 번에 정리하려면 [GitHub Pages 시작 도우미](https://evnsolution.github.io/clever-agent-project/start/)를 사용한다. 버튼과 텍스트 입력으로 답한 뒤 최종 copy text를 만들고, 에이전트에 붙여 넣을 위치까지 안내한다.
@@ -52,7 +51,7 @@ CLEVER는 한 가지 앱 전용 흐름이 아니다. 사용자가 익숙한 도�
    - https://github.com/EVNSolution/clever-change-control.git
 3. 이후 작업 기준은 <CLEVER_ROOT>/clever-agent-workspace/clever-agent-project 로 잡아줘.
 4. clever-agent-project의 README와 AGENTS.md 지침을 읽고, 그 지침에 따라 preflight와 작업 준비를 진행해줘.
-5. 실제 제품/서비스 target repo는 <CLEVER_ROOT>/projects/<project-slug>/<target-repo>/ 아래에 준비해줘.
+5. 실제 제품/서비스 target repo는 <CLEVER_ROOT>/projects/<target-repo>/ 아래에 준비해줘.
 6. target repo를 만들거나 확인한 뒤에는 clever-agent-project 지침에 따라 agent 문서를 target repo에 주입해줘.
 7. 초기 준비가 끝나기 전에는 구현, 커밋, PR 생성을 시작하지 마.
 8. 초기 준비가 성공하면 아래 형식으로 답해줘.

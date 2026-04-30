@@ -35,13 +35,12 @@ Use this local folder layout unless the user has explicitly provided another pat
     clever-context-monorepo/
     clever-change-control/
   projects/
-    <project-slug>/
-      <target-repo>/
+    <target-repo>/
 ```
 
 The three agent/control-plane repositories stay under `<CLEVER_ROOT>/clever-agent-workspace/`.
 Remote product/service repositories are cloned or pulled under
-`<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`. Seed files are copied
+`<CLEVER_ROOT>/projects/<target-repo>/`. Seed files are copied
 into that target repo root.
 
 - `AGENTS.md`: agent execution procedure, working order, issue/branch rules, verification, context update checks, and completion conditions
@@ -72,7 +71,7 @@ Interpret the result like this:
 - Always read `workspace_check.session_open_check` before startup questions. The
   Python preflight must confirm the CLEVER_ROOT-based session layout first:
   three control-plane repos under `<CLEVER_ROOT>/clever-agent-workspace/`, target
-  repos under `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`.
+  repos under `<CLEVER_ROOT>/projects/<target-repo>/`.
 - Always read `preflight_check.agent_response_contract` before replying to a
   CLEVER_ROOT-level prompt. It defines the response style: inherit the CLEVER
   agent workflow, complete initial setup, then continue with the provided prompt.
@@ -390,7 +389,7 @@ Once the user approves:
    - 새 target repo는 public으로 생성한다.
    - Use `gh repo create <owner>/<repo> --public` for a newly created target repo.
    - GitHub Free organization rulesets are enforced on public repositories; private repository enforcement requires GitHub Team, GitHub Pro, or GitHub Enterprise Cloud.
-5. Clone or pull the target repo under `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`.
+5. Clone or pull the target repo under `<CLEVER_ROOT>/projects/<target-repo>/`.
 6. Copy the target repo seed files before handoff:
    - `docs/templates/target-repo-AGENTS.md` -> target repo `AGENTS.md`
    - `docs/templates/target-repo-project-brief.md` -> target repo `docs/project-brief.md`
