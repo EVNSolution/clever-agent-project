@@ -1438,6 +1438,25 @@ def test_readme_guides_non_expert_users_by_entry_surface():
         assert 'python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json' in prompt
 
 
+def test_readme_includes_clever_root_user_prompt_for_agent_bootstrap():
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "### `<CLEVER_ROOT>`에서 에이전트에게 바로 붙여 넣는 프롬프트" in readme
+    root_prompt = first_text_block_after(readme, "`<CLEVER_ROOT>`에서 에이전트에게")
+    assert "지금 위치를 <CLEVER_ROOT>로 보고 CLEVER 작업을 시작해줘" in root_prompt
+    assert "바로 구현하거나 임의로 repo를 수정하지 마" in root_prompt
+    assert "<CLEVER_ROOT>/clever-agent-workspace/clever-agent-project" in root_prompt
+    assert "session_open_check" in root_prompt
+    assert "agent_response_contract" in root_prompt
+    assert "<CLEVER_ROOT>/projects/<project-slug>/<target-repo>" in root_prompt
+    assert "AGENTS.md" in root_prompt
+    assert "docs/project-brief.md" in root_prompt
+    assert ".github/PULL_REQUEST_TEMPLATE.md" in root_prompt
+    assert "scripts/apply-github-rulesets.sh" in root_prompt
+    assert "초기 작업(레포 확인/생성, repo 규칙 생성 또는 확인, pull/clone, 에이전트 문서 주입)이 완료됐습니다" in root_prompt
+    assert "다음 작업은 주신 프롬프트대로" in root_prompt
+
+
 def test_startup_first_questions_prioritize_project_and_service_scope():
     docs = [
         REPO_ROOT / "README.md",
