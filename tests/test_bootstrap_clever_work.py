@@ -464,28 +464,68 @@ def test_target_repo_seed_templates_separate_execution_rules_from_project_brief(
     assert "agent 작업 절차" in project_brief
 
 
-def test_target_repo_agents_template_enforces_role_based_branch_prefixes():
+def test_target_repo_agents_template_enforces_github_development_branch_flow():
     agents_template = REPO_ROOT / "docs/templates/target-repo-AGENTS.md"
 
     agents = agents_template.read_text(encoding="utf-8")
 
-    assert "브랜치 역할별 접두사" in agents
-    for branch_prefix in [
-        "feature/",
-        "fix/",
-        "change/",
-        "refactor/",
-        "docs/",
-        "chore/",
-        "test/",
-        "release/",
-        "hotfix/",
-    ]:
-        assert branch_prefix in agents
+    assert "GitHub issue-linked branch 생성" in agents
+    assert "gh issue develop <target-issue-number>" in agents
+    assert "--base dev" in agents
+    assert "--name cc-<change-control-issue-number>-<short-scope>" in agents
+    assert "--checkout" in agents
+    assert "gh issue develop --list <target-issue-number>" in agents
+    assert "EVNSolution/thundercrew-domain" in agents
+    assert "git checkout -b" in agents
+    assert "## 브랜치 이름 규칙" in agents
+    assert "cc-74-dashboard-mapstate-frontend" in agents
+    assert "GitHub Issue Development에 연결되지 않은 branch" in agents
+    assert "Co-authored-by: OmX" in agents
     assert "cat > .git/hooks/pre-commit <<'EOF'" in agents
     assert "cat > .git/hooks/pre-push <<'EOF'" in agents
-    assert "main|dev|feature/*|fix/*|change/*|refactor/*|docs/*|chore/*|test/*|release/*|hotfix/*)" in agents
-    assert "clever-" in agents
+    assert "cc-[0-9]*-*" in agents
+
+
+def test_target_repo_agents_template_enforces_pr_validation_and_report_contract():
+    agents = (REPO_ROOT / "docs/templates/target-repo-AGENTS.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "PR은 작업 branch에서 `dev`로 생성한다" in agents
+    assert "PR 본문에는 target issue와" in agents
+    assert "npm run check:workspace" in agents
+    assert "npm run lint" in agents
+    assert "npm run typecheck" in agents
+    assert "npm run build" in agents
+    assert "npm run test:service-ops" in agents
+    assert "cd development/service-ops-api && ./gradlew test" in agents
+    assert "cd development/service-ops-api && ./gradlew build" in agents
+    for expected in [
+        "target issue 번호",
+        "change-control issue 번호",
+        "linked branch 이름",
+        "PR 번호",
+        "merge commit",
+        "검증 명령 결과",
+        "남은 후속 작업",
+    ]:
+        assert expected in agents
+
+
+def test_root_prompts_enforce_issue_linked_target_workflow():
+    root_agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    skill = (REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md").read_text(
+        encoding="utf-8"
+    )
+
+    for text in [root_agents, skill]:
+        assert "gh issue develop <target-issue-number>" in text
+        assert "--repo <target-repo-full-name>" in text
+        assert "--base dev" in text
+        assert "--name cc-<change-control-issue-number>-<short-scope>" in text
+        assert "gh issue develop --list <target-issue-number>" in text
+        assert "git checkout -b" in text
+        assert "Do not implement, commit, or open a PR" in text or "may the agent implement, commit, or open a PR" in text
 
 
 def test_target_repo_ruleset_template_applies_main_and_dev_only():

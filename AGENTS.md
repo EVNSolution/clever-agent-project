@@ -428,10 +428,11 @@ Short version:
 - anchor and trace in `clever-change-control`
 - implement in the target repository
 
-## Target Repository Traceability Gate
+## Target Repository GitHub Workflow Gate
 
-This gate applies to every target project opened with this three-repository control
-plane, regardless of the directory where the agent session starts.
+This gate applies to every non-trivial development task in a target repository.
+It exists so the agent interprets implementation requests as a GitHub
+issue-linked workflow, not as an immediate local edit.
 
 Do not treat GitHub automatic references as sufficient traceability. Plain issue
 mentions such as `<context-owner>/<root-context-repo>#<issue>` or
@@ -442,37 +443,110 @@ Do not hard-code a GitHub organization, root context repository, or target
 repository name in this rule. Resolve repository identifiers from the current
 workspace, `git remote -v`, issue URLs, or explicit user instructions.
 
-Before any target-repository implementation, the agent must establish an
-issue-to-branch trace chain anchored in `clever-change-control`.
+Before any implementation, commit, or PR in a target repository, complete this
+sequence in order:
 
-Required chain:
+1. Create or identify the target repository issue for the actual work.
+2. When the work needs scoped change tracking, create or identify the matching
+   `clever-change-control` issue.
+3. Link the target issue and the `clever-change-control` issue to each other
+   with explicit issue mentions.
+4. Create the work branch from the target issue with GitHub Development. Do not
+   run `git checkout -b` first.
+5. Verify the linked branch after creation.
+6. Only after the target issue, optional change-control issue, and linked branch
+   are ready may the agent implement, commit, or open a PR.
 
-1. Identify the root context issue when one exists, such as
-   `<context-owner>/<root-context-repo>#<issue>`.
-2. Identify or create the `clever-change-control` anchor:
-   - `project-start` issue for the root start record
-   - `change-request` issue for scoped execution
-3. Identify or create the target repository issue for the actual work, such as
-   `<target-owner>/<target-repo>#<issue>`.
-4. Cross-link the records with explicit issue mentions:
-   - the `clever-change-control` issue mentions the root context issue and target
-     repository issue
-   - the target repository issue mentions the `clever-change-control` issue
-5. Create or confirm a branch for the scoped work before implementation.
+CLI branch creation must use this shape, with the actual target repo resolved
+from the task context:
 
-Branch rules:
+```bash
+gh issue develop <target-issue-number> \
+  --repo <target-repo-full-name> \
+  --base dev \
+  --name cc-<change-control-issue-number>-<short-scope> \
+  --checkout
+```
 
-- A branch must correspond to a tracked issue or scoped work item.
-- One parent issue may have many child branches.
-- Prefer branch names that include the trace identifier, for example:
-  - `cc-12-issue-34-login-timeout`
-  - `issue-34-login-timeout`
-- If multiple branches belong to one issue, list all active branches on the
-  `clever-change-control` issue.
+Then verify the GitHub Development linked branch:
 
-The agent must not begin implementation if the trace chain is missing. First
-create or identify the required issue records, add the bidirectional mentions,
-and state the branch that will carry the work.
+```bash
+gh issue develop --list <target-issue-number> \
+  --repo <target-repo-full-name>
+```
+
+For a task explicitly targeting `EVNSolution/thundercrew-domain`, the command
+uses `--repo EVNSolution/thundercrew-domain` and `--base dev`.
+
+Branch and PR rules:
+
+- Work branches always start from `dev`.
+- The branch name format is exactly
+  `cc-<change-control-issue-number>-<short-scope>`, for example
+  `cc-74-dashboard-mapstate-frontend`.
+- If a change-control issue is genuinely not needed, create a target issue first
+  and record why no `clever-change-control` issue is needed before choosing a
+  branch name.
+- PRs for non-trivial development go from the work branch into `dev`.
+- The PR body must list both the target issue and the `clever-change-control`
+  issue, or explicitly state why no change-control issue was needed.
+
+Forbidden actions:
+
+- Do not create the work branch manually with `git checkout -b` before GitHub
+  Development links it to the target issue.
+- Do not work on a branch that is not linked to a GitHub issue through
+  `gh issue develop`.
+- Do not develop or commit directly on `dev`.
+- Do not create a branch without an issue.
+- Do not implement without a linked branch.
+- Do not merge into `dev` without a PR.
+- Do not expose internal agent/tool names in public commit titles, PR titles,
+  merge commit titles, or GitHub attribution unless they are directly relevant.
+- Do not leave internal automation attribution such as `Co-authored-by: OmX` in
+  public development history.
+
+Merge rules:
+
+- Prefer a merge method where the PR trace is visible in `dev` history, such as
+  a merge commit.
+- If squash merge is necessary, the squash commit title must include the PR
+  number, for example `Dashboard map-state frontend integration (#62)`.
+- Do not create PR-numberless squash commits, commit titles that look like direct
+  commits to `dev`, or merge commits with unclear provenance.
+
+Minimum verification before opening the PR:
+
+```bash
+npm run check:workspace
+npm run lint
+npm run typecheck
+npm run build
+```
+
+If frontend tests exist, also run:
+
+```bash
+npm run test:service-ops
+# plus the relevant frontend test command
+```
+
+If backend code changed, also run:
+
+```bash
+cd development/service-ops-api && ./gradlew test
+cd development/service-ops-api && ./gradlew build
+```
+
+Every work report must include:
+
+1. target issue number
+2. change-control issue number, or the recorded reason it was not needed
+3. linked branch name
+4. PR number
+5. merge commit
+6. verification command results
+7. remaining follow-up work
 
 ## Concurrent Work Gate
 

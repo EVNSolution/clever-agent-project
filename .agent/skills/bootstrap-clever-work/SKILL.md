@@ -383,6 +383,37 @@ Once the user approves:
    - default new work to task branches from `dev` unless the work is intentionally direct-on-`dev`
 9. Recommend a new session in the cloned target repo for planning or implementation.
 
+### Scoped Target Work After Bootstrap
+
+For every non-trivial development task after the target repo exists, the agent
+must treat the request as a GitHub issue-linked workflow before editing files:
+
+1. Create or identify the target repository issue.
+2. Create or identify the matching `clever-change-control` issue when scoped
+   change tracking is needed.
+3. Link both issues with explicit mentions.
+4. Create the branch only through GitHub Development:
+
+```bash
+gh issue develop <target-issue-number> \
+  --repo <target-repo-full-name> \
+  --base dev \
+  --name cc-<change-control-issue-number>-<short-scope> \
+  --checkout
+```
+
+5. Verify the linked branch:
+
+```bash
+gh issue develop --list <target-issue-number> \
+  --repo <target-repo-full-name>
+```
+
+Do not use `git checkout -b` first. Do not implement, commit, or open a PR until
+the issue link and GitHub Development linked branch are ready. PRs for normal
+work branch into `dev`, and PR bodies list the target issue plus the
+`clever-change-control` issue.
+
 Only after the root issue is approved and the execution scope is fixed should a scoped change request introduce a `change-id`.
 
 Do not create service-doc drafts in the normal start path.
