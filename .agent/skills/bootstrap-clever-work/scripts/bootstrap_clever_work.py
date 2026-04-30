@@ -16,7 +16,6 @@ from typing import Any, Iterable
 CONTEXT_REPO_NAME = "clever-context-monorepo"
 CHANGE_REPO_NAME = "clever-change-control"
 AGENT_WORKSPACE_DIR_NAME = "clever-agent-workspace"
-PROJECTS_DIR_NAME = "projects"
 START_REPO_NAME = "clever-agent-project"
 CONTROL_PLANE_REPOS = (
     START_REPO_NAME,
@@ -252,7 +251,7 @@ def infer_workspace_root(start: Path, git_root: Path | None = None) -> Path:
     Preferred layout:
 
         <CLEVER_ROOT>/clever-agent-workspace/{three control-plane repos}
-        <CLEVER_ROOT>/projects/<target-repo>
+        <CLEVER_ROOT>/<target-repo>
 
     Legacy direct layout is still recognized so existing local checkouts can report
     a useful migration-oriented preflight instead of failing path discovery.
@@ -297,15 +296,22 @@ def is_relative_to_path(path: Path, parent: Path) -> bool:
 def build_session_open_check(*, cwd: Path, control_plane_root: Path, current_repo: str | None) -> dict[str, Any]:
     clever_work_root = derive_clever_work_root(control_plane_root)
     expected_control_plane_root = clever_work_root / AGENT_WORKSPACE_DIR_NAME
-    projects_root = clever_work_root / PROJECTS_DIR_NAME
+    target_repo_parent_root = clever_work_root
     uses_expected_nested_layout = control_plane_root.resolve() == expected_control_plane_root.resolve()
     cwd_under_control_plane = is_relative_to_path(cwd, control_plane_root)
-    cwd_under_projects = is_relative_to_path(cwd, projects_root)
+    cwd_under_clever_root = is_relative_to_path(cwd, clever_work_root)
+    cwd_is_clever_root = cwd.resolve() == clever_work_root.resolve()
+    cwd_under_target_repo_area = (
+        cwd_under_clever_root
+        and not cwd_under_control_plane
+        and not cwd_is_clever_root
+        and current_repo not in CONTROL_PLANE_REPOS
+    )
     opened_from_start_repo = current_repo == START_REPO_NAME and cwd_under_control_plane
     opened_from_control_plane_repo = current_repo in CONTROL_PLANE_REPOS and cwd_under_control_plane
 
     if uses_expected_nested_layout:
-        status = "pass" if (opened_from_control_plane_repo or cwd_under_projects) else "fail"
+        status = "pass" if (opened_from_control_plane_repo or cwd_under_target_repo_area) else "fail"
         layout_mode = "clever-root-with-agent-workspace"
     else:
         status = "legacy-layout" if opened_from_control_plane_repo else "fail"
@@ -317,9 +323,9 @@ def build_session_open_check(*, cwd: Path, control_plane_root: Path, current_rep
         "clever_root": str(clever_work_root),
         "control_plane_root": str(control_plane_root),
         "expected_control_plane_root": str(expected_control_plane_root),
-        "projects_root": str(projects_root),
+        "target_repo_parent_root": str(target_repo_parent_root),
         "cwd_under_control_plane_root": cwd_under_control_plane,
-        "cwd_under_projects_root": cwd_under_projects,
+        "cwd_under_target_repo_parent_root": cwd_under_target_repo_area,
         "opened_from_start_repo": opened_from_start_repo,
         "opened_from_control_plane_repo": opened_from_control_plane_repo,
         "message": (
@@ -327,7 +333,7 @@ def build_session_open_check(*, cwd: Path, control_plane_root: Path, current_rep
             if status == "pass"
             else "Session uses the legacy direct control-plane layout; prefer <CLEVER_ROOT>/clever-agent-workspace for the three agent repos."
             if status == "legacy-layout"
-            else "Session is not opened from the expected CLEVER_ROOT control-plane or projects layout."
+            else "Session is not opened from the expected CLEVER_ROOT control-plane or target repo layout."
         ),
     }
 
@@ -427,7 +433,7 @@ def build_workspace_check(start: Path, *, current_repo_maintenance: bool = False
         "clever_root": str(clever_root),
         "clever_work_root": session_open_check["clever_root"],
         "control_plane_root": session_open_check["control_plane_root"],
-        "projects_root": session_open_check["projects_root"],
+        "target_repo_parent_root": session_open_check["target_repo_parent_root"],
         "session_open_check": session_open_check,
         "control_plane_complete": control_plane_complete,
         "current_repo_is_start": current_repo_is_start,
@@ -747,7 +753,7 @@ def build_agent_response_contract(workspace_check: dict[str, Any]) -> dict[str, 
         "confirm the CLEVER_ROOT session layout with workspace_check.session_open_check",
         "create or confirm the target repository only after the project-start gate",
         "apply or confirm repository rules before normal development",
-        "clone or pull the target repo under <CLEVER_ROOT>/projects/<target-repo>",
+        "clone or pull the target repo under <CLEVER_ROOT>/<target-repo>",
         "inject AGENTS.md, docs/project-brief.md, PR template, and ruleset script into the target repo root",
         "after initial setup succeeds, continue according to the user's provided prompt",
     ]
@@ -1483,13 +1489,13 @@ def build_packet(
                     "clever-context-monorepo",
                     "clever-change-control",
                 ],
-                "project_repositories_root": "<CLEVER_ROOT>/projects",
-                "target_repo_checkout": "<CLEVER_ROOT>/projects/<target-repo>",
+                "target_repo_parent_root": "<CLEVER_ROOT>",
+                "target_repo_checkout": "<CLEVER_ROOT>/<target-repo>",
                 "seed_injection_root": "target repo root",
             },
             "post_create_clone": [
                 "create-or-confirm public target repo after project-start approval",
-                "clone-or-pull the target repo under <CLEVER_ROOT>/projects/<target-repo>",
+                "clone-or-pull the target repo under <CLEVER_ROOT>/<target-repo>",
                 "copy target repo seed files into the target repo root before handoff",
                 "apply GitHub rulesets after dev exists",
                 "verify local checkout is ready for follow-on work",
@@ -1606,7 +1612,7 @@ def print_workspace_check(workspace_check: dict[str, Any]) -> None:
     print(f"clever-root: {workspace_check['clever_root']}")
     print(f"clever-work-root: {workspace_check['clever_work_root']}")
     print(f"control-plane-root: {workspace_check['control_plane_root']}")
-    print(f"projects-root: {workspace_check['projects_root']}")
+    print(f"target-repo-parent-root: {workspace_check['target_repo_parent_root']}")
     session_open_check = workspace_check.get("session_open_check", {})
     print(f"session-open-check: {session_open_check.get('status')}")
     print(f"session-open-message: {session_open_check.get('message')}")

@@ -23,13 +23,12 @@ Recommended local layout:
     clever-agent-project/
     clever-context-monorepo/
     clever-change-control/
-  projects/
-    <target-repo>/
+  <target-repo>/
 ```
 
 `<CLEVER_ROOT>` is the top-level CLEVER work root. Keep the three agent/control
 repositories inside `<CLEVER_ROOT>/clever-agent-workspace/`. Put real product/service target
-repositories under `<CLEVER_ROOT>/projects/<target-repo>/`. When
+repositories under `<CLEVER_ROOT>/<target-repo>/`. When
 bootstrapping a target repo, clone or pull the remote repo into that project
 folder, then inject the agent documents into the target repo root.
 
@@ -85,9 +84,9 @@ Read these preflight output fields before asking anything:
 - `workspace_check.session_open_check`: the Python preflight's CLEVER_ROOT-based
   session-open validation. It must confirm the expected structure
   `<CLEVER_ROOT>/clever-agent-workspace/{three control-plane repos}` and
-  `<CLEVER_ROOT>/projects/<target-repo>` before startup work
+  `<CLEVER_ROOT>/<target-repo>` before startup work
   proceeds. If it reports `legacy-layout`, treat it as a migration warning and
-  keep the target project checkout under `<CLEVER_ROOT>/projects/`. If it
+  keep the target project checkout under `<CLEVER_ROOT>/`. If it
   reports `fail`, stop and fix the session location first.
 - `auto_skipped_questions`: questions already answered by tool evidence, such as
   GitHub login inference, startup location, or dirty-state inspection.
@@ -777,7 +776,7 @@ The expected operating flow is:
 5. Anchor the root line in `clever-change-control`
 6. Fix scoped execution
 7. Apply or confirm the repo branch operating contract
-8. Handoff to the target repository under `<CLEVER_ROOT>/projects/<target-repo>/`
+8. Handoff to the target repository under `<CLEVER_ROOT>/<target-repo>/`
 9. Feed rollout / rollback / release evidence back into `clever-change-control`
 
 ## If The Workspace Is Incomplete

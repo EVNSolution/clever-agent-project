@@ -263,7 +263,7 @@ def test_build_workspace_check_reports_ready_from_agent_project():
     assert report["missing_repositories"] == []
     assert report["session_open_check"]["status"] in {"pass", "legacy-layout"}
     assert "control_plane_root" in report["session_open_check"]
-    assert "projects_root" in report["session_open_check"]
+    assert "target_repo_parent_root" in report["session_open_check"]
 
 
 def test_build_workspace_check_requires_switch_when_started_from_change_control():
@@ -312,14 +312,13 @@ def test_build_workspace_check_detects_clever_root_agent_workspace_layout(tmp_pa
     module = load_module()
     clever_root = tmp_path / "CLEVER_ROOT"
     agent_workspace = clever_root / "clever-agent-workspace"
-    projects_root = clever_root / "projects"
+    target_repo_parent_root = clever_root
     for repo_name in [
         "clever-agent-project",
         "clever-context-monorepo",
         "clever-change-control",
     ]:
         (agent_workspace / repo_name).mkdir(parents=True)
-    projects_root.mkdir()
 
     monkeypatch_values = {
         agent_workspace / "clever-agent-project": "clever-agent-project",
@@ -343,10 +342,55 @@ def test_build_workspace_check_detects_clever_root_agent_workspace_layout(tmp_pa
 
     assert report["clever_work_root"] == str(clever_root)
     assert report["control_plane_root"] == str(agent_workspace)
-    assert report["projects_root"] == str(projects_root)
+    assert report["target_repo_parent_root"] == str(target_repo_parent_root)
     assert report["session_open_check"]["status"] == "pass"
     assert report["session_open_check"]["layout_mode"] == "clever-root-with-agent-workspace"
     assert report["recommended_start_repo"] == str(agent_workspace / "clever-agent-project")
+
+
+def test_build_workspace_check_detects_direct_target_repo_under_clever_root(tmp_path: Path):
+    module = load_module()
+    clever_root = tmp_path / "CLEVER_ROOT"
+    agent_workspace = clever_root / "clever-agent-workspace"
+    target_repo = clever_root / "thundercrew-domain"
+    for repo_name in [
+        "clever-agent-project",
+        "clever-context-monorepo",
+        "clever-change-control",
+    ]:
+        (agent_workspace / repo_name).mkdir(parents=True)
+    target_repo.mkdir(parents=True)
+
+    monkeypatch_values = {
+        agent_workspace / "clever-agent-project": "clever-agent-project",
+        agent_workspace / "clever-context-monorepo": "clever-context-monorepo",
+        agent_workspace / "clever-change-control": "clever-change-control",
+        target_repo: "thundercrew-domain",
+    }
+    control_plane_roots = {
+        agent_workspace / "clever-agent-project",
+        agent_workspace / "clever-context-monorepo",
+        agent_workspace / "clever-change-control",
+    }
+
+    def fake_git_root(path: Path):
+        path = path.resolve()
+        for candidate in monkeypatch_values:
+            if path == candidate or candidate in path.parents:
+                return candidate
+        return None
+
+    module.try_find_git_root = fake_git_root
+    module.try_repo_name = lambda path: monkeypatch_values.get(path) if path else None
+    module.current_branch = lambda _path: "main"
+    module.is_checkout_root = lambda path: path in control_plane_roots
+
+    report = module.build_workspace_check(target_repo)
+
+    assert report["clever_work_root"] == str(clever_root)
+    assert report["target_repo_parent_root"] == str(clever_root)
+    assert report["session_open_check"]["status"] == "pass"
+    assert report["session_open_check"]["cwd_under_target_repo_parent_root"] is True
 
 
 @pytest.mark.skipif(
@@ -486,8 +530,8 @@ def test_build_packet_includes_target_repo_seed_files():
             "clever-context-monorepo",
             "clever-change-control",
         ],
-        "project_repositories_root": "<CLEVER_ROOT>/projects",
-        "target_repo_checkout": "<CLEVER_ROOT>/projects/<target-repo>",
+        "target_repo_parent_root": "<CLEVER_ROOT>",
+        "target_repo_checkout": "<CLEVER_ROOT>/<target-repo>",
         "seed_injection_root": "target repo root",
     }
     assert (
@@ -495,7 +539,7 @@ def test_build_packet_includes_target_repo_seed_files():
         in packet["repo_bootstrap"]["post_create_clone"]
     )
     assert any(
-        "<CLEVER_ROOT>/projects/<target-repo>" in step
+        "<CLEVER_ROOT>/<target-repo>" in step
         for step in packet["repo_bootstrap"]["post_create_clone"]
     )
     assert (
@@ -524,7 +568,7 @@ def test_target_repo_seed_templates_separate_execution_rules_from_project_brief(
     assert "agent 작업 절차" in project_brief
 
 
-def test_control_plane_docs_define_projects_folder_layout():
+def test_control_plane_docs_define_single_target_repo_folder_layout():
     docs = [
         REPO_ROOT / "AGENTS.md",
         REPO_ROOT / "README.md",
@@ -539,9 +583,9 @@ def test_control_plane_docs_define_projects_folder_layout():
         assert "clever-agent-project/" in text
         assert "clever-context-monorepo/" in text
         assert "clever-change-control/" in text
-        assert "projects/" in text
+        assert "projects/" not in text
         assert "<project-slug>" not in text
-        assert "projects/<target-repo>" in text
+        assert "<target-repo>" in text
         assert "<target-repo>/" in text
 
     setting = (REPO_ROOT / "docs/setting.md").read_text(encoding="utf-8")
@@ -818,13 +862,13 @@ def test_build_packet_includes_post_create_clone_and_handoff_plan():
 
     assert repo_bootstrap["post_create_clone"] == [
         "create-or-confirm public target repo after project-start approval",
-        "clone-or-pull the target repo under <CLEVER_ROOT>/projects/<target-repo>",
+        "clone-or-pull the target repo under <CLEVER_ROOT>/<target-repo>",
         "copy target repo seed files into the target repo root before handoff",
         "apply GitHub rulesets after dev exists",
         "verify local checkout is ready for follow-on work",
     ]
     assert repo_bootstrap["local_folder_layout"]["target_repo_checkout"] == (
-        "<CLEVER_ROOT>/projects/<target-repo>"
+        "<CLEVER_ROOT>/<target-repo>"
     )
     assert handoff["recommended_session"] == "new-target-repo-session"
     assert handoff["status"] == "recommended-after-clone"
@@ -1451,7 +1495,7 @@ def test_readme_includes_short_new_root_user_prompt_for_agent_bootstrap():
     assert "https://github.com/EVNSolution/clever-change-control.git" in root_prompt
     assert "clever-agent-project의 README와 AGENTS.md 지침" in root_prompt
     assert "preflight와 작업 준비" in root_prompt
-    assert "<CLEVER_ROOT>/projects/<target-repo>" in root_prompt
+    assert "<CLEVER_ROOT>/<target-repo>" in root_prompt
     assert "agent 문서를 target repo에 주입" in root_prompt
     assert "구현, 커밋, PR 생성을 시작하지 마" in root_prompt
     assert "초기 작업(작업 루트 생성, 3대 레포 준비, preflight, target repo 준비, 에이전트 문서 주입)이 완료됐습니다" in root_prompt
