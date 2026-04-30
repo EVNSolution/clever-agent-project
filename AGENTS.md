@@ -19,16 +19,17 @@ Recommended local layout:
 
 ```text
 <CLEVER_ROOT>/
-  clever-agent-project/
-  clever-context-monorepo/
-  clever-change-control/
+  clever-agent-workspace/
+    clever-agent-project/
+    clever-context-monorepo/
+    clever-change-control/
   projects/
     <project-slug>/
       <target-repo>/
 ```
 
-`<CLEVER_ROOT>` is the control-plane root. Keep only the three agent/control
-repositories as first-class siblings there. Put real product/service target
+`<CLEVER_ROOT>` is the top-level CLEVER work root. Keep the three agent/control
+repositories inside `<CLEVER_ROOT>/clever-agent-workspace/`. Put real product/service target
 repositories under `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`. When
 bootstrapping a target repo, clone or pull the remote repo into that project
 folder, then inject the agent documents into the target repo root.

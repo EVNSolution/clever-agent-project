@@ -145,19 +145,20 @@ CLEVER 관련 저장소는 하나의 workspace root 아래에 두는 것을 권�
 
 ```text
 <CLEVER_ROOT>/
-  clever-agent-project/
-  clever-change-control/
-  clever-context-monorepo/
+  clever-agent-workspace/
+    clever-agent-project/
+    clever-change-control/
+    clever-context-monorepo/
   projects/
     <project-slug>/
       <target-repo>/
 ```
 
-`<CLEVER_ROOT>`는 에이전트 제어 평면이다. 3대 레포는 항상 이 루트의 sibling으로 둔다.
+`<CLEVER_ROOT>`는 전체 CLEVER 작업 루트다. 에이전트 제어 평면은 `<CLEVER_ROOT>/clever-agent-workspace/`이고, 3대 레포는 항상 그 안의 sibling으로 둔다.
 실제 제품/서비스 원격 repo는 `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`
 아래에 clone 또는 pull 한다. 새 target repo seed 파일은 이 target repo 루트에 주입한다.
 
-generic CLEVER startup 세션은 `<CLEVER_ROOT>/clever-agent-project`에서 시작한다. 승인 후 target GitHub repo를 생성하거나 확인한 다음, `<CLEVER_ROOT>/projects/<project-slug>/` 아래에 로컬 clone 또는 pull 하고 그 target repo 루트에서 새 세션을 시작한다.
+generic CLEVER startup 세션은 `<CLEVER_ROOT>/clever-agent-workspace/clever-agent-project`에서 시작한다. 승인 후 target GitHub repo를 생성하거나 확인한 다음, `<CLEVER_ROOT>/projects/<project-slug>/` 아래에 로컬 clone 또는 pull 하고 그 target repo 루트에서 새 세션을 시작한다.
 
 예외는 sibling control-plane repo 자체를 직접 수정하는 경우다.
 

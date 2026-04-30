@@ -435,7 +435,7 @@ def test_build_packet_includes_target_repo_seed_files():
         },
     ]
     assert packet["repo_bootstrap"]["local_folder_layout"] == {
-        "control_plane_root": "<CLEVER_ROOT>",
+        "control_plane_root": "<CLEVER_ROOT>/clever-agent-workspace",
         "control_plane_repositories": [
             "clever-agent-project",
             "clever-context-monorepo",
@@ -490,6 +490,7 @@ def test_control_plane_docs_define_projects_folder_layout():
     for doc_path in docs:
         text = doc_path.read_text(encoding="utf-8")
         assert "<CLEVER_ROOT>/" in text
+        assert "clever-agent-workspace/" in text
         assert "clever-agent-project/" in text
         assert "clever-context-monorepo/" in text
         assert "clever-change-control/" in text
@@ -498,7 +499,7 @@ def test_control_plane_docs_define_projects_folder_layout():
         assert "<target-repo>/" in text
 
     setting = (REPO_ROOT / "docs/setting.md").read_text(encoding="utf-8")
-    assert "3대 레포는 항상 이 루트의 sibling" in setting
+    assert "3대 레포는 항상 그 안의 sibling" in setting
     assert "target repo 루트에 주입" in setting
 
 

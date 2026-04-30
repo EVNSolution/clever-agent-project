@@ -1347,7 +1347,7 @@ def build_packet(
             "status": "proposed-after-approval",
             "proposal": repo_bootstrap_proposal,
             "local_folder_layout": {
-                "control_plane_root": "<CLEVER_ROOT>",
+                "control_plane_root": "<CLEVER_ROOT>/clever-agent-workspace",
                 "control_plane_repositories": [
                     "clever-agent-project",
                     "clever-context-monorepo",

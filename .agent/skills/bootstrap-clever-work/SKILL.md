@@ -30,15 +30,16 @@ Use this local folder layout unless the user has explicitly provided another pat
 
 ```text
 <CLEVER_ROOT>/
-  clever-agent-project/
-  clever-context-monorepo/
-  clever-change-control/
+  clever-agent-workspace/
+    clever-agent-project/
+    clever-context-monorepo/
+    clever-change-control/
   projects/
     <project-slug>/
       <target-repo>/
 ```
 
-The three agent/control-plane repositories stay directly under `<CLEVER_ROOT>`.
+The three agent/control-plane repositories stay under `<CLEVER_ROOT>/clever-agent-workspace/`.
 Remote product/service repositories are cloned or pulled under
 `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`. Seed files are copied
 into that target repo root.
