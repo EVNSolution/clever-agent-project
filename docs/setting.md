@@ -387,6 +387,13 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo
 이때 `recovery_actions`에 실패 check별 복구 명령이나 처리 지시가 들어간다.
 `auto_skipped_questions`는 도구가 이미 답한 질문이므로 다시 묻지 않는다.
 `next_questions`는 자동 확인 뒤에도 남아 있는 최소 사용자 질문만 담는다.
+`workspace_check.session_open_check`는 Python preflight가 현재 세션이
+`<CLEVER_ROOT>` 기준으로 열렸는지 확인한 결과다. `pass`이면
+`<CLEVER_ROOT>/clever-agent-workspace/`와 `<CLEVER_ROOT>/projects/` 구조가 맞다.
+`legacy-layout`이면 기존 direct control-plane layout에서 실행 중이라는 뜻이므로
+새 target repo는 반드시 `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`에
+둔다. `fail`이면 작업 질문으로 내려가기 전에 세션 위치를 먼저 고친다.
+
 `true`이면 내부 `workspace_check.agent_action`이 아래 중 하나를 돌려준다.
 
 - `proceed-with-hard-gate`: 현재 위치에서 시작 템플릿으로 진행

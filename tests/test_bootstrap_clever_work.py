@@ -256,10 +256,14 @@ def test_build_workspace_check_reports_ready_from_agent_project():
 
     assert report["control_plane_complete"] is True
     assert report["current_repo"] == "clever-agent-project"
+    assert "session_open_check" in report
     assert report["current_repo_is_start"] is True
     assert report["startup_ready"] is True
     assert report["agent_action"] == "proceed-with-hard-gate"
     assert report["missing_repositories"] == []
+    assert report["session_open_check"]["status"] in {"pass", "legacy-layout"}
+    assert "control_plane_root" in report["session_open_check"]
+    assert "projects_root" in report["session_open_check"]
 
 
 def test_build_workspace_check_requires_switch_when_started_from_change_control():
@@ -302,6 +306,47 @@ def test_build_workspace_check_reports_incomplete_workspace(tmp_path: Path):
     assert report["agent_action"] == "stop-and-fix-workspace"
     assert "clever-context-monorepo" in report["missing_repositories"]
     assert "clever-change-control" in report["missing_repositories"]
+
+
+def test_build_workspace_check_detects_clever_root_agent_workspace_layout(tmp_path: Path):
+    module = load_module()
+    clever_root = tmp_path / "CLEVER_ROOT"
+    agent_workspace = clever_root / "clever-agent-workspace"
+    projects_root = clever_root / "projects"
+    for repo_name in [
+        "clever-agent-project",
+        "clever-context-monorepo",
+        "clever-change-control",
+    ]:
+        (agent_workspace / repo_name).mkdir(parents=True)
+    projects_root.mkdir()
+
+    monkeypatch_values = {
+        agent_workspace / "clever-agent-project": "clever-agent-project",
+        agent_workspace / "clever-context-monorepo": "clever-context-monorepo",
+        agent_workspace / "clever-change-control": "clever-change-control",
+    }
+
+    def fake_git_root(path: Path):
+        path = path.resolve()
+        for candidate in monkeypatch_values:
+            if path == candidate or candidate in path.parents:
+                return candidate
+        return None
+
+    module.try_find_git_root = fake_git_root
+    module.try_repo_name = lambda path: monkeypatch_values.get(path) if path else None
+    module.current_branch = lambda _path: "main"
+    module.is_checkout_root = lambda path: path in monkeypatch_values
+
+    report = module.build_workspace_check(agent_workspace / "clever-agent-project")
+
+    assert report["clever_work_root"] == str(clever_root)
+    assert report["control_plane_root"] == str(agent_workspace)
+    assert report["projects_root"] == str(projects_root)
+    assert report["session_open_check"]["status"] == "pass"
+    assert report["session_open_check"]["layout_mode"] == "clever-root-with-agent-workspace"
+    assert report["recommended_start_repo"] == str(agent_workspace / "clever-agent-project")
 
 
 @pytest.mark.skipif(
@@ -501,6 +546,8 @@ def test_control_plane_docs_define_projects_folder_layout():
     setting = (REPO_ROOT / "docs/setting.md").read_text(encoding="utf-8")
     assert "3대 레포는 항상 그 안의 sibling" in setting
     assert "target repo 루트에 주입" in setting
+    agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    assert "session_open_check" in agents
 
 
 def test_target_repo_agents_template_enforces_github_development_branch_flow():

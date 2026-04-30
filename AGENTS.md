@@ -71,6 +71,13 @@ failed checks.
 
 Read these preflight output fields before asking anything:
 
+- `workspace_check.session_open_check`: the Python preflight's CLEVER_ROOT-based
+  session-open validation. It must confirm the expected structure
+  `<CLEVER_ROOT>/clever-agent-workspace/{three control-plane repos}` and
+  `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>` before startup work
+  proceeds. If it reports `legacy-layout`, treat it as a migration warning and
+  keep the target project checkout under `<CLEVER_ROOT>/projects/`. If it
+  reports `fail`, stop and fix the session location first.
 - `auto_skipped_questions`: questions already answered by tool evidence, such as
   GitHub login inference, startup location, or dirty-state inspection.
 - `recovery_actions`: concrete commands or actions for failed checks.

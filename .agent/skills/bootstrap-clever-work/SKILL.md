@@ -69,6 +69,10 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo
 Interpret the result like this:
 
 - `preflight_check.ready=false`: stop and show the failed checks before asking startup questions.
+- Always read `workspace_check.session_open_check` before startup questions. The
+  Python preflight must confirm the CLEVER_ROOT-based session layout first:
+  three control-plane repos under `<CLEVER_ROOT>/clever-agent-workspace/`, target
+  repos under `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`.
 - `preflight_check.ready=true`: continue by reading `workspace_check.agent_action`.
 - `auto_skipped_questions`: do not ask these questions again; tool evidence already answered them.
 - `recovery_actions`: use these concrete commands/actions to fix failed checks before continuing.
