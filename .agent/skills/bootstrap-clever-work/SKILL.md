@@ -26,6 +26,24 @@ The canonical identifier is the created `project-start` issue number in `clever-
 
 When a new target repo is created or bootstrapped, keep execution rules and planning content separate:
 
+Use this local folder layout unless the user has explicitly provided another path:
+
+```text
+<CLEVER_ROOT>/
+  clever-agent-workspace/
+    clever-agent-project/
+    clever-context-monorepo/
+    clever-change-control/
+  projects/
+    <project-slug>/
+      <target-repo>/
+```
+
+The three agent/control-plane repositories stay under `<CLEVER_ROOT>/clever-agent-workspace/`.
+Remote product/service repositories are cloned or pulled under
+`<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`. Seed files are copied
+into that target repo root.
+
 - `AGENTS.md`: agent execution procedure, working order, issue/branch rules, verification, context update checks, and completion conditions
 - `docs/project-brief.md`: project planning draft, purpose, constraints, scope, open questions, and next work list
 
@@ -51,6 +69,13 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo
 Interpret the result like this:
 
 - `preflight_check.ready=false`: stop and show the failed checks before asking startup questions.
+- Always read `workspace_check.session_open_check` before startup questions. The
+  Python preflight must confirm the CLEVER_ROOT-based session layout first:
+  three control-plane repos under `<CLEVER_ROOT>/clever-agent-workspace/`, target
+  repos under `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`.
+- Always read `preflight_check.agent_response_contract` before replying to a
+  CLEVER_ROOT-level prompt. It defines the response style: inherit the CLEVER
+  agent workflow, complete initial setup, then continue with the provided prompt.
 - `preflight_check.ready=true`: continue by reading `workspace_check.agent_action`.
 - `auto_skipped_questions`: do not ask these questions again; tool evidence already answered them.
 - `recovery_actions`: use these concrete commands/actions to fix failed checks before continuing.
@@ -365,7 +390,7 @@ Once the user approves:
    - 새 target repo는 public으로 생성한다.
    - Use `gh repo create <owner>/<repo> --public` for a newly created target repo.
    - GitHub Free organization rulesets are enforced on public repositories; private repository enforcement requires GitHub Team, GitHub Pro, or GitHub Enterprise Cloud.
-5. Clone or pull the target repo locally.
+5. Clone or pull the target repo under `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`.
 6. Copy the target repo seed files before handoff:
    - `docs/templates/target-repo-AGENTS.md` -> target repo `AGENTS.md`
    - `docs/templates/target-repo-project-brief.md` -> target repo `docs/project-brief.md`
@@ -382,6 +407,37 @@ Once the user approves:
    - after `dev` exists, block direct local pushes to `main`
    - default new work to task branches from `dev` unless the work is intentionally direct-on-`dev`
 9. Recommend a new session in the cloned target repo for planning or implementation.
+
+### Scoped Target Work After Bootstrap
+
+For every non-trivial development task after the target repo exists, the agent
+must treat the request as a GitHub issue-linked workflow before editing files:
+
+1. Create or identify the target repository issue.
+2. Create or identify the matching `clever-change-control` issue when scoped
+   change tracking is needed.
+3. Link both issues with explicit mentions.
+4. Create the branch only through GitHub Development:
+
+```bash
+gh issue develop <target-issue-number> \
+  --repo <target-repo-full-name> \
+  --base dev \
+  --name cc-<change-control-issue-number>-<short-scope> \
+  --checkout
+```
+
+5. Verify the linked branch:
+
+```bash
+gh issue develop --list <target-issue-number> \
+  --repo <target-repo-full-name>
+```
+
+Do not use `git checkout -b` first. Do not implement, commit, or open a PR until
+the issue link and GitHub Development linked branch are ready. PRs for normal
+work branch into `dev`, and PR bodies list the target issue plus the
+`clever-change-control` issue.
 
 Only after the root issue is approved and the execution scope is fixed should a scoped change request introduce a `change-id`.
 

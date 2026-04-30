@@ -19,7 +19,50 @@ CLEVER는 한 가지 앱 전용 흐름이 아니다. 사용자가 익숙한 도�
 첫 화면에서는 직접 shell 명령보다 **어떤 환경에서 시작하는지**를 먼저 고른다.
 공통 원칙은 **3개 레포를 같은 로컬 workspace에 두고, 일반 시작은 `clever-agent-project`에서 진행한다**는 점이다.
 
+권장 폴더 구조는 아래처럼 나눈다. `<CLEVER_ROOT>`는 전체 CLEVER 작업 루트이고, 에이전트 제어 평면은 `<CLEVER_ROOT>/clever-agent-workspace/`이며, 실제 제품/서비스 코드는 `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/` 아래에 둔다. target repo를 만들거나 확인한 뒤에는 이 프로젝트 폴더에 원격 repo를 clone/pull 하고, 그 repo 루트에 `AGENTS.md`, `docs/project-brief.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `scripts/apply-github-rulesets.sh`를 주입한다.
+
+```text
+<CLEVER_ROOT>/
+  clever-agent-workspace/
+    clever-agent-project/
+    clever-context-monorepo/
+    clever-change-control/
+  projects/
+    <project-slug>/
+      <target-repo>/
+        AGENTS.md
+        docs/project-brief.md
+        .github/PULL_REQUEST_TEMPLATE.md
+        scripts/apply-github-rulesets.sh
+```
+
 브라우저에서 버튼과 텍스트 입력으로 한 번에 정리하려면 [GitHub Pages 시작 도우미](https://evnsolution.github.io/clever-agent-project/start/)를 사용한다. 버튼과 텍스트 입력으로 답한 뒤 최종 copy text를 만들고, 에이전트에 붙여 넣을 위치까지 안내한다.
+
+### 새 폴더에서 에이전트에게 바로 붙여 넣는 프롬프트
+
+아직 로컬 구조가 없거나, 새 CLEVER 작업 루트에서 시작하려면 아래처럼 짧게 지시한다. 에이전트는 먼저 폴더를 만들고 3대 레포를 받은 뒤, `clever-agent-project`의 지침에 따라 작업 준비를 끝내야 한다.
+
+```text
+새 CLEVER 작업 루트를 하나 만들고 시작해줘.
+
+1. 현재 위치 아래에 <CLEVER_ROOT> 폴더를 하나 만들거나, 이미 적절한 작업 루트가 있으면 그곳을 사용해줘.
+2. <CLEVER_ROOT>/clever-agent-workspace/ 폴더를 만들고 그 안에 아래 3대 레포를 clone 또는 pull 해줘.
+   - https://github.com/EVNSolution/clever-agent-project.git
+   - https://github.com/EVNSolution/clever-context-monorepo.git
+   - https://github.com/EVNSolution/clever-change-control.git
+3. 이후 작업 기준은 <CLEVER_ROOT>/clever-agent-workspace/clever-agent-project 로 잡아줘.
+4. clever-agent-project의 README와 AGENTS.md 지침을 읽고, 그 지침에 따라 preflight와 작업 준비를 진행해줘.
+5. 실제 제품/서비스 target repo는 <CLEVER_ROOT>/projects/<project-slug>/<target-repo>/ 아래에 준비해줘.
+6. target repo를 만들거나 확인한 뒤에는 clever-agent-project 지침에 따라 agent 문서를 target repo에 주입해줘.
+7. 초기 준비가 끝나기 전에는 구현, 커밋, PR 생성을 시작하지 마.
+8. 초기 준비가 성공하면 아래 형식으로 답해줘.
+
+초기 작업(작업 루트 생성, 3대 레포 준비, preflight, target repo 준비, 에이전트 문서 주입)이 완료됐습니다. 다음 작업은 주신 프롬프트대로 <내가 요청한 작업 요약>을 진행하겠습니다.
+
+내가 요청한 실제 작업은 다음 메시지 또는 아래 내용이야:
+- 작업 내용: <여기에 원하는 작업을 적는다>
+```
+
 
 <details>
 <summary><strong>앱형 에이전트 / Application</strong> — 채팅에 프롬프트를 붙여 넣고 기본 세팅을 맡긴다.</summary>

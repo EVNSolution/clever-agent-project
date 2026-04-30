@@ -57,19 +57,46 @@ preflight는 최소한 `gh auth status`, gh CLI에서 확인한 GitHub login 또
 ## 작업 시작 순서
 
 새 세션 또는 새 이슈 작업을 시작하면 아래 순서로 진행한다.
+비사소한 개발 작업에서는 이슈와 GitHub Development linked branch가 준비되기
+전까지 구현, 커밋, PR 생성을 하지 않는다.
 
 1. `git status --short --branch`로 branch와 dirty 상태를 확인한다.
-2. 현재 작업이 연결된 issue를 확인한다.
-3. `project-start issue`와 `change-control issue`가 연결되어 있는지 확인한다.
-4. 현재 branch가 작업 범위와 맞는지 확인한다.
-5. `docs/project-brief.md`에서 프로젝트 목적과 제약을 확인한다.
-6. 필요한 경우 `clever-context-monorepo/docs/services/<service>/index.md`를 읽는다.
-7. 작업 전 변경 범위와 검증 방법을 짧게 정리한다.
-8. 기능 변경 또는 버그 수정은 테스트를 먼저 추가한다.
-9. 구현한다.
-10. 관련 테스트와 `git diff --check`를 실행한다.
-11. context monorepo 반영 필요 여부를 확인한다.
-12. 완료 보고에 변경 내용, 검증 결과, 남은 리스크를 남긴다.
+2. target repository에 현재 작업을 대표하는 target issue를 생성하거나 확인한다.
+3. 필요한 경우 `clever-change-control` repository에 대응 change-control issue를 생성하거나 확인한다.
+4. target issue와 change-control issue를 서로 명시적으로 링크한다.
+5. 브랜치는 반드시 target issue의 GitHub Development 기능으로 생성한다.
+6. `gh issue develop --list`로 linked branch를 확인한다.
+7. linked branch checkout 이후 `docs/project-brief.md`에서 프로젝트 목적과 제약을 확인한다.
+8. 필요한 경우 `clever-context-monorepo/docs/services/<service>/index.md`를 읽는다.
+9. 작업 전 변경 범위와 검증 방법을 짧게 정리한다.
+10. 기능 변경 또는 버그 수정은 테스트를 먼저 추가한다.
+11. 구현한다.
+12. PR 생성 전 필수 검증 명령을 실행한다.
+13. context monorepo 반영 필요 여부를 확인한다.
+14. 완료 보고에 target issue, change-control issue, linked branch, PR, merge commit, 검증 결과, 남은 후속 작업을 남긴다.
+
+### GitHub issue-linked branch 생성
+
+수동으로 `git checkout -b`를 먼저 하지 않는다. CLI를 사용할 때는 반드시 아래
+형식을 사용한다.
+
+```bash
+gh issue develop <target-issue-number> \
+  --repo <target_repo_full_name> \
+  --base dev \
+  --name cc-<change-control-issue-number>-<short-scope> \
+  --checkout
+```
+
+브랜치 생성 후 linked branch를 확인한다.
+
+```bash
+gh issue develop --list <target-issue-number> \
+  --repo <target_repo_full_name>
+```
+
+예를 들어 target repo가 `EVNSolution/thundercrew-domain`이면 `--repo
+EVNSolution/thundercrew-domain`과 `--base dev`를 사용한다.
 
 ## Branch 운영
 
@@ -164,47 +191,48 @@ scripts/apply-github-rulesets.sh <target_repo_full_name>
 실행 계정에는 target repo의 GitHub Administration write 권한이 필요하다.
 private repo로 만들어야 하는 예외가 생기면 ruleset enforce가 되지 않는 리스크를 먼저 이슈에 남긴다.
 
-## 브랜치 역할별 접두사
+## 브랜치 이름 규칙
 
-task branch는 프로젝트명이나 repo명으로 시작하지 않는다.
-`clever-` 같은 제품/조직/프로젝트 이름은 branch 역할 접두사가 아니다.
-필요하면 topic 뒤에만 넣는다.
+비사소한 개발 작업의 branch 이름은 아래 형식으로 고정한다.
 
-허용 branch:
-
-- `main`: deploy branch
-- `dev`: integration work branch
-- `feature/<issue-or-cc>-<short-topic>`: 신규 기능
-- `fix/<issue-or-cc>-<short-topic>`: 버그 수정
-- `change/<issue-or-cc>-<short-topic>`: 동작 변경
-- `refactor/<issue-or-cc>-<short-topic>`: 구조 개선
-- `docs/<issue-or-cc>-<short-topic>`: 문서 작업
-- `chore/<issue-or-cc>-<short-topic>`: 설정, 관리, 빌드 보조 작업
-- `test/<issue-or-cc>-<short-topic>`: 테스트 보강
-- `release/<env-or-version>`: 릴리스 준비
-- `hotfix/<issue-or-cc>-<short-topic>`: 긴급 수정
+```text
+cc-<change-control-issue-number>-<short-scope>
+```
 
 예:
 
-- 좋음: `feature/issue-24-login-timeout`
-- 좋음: `fix/cc-12-issue-24-login-timeout`
-- 나쁨: `clever-login-timeout`
-- 나쁨: `issue-24-login-timeout`
+```text
+cc-74-dashboard-mapstate-frontend
+```
 
-브랜치 역할 접두사를 로컬에서 강제하려면 target repo에서 아래 명령을 실행한다.
+규칙:
+
+- branch는 항상 target issue의 GitHub Development 기능으로 생성한다.
+- work branch는 항상 `dev`에서 시작한다.
+- `git checkout -b`로 임의 branch를 먼저 만들지 않는다.
+- GitHub Issue Development에 연결되지 않은 branch에서 작업하지 않는다.
+- `dev` branch에서 직접 개발하거나 직접 commit하지 않는다.
+- issue 없이 branch를 만들지 않는다.
+- branch 없이 구현하지 않는다.
+- PR 없이 `dev`에 반영하지 않는다.
+- 내부 agent/tool 이름을 public commit, PR 제목, merge commit, GitHub attribution에 불필요하게 노출하지 않는다.
+- `Co-authored-by: OmX` 같은 내부 자동화 attribution을 public dev history에 남기지 않는다.
+
+브랜치 이름과 direct push를 로컬에서 보조적으로 확인하려면 target repo에서 아래
+명령을 실행한다. 이 hook은 GitHub Development linked branch 확인을 대체하지
+않는다.
 
 ```bash
 cat > .git/hooks/pre-commit <<'EOF'
 #!/bin/sh
 branch="$(git rev-parse --abbrev-ref HEAD)"
 case "$branch" in
-  main|dev|feature/*|fix/*|change/*|refactor/*|docs/*|chore/*|test/*|release/*|hotfix/*)
+  main|dev|cc-[0-9]*-*)
     exit 0
     ;;
   *)
     echo "Invalid branch name: $branch"
-    echo "Use main, dev, or a role-prefixed task branch:"
-    echo "feature/* fix/* change/* refactor/* docs/* chore/* test/* release/* hotfix/*"
+    echo "Use main, dev, or cc-<change-control-issue-number>-<short-scope>."
     exit 1
     ;;
 esac
@@ -215,17 +243,16 @@ cat > .git/hooks/pre-push <<'EOF'
 #!/bin/sh
 branch="$(git rev-parse --abbrev-ref HEAD)"
 case "$branch" in
-  main)
-    echo "Direct pushes to main are blocked locally. Use dev or a role-prefixed task branch."
+  main|dev)
+    echo "Direct pushes to $branch are blocked locally. Use a PR."
     exit 1
     ;;
-  dev|feature/*|fix/*|change/*|refactor/*|docs/*|chore/*|test/*|release/*|hotfix/*)
+  cc-[0-9]*-*)
     exit 0
     ;;
   *)
     echo "Invalid branch name: $branch"
-    echo "Use dev or a role-prefixed task branch:"
-    echo "feature/* fix/* change/* refactor/* docs/* chore/* test/* release/* hotfix/*"
+    echo "Use cc-<change-control-issue-number>-<short-scope>."
     exit 1
     ;;
 esac
@@ -234,7 +261,7 @@ chmod +x .git/hooks/pre-push
 ```
 
 `pre-commit`은 잘못된 branch 이름에서 commit 생성을 막는다.
-`pre-push`는 `main` direct push와 잘못된 branch 이름 push를 막는다.
+`pre-push`는 `main`/`dev` direct push와 잘못된 branch 이름 push를 막는다.
 
 ## Issue 연결 규칙
 
@@ -294,6 +321,65 @@ PR을 열기 전에 현재 변경을 한 PR로 묶을지, 분리 PR로 나눌지
 
 예: OpenAPI schema 변경, Admin Web smoke 화면, Rider App smoke 화면, Spring
 service mock endpoint 구현은 보통 분리 PR로 다룬다.
+
+## PR, merge, 검증, 보고 규칙
+
+PR은 작업 branch에서 `dev`로 생성한다. PR 본문에는 target issue와
+change-control issue를 명시한다. change-control issue가 필요 없다고 판단한
+예외 작업은 그 사유를 target issue와 PR 본문에 남긴다.
+
+기본 merge 방식은 GitHub PR trace가 `dev` history에서 명확히 보이는 방식을
+우선한다. merge commit 방식을 권장한다. squash merge가 필요한 경우에도 commit
+title에는 반드시 PR 번호를 포함한다.
+
+예:
+
+```text
+Dashboard map-state frontend integration (#62)
+```
+
+금지:
+
+- PR 번호 없는 squash commit
+- `dev`에 직접 작성한 것처럼 보이는 commit title
+- 출처가 불명확한 merge commit
+- squash merge 남발
+
+PR 생성 전 최소 검증:
+
+```bash
+npm run check:workspace
+npm run lint
+npm run typecheck
+npm run build
+```
+
+프론트 테스트가 있으면 추가로 실행한다.
+
+```bash
+npm run test:service-ops
+# 관련 frontend test command
+```
+
+백엔드를 건드렸으면 추가로 실행한다.
+
+```bash
+cd development/service-ops-api && ./gradlew test
+cd development/service-ops-api && ./gradlew build
+```
+
+작업 보고는 항상 아래 기준으로 한다.
+
+1. target issue 번호
+2. change-control issue 번호
+3. linked branch 이름
+4. PR 번호
+5. merge commit
+6. 검증 명령 결과
+7. 남은 후속 작업
+
+PR merge 후 target issue와 change-control issue를 정리/close한다. merge 후 작업
+branch는 local/remote 모두 삭제한다.
 
 ## 구현 규칙
 

@@ -256,10 +256,14 @@ def test_build_workspace_check_reports_ready_from_agent_project():
 
     assert report["control_plane_complete"] is True
     assert report["current_repo"] == "clever-agent-project"
+    assert "session_open_check" in report
     assert report["current_repo_is_start"] is True
     assert report["startup_ready"] is True
     assert report["agent_action"] == "proceed-with-hard-gate"
     assert report["missing_repositories"] == []
+    assert report["session_open_check"]["status"] in {"pass", "legacy-layout"}
+    assert "control_plane_root" in report["session_open_check"]
+    assert "projects_root" in report["session_open_check"]
 
 
 def test_build_workspace_check_requires_switch_when_started_from_change_control():
@@ -302,6 +306,47 @@ def test_build_workspace_check_reports_incomplete_workspace(tmp_path: Path):
     assert report["agent_action"] == "stop-and-fix-workspace"
     assert "clever-context-monorepo" in report["missing_repositories"]
     assert "clever-change-control" in report["missing_repositories"]
+
+
+def test_build_workspace_check_detects_clever_root_agent_workspace_layout(tmp_path: Path):
+    module = load_module()
+    clever_root = tmp_path / "CLEVER_ROOT"
+    agent_workspace = clever_root / "clever-agent-workspace"
+    projects_root = clever_root / "projects"
+    for repo_name in [
+        "clever-agent-project",
+        "clever-context-monorepo",
+        "clever-change-control",
+    ]:
+        (agent_workspace / repo_name).mkdir(parents=True)
+    projects_root.mkdir()
+
+    monkeypatch_values = {
+        agent_workspace / "clever-agent-project": "clever-agent-project",
+        agent_workspace / "clever-context-monorepo": "clever-context-monorepo",
+        agent_workspace / "clever-change-control": "clever-change-control",
+    }
+
+    def fake_git_root(path: Path):
+        path = path.resolve()
+        for candidate in monkeypatch_values:
+            if path == candidate or candidate in path.parents:
+                return candidate
+        return None
+
+    module.try_find_git_root = fake_git_root
+    module.try_repo_name = lambda path: monkeypatch_values.get(path) if path else None
+    module.current_branch = lambda _path: "main"
+    module.is_checkout_root = lambda path: path in monkeypatch_values
+
+    report = module.build_workspace_check(agent_workspace / "clever-agent-project")
+
+    assert report["clever_work_root"] == str(clever_root)
+    assert report["control_plane_root"] == str(agent_workspace)
+    assert report["projects_root"] == str(projects_root)
+    assert report["session_open_check"]["status"] == "pass"
+    assert report["session_open_check"]["layout_mode"] == "clever-root-with-agent-workspace"
+    assert report["recommended_start_repo"] == str(agent_workspace / "clever-agent-project")
 
 
 @pytest.mark.skipif(
@@ -434,9 +479,24 @@ def test_build_packet_includes_target_repo_seed_files():
             ],
         },
     ]
+    assert packet["repo_bootstrap"]["local_folder_layout"] == {
+        "control_plane_root": "<CLEVER_ROOT>/clever-agent-workspace",
+        "control_plane_repositories": [
+            "clever-agent-project",
+            "clever-context-monorepo",
+            "clever-change-control",
+        ],
+        "project_repositories_root": "<CLEVER_ROOT>/projects/<project-slug>",
+        "target_repo_checkout": "<CLEVER_ROOT>/projects/<project-slug>/<target-repo>",
+        "seed_injection_root": "target repo root",
+    }
     assert (
-        "copy target repo seed files before handoff"
+        "copy target repo seed files into the target repo root before handoff"
         in packet["repo_bootstrap"]["post_create_clone"]
+    )
+    assert any(
+        "<CLEVER_ROOT>/projects/<project-slug>/<target-repo>" in step
+        for step in packet["repo_bootstrap"]["post_create_clone"]
     )
     assert (
         "apply GitHub rulesets after dev exists"
@@ -464,28 +524,103 @@ def test_target_repo_seed_templates_separate_execution_rules_from_project_brief(
     assert "agent 작업 절차" in project_brief
 
 
-def test_target_repo_agents_template_enforces_role_based_branch_prefixes():
+def test_control_plane_docs_define_projects_folder_layout():
+    docs = [
+        REPO_ROOT / "AGENTS.md",
+        REPO_ROOT / "README.md",
+        REPO_ROOT / "docs/setting.md",
+        REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md",
+    ]
+
+    for doc_path in docs:
+        text = doc_path.read_text(encoding="utf-8")
+        assert "<CLEVER_ROOT>/" in text
+        assert "clever-agent-workspace/" in text
+        assert "clever-agent-project/" in text
+        assert "clever-context-monorepo/" in text
+        assert "clever-change-control/" in text
+        assert "projects/" in text
+        assert "<project-slug>/" in text
+        assert "<target-repo>/" in text
+
+    setting = (REPO_ROOT / "docs/setting.md").read_text(encoding="utf-8")
+    assert "3대 레포는 항상 그 안의 sibling" in setting
+    assert "target repo 루트에 주입" in setting
+    agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    assert "session_open_check" in agents
+    assert "agent_response_contract" in agents
+    assert "초기 작업" in agents
+    assert "주신 프롬프트대로" in agents
+
+    setting = (REPO_ROOT / "docs/setting.md").read_text(encoding="utf-8")
+    skill = (REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md").read_text(encoding="utf-8")
+    for text in [setting, skill]:
+        assert "agent_response_contract" in text
+        assert "바로 구현하지" in text or "do not start CLEVER work from a freeform prompt" in text
+
+
+def test_target_repo_agents_template_enforces_github_development_branch_flow():
     agents_template = REPO_ROOT / "docs/templates/target-repo-AGENTS.md"
 
     agents = agents_template.read_text(encoding="utf-8")
 
-    assert "브랜치 역할별 접두사" in agents
-    for branch_prefix in [
-        "feature/",
-        "fix/",
-        "change/",
-        "refactor/",
-        "docs/",
-        "chore/",
-        "test/",
-        "release/",
-        "hotfix/",
-    ]:
-        assert branch_prefix in agents
+    assert "GitHub issue-linked branch 생성" in agents
+    assert "gh issue develop <target-issue-number>" in agents
+    assert "--base dev" in agents
+    assert "--name cc-<change-control-issue-number>-<short-scope>" in agents
+    assert "--checkout" in agents
+    assert "gh issue develop --list <target-issue-number>" in agents
+    assert "EVNSolution/thundercrew-domain" in agents
+    assert "git checkout -b" in agents
+    assert "## 브랜치 이름 규칙" in agents
+    assert "cc-74-dashboard-mapstate-frontend" in agents
+    assert "GitHub Issue Development에 연결되지 않은 branch" in agents
+    assert "Co-authored-by: OmX" in agents
     assert "cat > .git/hooks/pre-commit <<'EOF'" in agents
     assert "cat > .git/hooks/pre-push <<'EOF'" in agents
-    assert "main|dev|feature/*|fix/*|change/*|refactor/*|docs/*|chore/*|test/*|release/*|hotfix/*)" in agents
-    assert "clever-" in agents
+    assert "cc-[0-9]*-*" in agents
+
+
+def test_target_repo_agents_template_enforces_pr_validation_and_report_contract():
+    agents = (REPO_ROOT / "docs/templates/target-repo-AGENTS.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "PR은 작업 branch에서 `dev`로 생성한다" in agents
+    assert "PR 본문에는 target issue와" in agents
+    assert "npm run check:workspace" in agents
+    assert "npm run lint" in agents
+    assert "npm run typecheck" in agents
+    assert "npm run build" in agents
+    assert "npm run test:service-ops" in agents
+    assert "cd development/service-ops-api && ./gradlew test" in agents
+    assert "cd development/service-ops-api && ./gradlew build" in agents
+    for expected in [
+        "target issue 번호",
+        "change-control issue 번호",
+        "linked branch 이름",
+        "PR 번호",
+        "merge commit",
+        "검증 명령 결과",
+        "남은 후속 작업",
+    ]:
+        assert expected in agents
+
+
+def test_root_prompts_enforce_issue_linked_target_workflow():
+    root_agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    skill = (REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md").read_text(
+        encoding="utf-8"
+    )
+
+    for text in [root_agents, skill]:
+        assert "gh issue develop <target-issue-number>" in text
+        assert "--repo <target-repo-full-name>" in text
+        assert "--base dev" in text
+        assert "--name cc-<change-control-issue-number>-<short-scope>" in text
+        assert "gh issue develop --list <target-issue-number>" in text
+        assert "git checkout -b" in text
+        assert "Do not implement, commit, or open a PR" in text or "may the agent implement, commit, or open a PR" in text
 
 
 def test_target_repo_ruleset_template_applies_main_and_dev_only():
@@ -682,15 +817,19 @@ def test_build_packet_includes_post_create_clone_and_handoff_plan():
 
     assert repo_bootstrap["post_create_clone"] == [
         "create-or-confirm public target repo after project-start approval",
-        "clone-or-pull the target repo locally",
-        "copy target repo seed files before handoff",
+        "clone-or-pull the target repo under <CLEVER_ROOT>/projects/<project-slug>/<target-repo>",
+        "copy target repo seed files into the target repo root before handoff",
         "apply GitHub rulesets after dev exists",
         "verify local checkout is ready for follow-on work",
     ]
+    assert repo_bootstrap["local_folder_layout"]["target_repo_checkout"] == (
+        "<CLEVER_ROOT>/projects/<project-slug>/<target-repo>"
+    )
     assert handoff["recommended_session"] == "new-target-repo-session"
     assert handoff["status"] == "recommended-after-clone"
     assert "Switch to the cloned target repo" in handoff["summary"]
     assert "seed AGENTS.md and docs/project-brief.md" in handoff["summary"]
+    assert "projects folder" in packet["next_step"]
     assert "seed the target repo" in packet["next_step"]
 
 
@@ -980,6 +1119,11 @@ def test_preflight_check_reports_auto_skips_and_next_startup_question(monkeypatc
             "reason": "preflight passed and the workspace is ready for the startup template.",
         }
     ]
+    contract = report["agent_response_contract"]
+    assert contract["do_not_start_freeform_work"] is True
+    assert "에이전트 기반 preflight" in contract["immediate_reply_style"]
+    assert "초기 작업" in contract["after_initial_setup_success_reply_style"]
+    assert "주신 프롬프트대로" in contract["after_initial_setup_success_reply_style"]
 
 
 def test_preflight_check_infers_github_login_from_gh_cli_when_expected_missing(monkeypatch):
@@ -1292,6 +1436,25 @@ def test_readme_guides_non_expert_users_by_entry_surface():
         assert "git clone https://github.com/EVNSolution/clever-context-monorepo.git" in prompt
         assert "git clone https://github.com/EVNSolution/clever-change-control.git" in prompt
         assert 'python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --json' in prompt
+
+
+def test_readme_includes_short_new_root_user_prompt_for_agent_bootstrap():
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "### 새 폴더에서 에이전트에게 바로 붙여 넣는 프롬프트" in readme
+    root_prompt = first_text_block_after(readme, "새 폴더에서 에이전트에게")
+    assert "새 CLEVER 작업 루트를 하나 만들고 시작해줘" in root_prompt
+    assert "<CLEVER_ROOT>/clever-agent-workspace/" in root_prompt
+    assert "https://github.com/EVNSolution/clever-agent-project.git" in root_prompt
+    assert "https://github.com/EVNSolution/clever-context-monorepo.git" in root_prompt
+    assert "https://github.com/EVNSolution/clever-change-control.git" in root_prompt
+    assert "clever-agent-project의 README와 AGENTS.md 지침" in root_prompt
+    assert "preflight와 작업 준비" in root_prompt
+    assert "<CLEVER_ROOT>/projects/<project-slug>/<target-repo>" in root_prompt
+    assert "agent 문서를 target repo에 주입" in root_prompt
+    assert "구현, 커밋, PR 생성을 시작하지 마" in root_prompt
+    assert "초기 작업(작업 루트 생성, 3대 레포 준비, preflight, target repo 준비, 에이전트 문서 주입)이 완료됐습니다" in root_prompt
+    assert "다음 작업은 주신 프롬프트대로" in root_prompt
 
 
 def test_startup_first_questions_prioritize_project_and_service_scope():
