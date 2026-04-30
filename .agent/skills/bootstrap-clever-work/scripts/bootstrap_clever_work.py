@@ -252,7 +252,7 @@ def infer_workspace_root(start: Path, git_root: Path | None = None) -> Path:
     Preferred layout:
 
         <CLEVER_ROOT>/clever-agent-workspace/{three control-plane repos}
-        <CLEVER_ROOT>/projects/<project-slug>/<target-repo>
+        <CLEVER_ROOT>/projects/<target-repo>
 
     Legacy direct layout is still recognized so existing local checkouts can report
     a useful migration-oriented preflight instead of failing path discovery.
@@ -747,7 +747,7 @@ def build_agent_response_contract(workspace_check: dict[str, Any]) -> dict[str, 
         "confirm the CLEVER_ROOT session layout with workspace_check.session_open_check",
         "create or confirm the target repository only after the project-start gate",
         "apply or confirm repository rules before normal development",
-        "clone or pull the target repo under <CLEVER_ROOT>/projects/<project-slug>/<target-repo>",
+        "clone or pull the target repo under <CLEVER_ROOT>/projects/<target-repo>",
         "inject AGENTS.md, docs/project-brief.md, PR template, and ruleset script into the target repo root",
         "after initial setup succeeds, continue according to the user's provided prompt",
     ]
@@ -1483,13 +1483,13 @@ def build_packet(
                     "clever-context-monorepo",
                     "clever-change-control",
                 ],
-                "project_repositories_root": "<CLEVER_ROOT>/projects/<project-slug>",
-                "target_repo_checkout": "<CLEVER_ROOT>/projects/<project-slug>/<target-repo>",
+                "project_repositories_root": "<CLEVER_ROOT>/projects",
+                "target_repo_checkout": "<CLEVER_ROOT>/projects/<target-repo>",
                 "seed_injection_root": "target repo root",
             },
             "post_create_clone": [
                 "create-or-confirm public target repo after project-start approval",
-                "clone-or-pull the target repo under <CLEVER_ROOT>/projects/<project-slug>/<target-repo>",
+                "clone-or-pull the target repo under <CLEVER_ROOT>/projects/<target-repo>",
                 "copy target repo seed files into the target repo root before handoff",
                 "apply GitHub rulesets after dev exists",
                 "verify local checkout is ready for follow-on work",
