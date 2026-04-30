@@ -66,6 +66,18 @@ The preflight must verify at least:
 - remote fetch access
 - GitHub repo visibility and issue/PR/ruleset read access
 
+If the session is opened from `<CLEVER_ROOT>` itself, do not improvise a new
+workflow and do not start implementation. First hand the session into the
+agent-based path under `clever-agent-workspace/clever-agent-project`, run the
+Python preflight, and read `preflight_check.agent_response_contract`. The first
+answer should say that the agent will inherit the CLEVER workflow, complete
+initial setup (repo confirmation/creation, repo rules, pull/clone, agent document
+injection), and only then continue with the user's prompt.
+
+After initial setup succeeds, answer in this style:
+
+> 초기 작업(레포 확인/생성, repo 규칙 생성 또는 확인, pull/clone, 에이전트 문서 주입)이 완료됐습니다. 다음 작업은 주신 프롬프트대로 `<normalized-next-work>`를 진행하겠습니다.
+
 If `preflight_check.ready` is false, stop before startup questions and report the
 failed checks.
 

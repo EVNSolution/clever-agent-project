@@ -73,6 +73,9 @@ Interpret the result like this:
   Python preflight must confirm the CLEVER_ROOT-based session layout first:
   three control-plane repos under `<CLEVER_ROOT>/clever-agent-workspace/`, target
   repos under `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`.
+- Always read `preflight_check.agent_response_contract` before replying to a
+  CLEVER_ROOT-level prompt. It defines the response style: inherit the CLEVER
+  agent workflow, complete initial setup, then continue with the provided prompt.
 - `preflight_check.ready=true`: continue by reading `workspace_check.agent_action`.
 - `auto_skipped_questions`: do not ask these questions again; tool evidence already answered them.
 - `recovery_actions`: use these concrete commands/actions to fix failed checks before continuing.

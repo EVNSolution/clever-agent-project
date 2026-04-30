@@ -548,6 +548,15 @@ def test_control_plane_docs_define_projects_folder_layout():
     assert "target repo 루트에 주입" in setting
     agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "session_open_check" in agents
+    assert "agent_response_contract" in agents
+    assert "초기 작업" in agents
+    assert "주신 프롬프트대로" in agents
+
+    setting = (REPO_ROOT / "docs/setting.md").read_text(encoding="utf-8")
+    skill = (REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md").read_text(encoding="utf-8")
+    for text in [setting, skill]:
+        assert "agent_response_contract" in text
+        assert "바로 구현하지" in text or "do not start CLEVER work from a freeform prompt" in text
 
 
 def test_target_repo_agents_template_enforces_github_development_branch_flow():
@@ -1110,6 +1119,11 @@ def test_preflight_check_reports_auto_skips_and_next_startup_question(monkeypatc
             "reason": "preflight passed and the workspace is ready for the startup template.",
         }
     ]
+    contract = report["agent_response_contract"]
+    assert contract["do_not_start_freeform_work"] is True
+    assert "에이전트 기반 preflight" in contract["immediate_reply_style"]
+    assert "초기 작업" in contract["after_initial_setup_success_reply_style"]
+    assert "주신 프롬프트대로" in contract["after_initial_setup_success_reply_style"]
 
 
 def test_preflight_check_infers_github_login_from_gh_cli_when_expected_missing(monkeypatch):

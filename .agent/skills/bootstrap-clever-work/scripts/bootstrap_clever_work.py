@@ -738,6 +738,56 @@ def build_preflight_next_questions(
     return questions
 
 
+def build_agent_response_contract(workspace_check: dict[str, Any]) -> dict[str, Any]:
+    agent_action = workspace_check.get("agent_action")
+    session_open_check = workspace_check.get("session_open_check") or {}
+    initial_steps = [
+        "do not start implementation directly from a free-form prompt",
+        "inherit the CLEVER agent-based workflow from clever-agent-project",
+        "confirm the CLEVER_ROOT session layout with workspace_check.session_open_check",
+        "create or confirm the target repository only after the project-start gate",
+        "apply or confirm repository rules before normal development",
+        "clone or pull the target repo under <CLEVER_ROOT>/projects/<project-slug>/<target-repo>",
+        "inject AGENTS.md, docs/project-brief.md, PR template, and ruleset script into the target repo root",
+        "after initial setup succeeds, continue according to the user's provided prompt",
+    ]
+    if agent_action == "switch-to-clever-agent-project":
+        immediate_reply = (
+            "현재 세션은 CLEVER_ROOT 또는 control-plane 시작 위치로 감지했습니다. "
+            "바로 작업을 시작하지 않고 `clever-agent-workspace/clever-agent-project`의 "
+            "에이전트 기반 절차를 먼저 전수받아 preflight와 초기 세팅을 진행하겠습니다."
+        )
+    elif agent_action == "proceed-with-hard-gate":
+        immediate_reply = (
+            "에이전트 기반 preflight가 통과했습니다. 바로 구현하지 않고 작업 시작 정보를 "
+            "정규화한 뒤 project-start, repo bootstrap, 규칙 적용, pull/clone, 에이전트 문서 "
+            "주입 순서로 진행하겠습니다."
+        )
+    elif agent_action == "current-repo-maintenance":
+        immediate_reply = (
+            "현재 작업은 control-plane repo maintenance로 감지했습니다. 해당 repo 범위에서만 "
+            "에이전트 절차를 적용하고 일반 target repo bootstrap으로 내려가지 않겠습니다."
+        )
+    else:
+        immediate_reply = (
+            "CLEVER_ROOT 기반 세션 검증이 아직 완료되지 않았습니다. 작업을 시작하지 않고 "
+            "누락된 agent workspace와 3대 레포 구성을 먼저 복구하겠습니다."
+        )
+
+    return {
+        "do_not_start_freeform_work": True,
+        "session_open_status": session_open_check.get("status"),
+        "agent_action": agent_action,
+        "initial_steps": initial_steps,
+        "immediate_reply_style": immediate_reply,
+        "after_initial_setup_success_reply_style": (
+            "초기 작업(레포 확인/생성, repo 규칙 생성 또는 확인, pull/clone, "
+            "에이전트 문서 주입)이 완료됐습니다. 다음 작업은 주신 프롬프트대로 "
+            "<normalized-next-work>를 진행하겠습니다."
+        ),
+    }
+
+
 def build_preflight_check(
     *,
     cwd: Path,
@@ -1090,6 +1140,7 @@ def build_preflight_check(
         workspace_check=workspace_check,
         github_login=github_login,
     )
+    agent_response_contract = build_agent_response_contract(workspace_check)
     return {
         "mode": mode,
         "ready": ready,
@@ -1102,6 +1153,7 @@ def build_preflight_check(
         "auto_skipped_questions": auto_skipped_questions,
         "recovery_actions": recovery_actions,
         "next_questions": next_questions,
+        "agent_response_contract": agent_response_contract,
     }
 
 

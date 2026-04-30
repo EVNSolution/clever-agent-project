@@ -387,6 +387,12 @@ python3 scripts/bootstrap_clever_work.py --cwd "$PWD" --preflight --current-repo
 이때 `recovery_actions`에 실패 check별 복구 명령이나 처리 지시가 들어간다.
 `auto_skipped_questions`는 도구가 이미 답한 질문이므로 다시 묻지 않는다.
 `next_questions`는 자동 확인 뒤에도 남아 있는 최소 사용자 질문만 담는다.
+`preflight_check.agent_response_contract`는 `<CLEVER_ROOT>`에서 프롬프트를 받았을 때
+에이전트가 어떻게 첫 답변을 해야 하는지 고정한다. 바로 구현하지 말고
+에이전트 기반 절차를 전수받아 preflight, repo 확인/생성, ruleset 확인/생성,
+pull/clone, target repo agent 문서 주입을 먼저 끝낸 뒤 "초기 작업이 완료됐고,
+다음 작업은 주신 프롬프트대로 진행하겠다"는 형태로 답한다.
+
 `workspace_check.session_open_check`는 Python preflight가 현재 세션이
 `<CLEVER_ROOT>` 기준으로 열렸는지 확인한 결과다. `pass`이면
 `<CLEVER_ROOT>/clever-agent-workspace/`와 `<CLEVER_ROOT>/projects/` 구조가 맞다.
