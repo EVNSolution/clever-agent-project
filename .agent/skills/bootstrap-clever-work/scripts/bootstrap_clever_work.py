@@ -1346,10 +1346,21 @@ def build_packet(
             "visibility_reason": visibility_reason,
             "status": "proposed-after-approval",
             "proposal": repo_bootstrap_proposal,
+            "local_folder_layout": {
+                "control_plane_root": "<CLEVER_ROOT>",
+                "control_plane_repositories": [
+                    "clever-agent-project",
+                    "clever-context-monorepo",
+                    "clever-change-control",
+                ],
+                "project_repositories_root": "<CLEVER_ROOT>/projects/<project-slug>",
+                "target_repo_checkout": "<CLEVER_ROOT>/projects/<project-slug>/<target-repo>",
+                "seed_injection_root": "target repo root",
+            },
             "post_create_clone": [
                 "create-or-confirm public target repo after project-start approval",
-                "clone-or-pull the target repo locally",
-                "copy target repo seed files before handoff",
+                "clone-or-pull the target repo under <CLEVER_ROOT>/projects/<project-slug>/<target-repo>",
+                "copy target repo seed files into the target repo root before handoff",
                 "apply GitHub rulesets after dev exists",
                 "verify local checkout is ready for follow-on work",
             ],
@@ -1362,7 +1373,7 @@ def build_packet(
         },
         "next_step": (
             "Present the project-start draft for approval. After approval, create the issue, "
-            "propose repo bootstrap, clone or pull the target repo, seed the target repo, "
+            "propose repo bootstrap, clone or pull the target repo under the projects folder, seed the target repo, "
             "and recommend a new target-repo session."
         ),
     }

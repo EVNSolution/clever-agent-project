@@ -148,9 +148,16 @@ CLEVER 관련 저장소는 하나의 workspace root 아래에 두는 것을 권�
   clever-agent-project/
   clever-change-control/
   clever-context-monorepo/
+  projects/
+    <project-slug>/
+      <target-repo>/
 ```
 
-generic CLEVER startup 세션은 `<CLEVER_ROOT>/clever-agent-project`에서 시작한다. 승인 후 target GitHub repo를 생성하거나 확인한 다음, 로컬에 clone 또는 pull 하고 그 target repo 루트에서 새 세션을 시작한다.
+`<CLEVER_ROOT>`는 에이전트 제어 평면이다. 3대 레포는 항상 이 루트의 sibling으로 둔다.
+실제 제품/서비스 원격 repo는 `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`
+아래에 clone 또는 pull 한다. 새 target repo seed 파일은 이 target repo 루트에 주입한다.
+
+generic CLEVER startup 세션은 `<CLEVER_ROOT>/clever-agent-project`에서 시작한다. 승인 후 target GitHub repo를 생성하거나 확인한 다음, `<CLEVER_ROOT>/projects/<project-slug>/` 아래에 로컬 clone 또는 pull 하고 그 target repo 루트에서 새 세션을 시작한다.
 
 예외는 sibling control-plane repo 자체를 직접 수정하는 경우다.
 
@@ -346,7 +353,7 @@ PR 정보를 wiki에 올리는 것이 아니다. wiki에는 필요한 서비스/
 
 ### 새 target repo 초기 seed 파일
 
-새 프로젝트 repo를 만들거나 첫 target repo를 bootstrap할 때는 프로젝트 기획 초안과 agent 실행 절차서를 분리해서 넣는다.
+새 프로젝트 repo를 만들거나 첫 target repo를 bootstrap할 때는 프로젝트 기획 초안과 agent 실행 절차서를 분리해서 넣는다. 주입 위치는 `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`에 clone/pull된 target repo 루트다.
 
 - [target repo AGENTS template](templates/target-repo-AGENTS.md) -> target repo `AGENTS.md`
 - [target repo project brief template](templates/target-repo-project-brief.md) -> target repo `docs/project-brief.md`

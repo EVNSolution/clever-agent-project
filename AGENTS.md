@@ -15,6 +15,24 @@ Before doing any real work, confirm that all of the following repositories exist
 2. `clever-context-monorepo`
 3. `clever-change-control`
 
+Recommended local layout:
+
+```text
+<CLEVER_ROOT>/
+  clever-agent-project/
+  clever-context-monorepo/
+  clever-change-control/
+  projects/
+    <project-slug>/
+      <target-repo>/
+```
+
+`<CLEVER_ROOT>` is the control-plane root. Keep only the three agent/control
+repositories as first-class siblings there. Put real product/service target
+repositories under `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`. When
+bootstrapping a target repo, clone or pull the remote repo into that project
+folder, then inject the agent documents into the target repo root.
+
 If any of these repositories are missing, the workspace is incomplete.
 Do not pretend web links are a substitute for local context.
 Stop and state that the three-repository local workspace is required.
@@ -740,7 +758,7 @@ The expected operating flow is:
 5. Anchor the root line in `clever-change-control`
 6. Fix scoped execution
 7. Apply or confirm the repo branch operating contract
-8. Handoff to the target repository
+8. Handoff to the target repository under `<CLEVER_ROOT>/projects/<project-slug>/<target-repo>/`
 9. Feed rollout / rollback / release evidence back into `clever-change-control`
 
 ## If The Workspace Is Incomplete

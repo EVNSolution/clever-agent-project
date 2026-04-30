@@ -434,9 +434,24 @@ def test_build_packet_includes_target_repo_seed_files():
             ],
         },
     ]
+    assert packet["repo_bootstrap"]["local_folder_layout"] == {
+        "control_plane_root": "<CLEVER_ROOT>",
+        "control_plane_repositories": [
+            "clever-agent-project",
+            "clever-context-monorepo",
+            "clever-change-control",
+        ],
+        "project_repositories_root": "<CLEVER_ROOT>/projects/<project-slug>",
+        "target_repo_checkout": "<CLEVER_ROOT>/projects/<project-slug>/<target-repo>",
+        "seed_injection_root": "target repo root",
+    }
     assert (
-        "copy target repo seed files before handoff"
+        "copy target repo seed files into the target repo root before handoff"
         in packet["repo_bootstrap"]["post_create_clone"]
+    )
+    assert any(
+        "<CLEVER_ROOT>/projects/<project-slug>/<target-repo>" in step
+        for step in packet["repo_bootstrap"]["post_create_clone"]
     )
     assert (
         "apply GitHub rulesets after dev exists"
@@ -462,6 +477,29 @@ def test_target_repo_seed_templates_separate_execution_rules_from_project_brief(
     assert "초기 범위" in project_brief
     assert "다음 작업 목록" in project_brief
     assert "agent 작업 절차" in project_brief
+
+
+def test_control_plane_docs_define_projects_folder_layout():
+    docs = [
+        REPO_ROOT / "AGENTS.md",
+        REPO_ROOT / "README.md",
+        REPO_ROOT / "docs/setting.md",
+        REPO_ROOT / ".agent/skills/bootstrap-clever-work/SKILL.md",
+    ]
+
+    for doc_path in docs:
+        text = doc_path.read_text(encoding="utf-8")
+        assert "<CLEVER_ROOT>/" in text
+        assert "clever-agent-project/" in text
+        assert "clever-context-monorepo/" in text
+        assert "clever-change-control/" in text
+        assert "projects/" in text
+        assert "<project-slug>/" in text
+        assert "<target-repo>/" in text
+
+    setting = (REPO_ROOT / "docs/setting.md").read_text(encoding="utf-8")
+    assert "3대 레포는 항상 이 루트의 sibling" in setting
+    assert "target repo 루트에 주입" in setting
 
 
 def test_target_repo_agents_template_enforces_github_development_branch_flow():
@@ -722,15 +760,19 @@ def test_build_packet_includes_post_create_clone_and_handoff_plan():
 
     assert repo_bootstrap["post_create_clone"] == [
         "create-or-confirm public target repo after project-start approval",
-        "clone-or-pull the target repo locally",
-        "copy target repo seed files before handoff",
+        "clone-or-pull the target repo under <CLEVER_ROOT>/projects/<project-slug>/<target-repo>",
+        "copy target repo seed files into the target repo root before handoff",
         "apply GitHub rulesets after dev exists",
         "verify local checkout is ready for follow-on work",
     ]
+    assert repo_bootstrap["local_folder_layout"]["target_repo_checkout"] == (
+        "<CLEVER_ROOT>/projects/<project-slug>/<target-repo>"
+    )
     assert handoff["recommended_session"] == "new-target-repo-session"
     assert handoff["status"] == "recommended-after-clone"
     assert "Switch to the cloned target repo" in handoff["summary"]
     assert "seed AGENTS.md and docs/project-brief.md" in handoff["summary"]
+    assert "projects folder" in packet["next_step"]
     assert "seed the target repo" in packet["next_step"]
 
 
